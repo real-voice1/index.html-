@@ -1,4 +1,3 @@
-
 // استيراد مكتبات Firebase الأساسية من الـ CDN الحديثة
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
@@ -68,8 +67,8 @@ if (toggleAuthModeBtn) {
 if (authForm) {
     authForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('email'].value;
-        const password = document.getElementById('password'].value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
 
         try {
             if (isLoginMode) {
