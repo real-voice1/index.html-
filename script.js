@@ -12,7 +12,6 @@ import {
     doc, 
     getDoc, 
     setDoc, 
-    updateDoc, 
     onSnapshot, 
     query, 
     where, 
@@ -88,7 +87,7 @@ let roomSeats = Array(8).fill(null);
 let userData = null;
 let myCurrentSeatIndex = null;
 
-// تحويل صور المعرض إلى Base64 مع معالجة الأخطاء لضمان عدم توقف التطبيق
+// تحويل صور المعرض إلى Base64 مع معالجة الأخطاء
 function convertFileToBase64(file) {
     return new Promise((resolve) => {
         if (!file) {
@@ -172,7 +171,6 @@ if (navRoomsBtn && navProfileBtn) {
     });
 }
 
-// فتح نافذة تعديل البروفايل
 if (editProfileBtn) {
     editProfileBtn.addEventListener('click', () => {
         if (userData && inputNickname) {
@@ -188,7 +186,7 @@ if (closeEditProfile) {
     });
 }
 
-// زر حفظ تعديلات البروفايل (الاسم والصورة من المعرض)
+// زر حفظ تعديلات البروفايل باستخدام setDoc مع merge لتجنب أخطاء عدم وجود المستند
 if (saveProfileBtn) {
     saveProfileBtn.addEventListener('click', async () => {
         if (!currentUser) return;
@@ -196,24 +194,27 @@ if (saveProfileBtn) {
         if (!newNick) return alert("⚠️ برجاء كتابة الاسم المستعار!");
 
         try {
-            let avatarBase64 = userData ? userData.avatar : "https://via.placeholder.com/150";
+            let avatarBase64 = (userData && userData.avatar) ? userData.avatar : "https://via.placeholder.com/150";
             if (inputAvatarFile && inputAvatarFile.files && inputAvatarFile.files[0]) {
                 avatarBase64 = await convertFileToBase64(inputAvatarFile.files[0]);
             }
 
             const userRef = doc(db, "users", currentUser.uid);
-            await updateDoc(userRef, {
+            
+            await setDoc(userRef, {
+                uid: currentUser.uid,
+                email: currentUser.email,
+                userId: userData ? userData.userId : Math.floor(100000 + Math.random() * 900000),
                 nickname: newNick,
                 avatar: avatarBase64
-            });
+            }, { merge: true });
 
             if (profileDisplayName) profileDisplayName.textContent = newNick;
             if (profileImgPreview) profileImgPreview.src = avatarBase64;
             
-            if (userData) {
-                userData.nickname = newNick;
-                userData.avatar = avatarBase64;
-            }
+            if (!userData) userData = {};
+            userData.nickname = newNick;
+            userData.avatar = avatarBase64;
 
             alert("✅ تم تحديث الملف الشخصي بنجاح!");
             if (editProfileModal) editProfileModal.classList.add('hidden');
@@ -247,7 +248,6 @@ if (cancelRoomBtn) {
     });
 }
 
-// زر إنشاء الغرفة واشتراط رفع الصورة من المعرض
 if (confirmCreateRoom) {
     confirmCreateRoom.addEventListener('click', async () => {
         if (!roomNameInput || !roomImageFile) return;
@@ -280,7 +280,6 @@ if (confirmCreateRoom) {
     });
 }
 
-// استعراض الغرف في مربعات كبرى ومنسقة
 function loadRooms() {
     if (!roomsGrid) return;
     onSnapshot(collection(db, "rooms"), (snapshot) => {
@@ -414,7 +413,7 @@ if (toggleMicBtn) {
             toggleMicBtn.className = "bg-red-600/30 hover:bg-red-600 text-red-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-red-500/40 cursor-pointer flex items-center gap-1";
         } else {
             toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone"></i> كتم المايك`;
-            toggleMicBtn.className = "bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-red-500/40 cursor-pointer flex items-center gap-1";
+            toggleMicBtn.className = "bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-purple-500/40 cursor-pointer flex items-center gap-1";
         }
     });
 }
