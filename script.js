@@ -88,13 +88,17 @@ let roomSeats = Array(8).fill(null);
 let userData = null;
 let myCurrentSeatIndex = null;
 
-// تحويل صور المعرض إلى Base64 بدقة
+// تحويل صور المعرض إلى Base64 مع معالجة الأخطاء لضمان عدم توقف التطبيق
 function convertFileToBase64(file) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
+        if (!file) {
+            resolve("https://via.placeholder.com/150");
+            return;
+        }
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
+        reader.onerror = () => resolve("https://via.placeholder.com/150");
     });
 }
 
@@ -168,10 +172,11 @@ if (navRoomsBtn && navProfileBtn) {
     });
 }
 
+// فتح نافذة تعديل البروفايل
 if (editProfileBtn) {
     editProfileBtn.addEventListener('click', () => {
-        if (userData) {
-            if (inputNickname) inputNickname.value = userData.nickname || '';
+        if (userData && inputNickname) {
+            inputNickname.value = userData.nickname || '';
         }
         if (editProfileModal) editProfileModal.classList.remove('hidden');
     });
@@ -183,15 +188,16 @@ if (closeEditProfile) {
     });
 }
 
+// زر حفظ تعديلات البروفايل (الاسم والصورة من المعرض)
 if (saveProfileBtn) {
     saveProfileBtn.addEventListener('click', async () => {
         if (!currentUser) return;
-        const newNick = inputNickname.value.trim();
+        const newNick = inputNickname ? inputNickname.value.trim() : "";
         if (!newNick) return alert("⚠️ برجاء كتابة الاسم المستعار!");
 
         try {
-            let avatarBase64 = userData.avatar || "https://via.placeholder.com/150";
-            if (inputAvatarFile.files && inputAvatarFile.files[0]) {
+            let avatarBase64 = userData ? userData.avatar : "https://via.placeholder.com/150";
+            if (inputAvatarFile && inputAvatarFile.files && inputAvatarFile.files[0]) {
                 avatarBase64 = await convertFileToBase64(inputAvatarFile.files[0]);
             }
 
@@ -204,12 +210,15 @@ if (saveProfileBtn) {
             if (profileDisplayName) profileDisplayName.textContent = newNick;
             if (profileImgPreview) profileImgPreview.src = avatarBase64;
             
-            userData.nickname = newNick;
-            userData.avatar = avatarBase64;
+            if (userData) {
+                userData.nickname = newNick;
+                userData.avatar = avatarBase64;
+            }
 
             alert("✅ تم تحديث الملف الشخصي بنجاح!");
             if (editProfileModal) editProfileModal.classList.add('hidden');
         } catch (error) {
+            console.error("Profile update error:", error);
             alert("❌ خطأ أثناء الحفظ: " + error.message);
         }
     });
@@ -238,6 +247,7 @@ if (cancelRoomBtn) {
     });
 }
 
+// زر إنشاء الغرفة واشتراط رفع الصورة من المعرض
 if (confirmCreateRoom) {
     confirmCreateRoom.addEventListener('click', async () => {
         if (!roomNameInput || !roomImageFile) return;
@@ -264,11 +274,13 @@ if (confirmCreateRoom) {
             if (createRoomModal) createRoomModal.classList.add('hidden');
             alert("🎉 تم إنشاء غرفتك بنجاح!");
         } catch (error) {
-            alert("❌ خطأ: " + error.message);
+            console.error("Room creation error:", error);
+            alert("❌ خطأ أثناء إنشاء الغرفة: " + error.message);
         }
     });
 }
 
+// استعراض الغرف في مربعات كبرى ومنسقة
 function loadRooms() {
     if (!roomsGrid) return;
     onSnapshot(collection(db, "rooms"), (snapshot) => {
@@ -362,7 +374,6 @@ function updateSeatUI(index, name, isOccupied) {
     const nameSpan = document.getElementById(`seat-name-${index}`);
     if (!seatDiv || !nameSpan) return;
     
-    // استخدام صورة البروفايل الثابتة للمستخدم على المايك إذا متوفرة
     const userAvatarImg = (userData && userData.avatar) ? userData.avatar : "https://via.placeholder.com/150";
 
     if (isOccupied) {
@@ -403,7 +414,7 @@ if (toggleMicBtn) {
             toggleMicBtn.className = "bg-red-600/30 hover:bg-red-600 text-red-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-red-500/40 cursor-pointer flex items-center gap-1";
         } else {
             toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone"></i> كتم المايك`;
-            toggleMicBtn.className = "bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-purple-500/40 cursor-pointer flex items-center gap-1";
+            toggleMicBtn.className = "bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-red-500/40 cursor-pointer flex items-center gap-1";
         }
     });
 }
@@ -446,7 +457,7 @@ onAuthStateChanged(auth, async (user) => {
                 userData = userDocSnap.data();
                 if (headerUserId) headerUserId.textContent = `ID: ${userData.userId}`;
                 if (profileDisplayId) profileDisplayId.textContent = `ID: ${userData.userId}`;
-                if (profileDisplayName) profileDisplayName.textContent = userData.nickname;
+                if (profileDisplayName) profileDisplayName.textContent = userData.nickname || "مستخدم";
                 if (profileImgPreview) profileImgPreview.src = userData.avatar || "https://via.placeholder.com/150";
             }
         } catch (e) {
