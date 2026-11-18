@@ -63,21 +63,32 @@
         </button>
     </div>
 
-    <!-- 2. شاشة تسجيل الدخول -->
+    <!-- 2. شاشة تسجيل الدخول + زر Google -->
     <div id="auth-screen" class="full-mobile-card p-6 rounded-3xl w-full max-w-lg hidden flex flex-col justify-center mt-4">
-        <div class="text-center mb-8">
+        <div class="text-center mb-6">
             <h2 class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent" id="auth-title">تسجيل الدخول بالحساب</h2>
-            <p class="text-xs text-slate-400 mt-2">يُشترط البريد الإلكتروني وكلمة المرور للولوج</p>
+            <p class="text-xs text-slate-400 mt-2">سجل الدخول بالإيميل أو عبر Google</p>
         </div>
 
-        <form id="auth-form" class="space-y-5">
+        <!-- زر تسجيل الدخول بواسطة جوجل الاحترافي -->
+        <button id="google-login-btn" class="w-full bg-white text-slate-900 font-bold py-3.5 rounded-2xl shadow-lg text-sm flex items-center justify-center gap-3 mb-5 cursor-pointer hover:bg-slate-100 transition">
+            <i class="fa-brands fa-google text-red-500 text-base"></i> متابعة باستخدام Google
+        </button>
+
+        <div class="flex items-center my-3 text-slate-600 text-xs">
+            <div class="flex-1 border-t border-slate-800"></div>
+            <span class="px-3 text-slate-500">أو بالبريد الإلكتروني</span>
+            <div class="flex-1 border-t border-slate-800"></div>
+        </div>
+
+        <form id="auth-form" class="space-y-4">
             <div>
-                <label class="block text-xs text-purple-300 mb-1.5">البريد الإلكتروني (Gmail)</label>
-                <input type="email" id="email" required class="w-full px-4 py-3.5 rounded-2xl bg-slate-900/80 text-sm border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white" placeholder="name@gmail.com">
+                <label class="block text-xs text-purple-300 mb-1">البريد الإلكتروني (Gmail)</label>
+                <input type="email" id="email" required class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 text-sm border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white" placeholder="name@gmail.com">
             </div>
             <div>
-                <label class="block text-xs text-purple-300 mb-1.5">كلمة المرور</label>
-                <input type="password" id="password" required class="w-full px-4 py-3.5 rounded-2xl bg-slate-900/80 text-sm border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white" placeholder="••••••••">
+                <label class="block text-xs text-purple-300 mb-1">كلمة المرور</label>
+                <input type="password" id="password" required class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 text-sm border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white" placeholder="••••••••">
             </div>
 
             <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3.5 rounded-2xl shadow-lg text-sm cursor-pointer">
@@ -85,7 +96,7 @@
             </button>
         </form>
 
-        <div class="text-center mt-6">
+        <div class="text-center mt-5">
             <button type="button" id="toggle-auth-mode" class="text-xs text-purple-300 hover:underline cursor-pointer">
                 ليس لديك حساب؟ انشئ حساب جديد
             </button>
@@ -94,7 +105,6 @@
 
     <!-- 3. شاشة التطبيق الرئيسية -->
     <div id="main-app-container" class="w-full max-w-lg hidden flex flex-col">
-        <!-- تبويب الغرف -->
         <div id="tab-rooms" class="w-full p-4 flex flex-col">
             <div class="flex justify-between items-center mb-4 px-1">
                 <div>
@@ -110,11 +120,9 @@
             </div>
         </div>
 
-        <!-- تبويب الملف الشخصي (خاصتي) -->
         <div id="tab-profile" class="w-full p-4 hidden flex flex-col">
             <div class="flex items-center justify-between mb-6 border-b border-purple-500/20 pb-5 px-1">
                 <div class="flex items-center gap-3.5">
-                    <!-- تم تفعيل النقر على صورة البروفايل الرئيسية هنا لفتح البروفايل -->
                     <div id="main-profile-img-container" class="w-18 h-18 rounded-full border-2 border-amber-400 p-0.5 relative cursor-pointer shadow-lg hover:scale-105 transition">
                         <img id="profile-img-preview" src="https://via.placeholder.com/150" class="w-full h-full rounded-full object-cover">
                     </div>
@@ -131,11 +139,11 @@
                 </button>
             </div>
 
-            <!-- مستويات الجاذبية والثروة في البروفايل الرئيسي (من 1 إلى 100 وتتطور كل 10 مستويات) -->
+            <!-- مستويات الجاذبية والثروة في البروفايل الرئيسي تبدأ من 1 -->
             <div class="grid grid-cols-2 gap-3 mb-6">
                 <div id="main-charm-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
                     <div>
-                        <span id="main-charm-text" class="text-xs font-black block">Lv. 2</span>
+                        <span id="main-charm-text" class="text-xs font-black block">Lv. 1</span>
                         <span class="text-[10px] opacity-80 block mt-0.5">الجاذبية 💖</span>
                     </div>
                     <i id="main-charm-icon" class="fa-solid fa-heart text-pink-400 text-xl"></i>
@@ -143,7 +151,7 @@
 
                 <div id="main-wealth-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
                     <div>
-                        <span id="main-wealth-text" class="text-xs font-black block">Lv. 10</span>
+                        <span id="main-wealth-text" class="text-xs font-black block">Lv. 1</span>
                         <span class="text-[10px] opacity-80 block mt-0.5">الثروة 💰</span>
                     </div>
                     <i id="main-wealth-icon" class="fa-solid fa-gem text-amber-400 text-xl"></i>
@@ -259,7 +267,7 @@
         </div>
     </div>
 
-    <!-- نافذة بروفايل المستخدم من الأسفل (Bottom Sheet الاحترافي) -->
+    <!-- نافذة بروفايل المستخدم من الأسفل (Bottom Sheet الاحترافي - بدون جملة الترحيب) -->
     <div id="room-user-profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end hidden">
         <div id="bottom-sheet-content" class="bottom-sheet p-6 w-full max-w-lg mx-auto text-white flex flex-col max-h-[85vh] overflow-y-auto">
             
@@ -268,7 +276,7 @@
                 <button id="close-user-profile" class="absolute left-2 text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
-            <div class="flex items-center gap-4 mb-4 pb-4 border-b border-purple-500/20">
+            <div class="flex items-center gap-4 mb-5 pb-4 border-b border-purple-500/20">
                 <div class="w-20 h-20 rounded-full border-2 border-amber-400 p-0.5 relative shrink-0 shadow-xl">
                     <img id="modal-profile-avatar" src="https://via.placeholder.com/150" class="w-full h-full rounded-full object-cover">
                 </div>
@@ -285,15 +293,11 @@
                 </div>
             </div>
 
-            <div class="bg-slate-900/80 p-3.5 rounded-2xl mb-4 border border-purple-500/20 text-xs text-slate-300 text-center">
-                مرحباً بك في ملفي الشخصي، استمتع بصوتي وأوقاتك معنا في REAL VOICE ✨
-            </div>
-
-            <!-- مستويات الجاذبية والثروة من 1 إلى 100 مع الأيقونات المتطورة -->
+            <!-- مستويات الجاذبية والثروة تبدأ من 1 -->
             <div class="grid grid-cols-2 gap-3 mb-5">
                 <div id="charm-level-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
                     <div>
-                        <span id="charm-level-text" class="text-xs font-black block">Lv. 2</span>
+                        <span id="charm-level-text" class="text-xs font-black block">Lv. 1</span>
                         <span class="text-[10px] opacity-80 block mt-0.5">الجاذبية 💖</span>
                     </div>
                     <i id="charm-level-icon" class="fa-solid fa-heart text-pink-400 text-xl"></i>
@@ -301,7 +305,7 @@
 
                 <div id="wealth-level-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
                     <div>
-                        <span id="wealth-level-text" class="text-xs font-black block">Lv. 10</span>
+                        <span id="wealth-level-text" class="text-xs font-black block">Lv. 1</span>
                         <span class="text-[10px] opacity-80 block mt-0.5">الثروة 💰</span>
                     </div>
                     <i id="wealth-level-icon" class="fa-solid fa-gem text-amber-400 text-xl"></i>
