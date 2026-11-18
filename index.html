@@ -8,30 +8,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
     <style>
-        body {
-            background-color: #020617;
-            color: white;
-            font-family: system-ui, -apple-system, sans-serif;
-        }
-        .full-mobile-card {
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            min-height: 85vh;
-        }
-        .bottom-sheet {
-            background: rgba(19, 25, 38, 0.98);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(168, 85, 247, 0.3);
-            border-top-left-radius: 25px;
-            border-top-right-radius: 25px;
-            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.9);
-            transform: translateY(100%);
-            transition: transform 0.3s ease-in-out;
-        }
-        .bottom-sheet.show {
-            transform: translateY(0);
-        }
+        body { background-color: #020617; color: white; font-family: system-ui, -apple-system, sans-serif; }
+        .full-mobile-card { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); min-height: 85vh; }
+        .bottom-sheet { background: rgba(19, 25, 38, 0.98); backdrop-filter: blur(20px); border-top: 1px solid rgba(168, 85, 247, 0.3); border-top-left-radius: 25px; border-top-right-radius: 25px; transform: translateY(100%); transition: transform 0.3s ease-in-out; }
+        .bottom-sheet.show { transform: translateY(0); }
     </style>
 </head>
 <body class="flex flex-col items-center justify-start min-h-screen p-3 bg-slate-950 text-white pb-24">
@@ -43,52 +23,26 @@
         </div>
         <h1 class="text-3xl font-black mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">REAL VOICE</h1>
         <p class="text-slate-400 text-sm mb-8">منصة الدردشة الصوتية والألعاب الاجتماعية الأولى</p>
-        
-        <button id="start-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3.5 rounded-2xl shadow-lg text-base cursor-pointer">
-            دخول التطبيق بالإيميل 🚀
-        </button>
+        <button id="start-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3.5 rounded-2xl shadow-lg text-base cursor-pointer">دخول التطبيق بالإيميل 🚀</button>
     </div>
 
     <!-- 2. شاشة تسجيل الدخول -->
     <div id="auth-screen" class="full-mobile-card p-6 rounded-3xl w-full max-w-lg hidden flex flex-col justify-center mt-4">
         <div class="text-center mb-6">
             <h2 class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent" id="auth-title">تسجيل الدخول بالحساب</h2>
-            <p class="text-xs text-slate-400 mt-2">سجل الدخول بالإيميل أو عبر Google</p>
         </div>
-
-        <button id="google-login-btn" class="w-full bg-white text-slate-900 font-bold py-3.5 rounded-2xl shadow-lg text-sm flex items-center justify-center gap-3 mb-5 cursor-pointer hover:bg-slate-100 transition">
+        <button id="google-login-btn" class="w-full bg-white text-slate-900 font-bold py-3.5 rounded-2xl shadow-lg text-sm flex items-center justify-center gap-3 mb-5 cursor-pointer">
             <i class="fa-brands fa-google text-red-500 text-base"></i> متابعة باستخدام Google
         </button>
-
-        <div class="flex items-center my-3 text-slate-600 text-xs">
-            <div class="flex-1 border-t border-slate-800"></div>
-            <span class="px-3 text-slate-500">أو بالبريد الإلكتروني</span>
-            <div class="flex-1 border-t border-slate-800"></div>
-        </div>
-
         <form id="auth-form" class="space-y-4">
-            <div>
-                <label class="block text-xs text-purple-300 mb-1">البريد الإلكتروني (Gmail)</label>
-                <input type="email" id="email" required class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 text-sm border border-purple-500/30 text-white" placeholder="name@gmail.com">
-            </div>
-            <div>
-                <label class="block text-xs text-purple-300 mb-1">كلمة المرور</label>
-                <input type="password" id="password" required class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 text-sm border border-purple-500/30 text-white" placeholder="••••••••">
-            </div>
-
-            <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3.5 rounded-2xl shadow-lg text-sm cursor-pointer">
-                دخول / إنشاء الحساب
-            </button>
+            <div><label class="block text-xs text-purple-300 mb-1">البريد الإلكتروني</label><input type="email" id="email" required class="w-full px-4 py-3 rounded-2xl bg-slate-900/85 text-sm border border-purple-500/30 text-white"></div>
+            <div><label class="block text-xs text-purple-300 mb-1">كلمة المرور</label><input type="password" id="password" required class="w-full px-4 py-3 rounded-2xl bg-slate-900/85 text-sm border border-purple-500/30 text-white"></div>
+            <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3.5 rounded-2xl shadow-lg text-sm cursor-pointer">دخول / إنشاء الحساب</button>
         </form>
-
-        <div class="text-center mt-5">
-            <button type="button" id="toggle-auth-mode" class="text-xs text-purple-300 hover:underline cursor-pointer">
-                ليس لديك حساب؟ انشئ حساب جديد
-            </button>
-        </div>
+        <div class="text-center mt-5"><button type="button" id="toggle-auth-mode" class="text-xs text-purple-300 underline cursor-pointer">ليس لديك حساب؟ انشئ حساب جديد</button></div>
     </div>
 
-    <!-- 3. شاشة التطبيق الرئيسية -->
+    <!-- 3. الشاشة الرئيسية -->
     <div id="main-app-container" class="w-full max-w-lg hidden flex flex-col">
         <div id="tab-rooms" class="w-full p-4 flex flex-col">
             <div class="flex justify-between items-center mb-4 px-1">
@@ -96,56 +50,46 @@
                     <h2 class="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">استكشاف الغرف الصوتية</h2>
                     <p id="header-user-id" class="text-xs text-slate-400">ID: جاري التحميل...</p>
                 </div>
-                <button id="create-room-btn" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg cursor-pointer">
-                    <i class="fa-solid fa-plus ml-1"></i> إنشاء غرفة
-                </button>
+                <button id="create-room-btn" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg cursor-pointer"><i class="fa-solid fa-plus ml-1"></i> إنشاء غرفة</button>
             </div>
-            <div id="rooms-grid" class="grid grid-cols-2 gap-3 pb-6">
-                <p class="col-span-2 text-center text-slate-500 text-xs py-8">جاري تحميل الغرف المتاحة...</p>
-            </div>
+            <div id="rooms-grid" class="grid grid-cols-2 gap-3 pb-6"><p class="col-span-2 text-center text-slate-500 text-xs py-8">جاري تحميل الغرف...</p></div>
         </div>
 
-        <!-- تبويب الملف الشخصي -->
         <div id="tab-profile" class="w-full p-4 hidden flex flex-col">
             <div class="flex items-center justify-between mb-6 border-b border-purple-500/20 pb-5 px-1">
                 <div class="flex items-center gap-3.5">
-                    <div class="w-18 h-18 rounded-full border-2 border-amber-400 p-0.5 relative cursor-pointer shadow-lg">
+                    <div class="w-16 h-16 rounded-full border-2 border-amber-400 p-0.5 relative">
                         <img id="profile-img-preview" src="https://via.placeholder.com/150" class="w-full h-full rounded-full object-cover">
                     </div>
                     <div>
-                        <div class="flex items-center gap-2">
-                            <h3 id="profile-display-name" class="text-base font-bold text-purple-200">اسم المستخدم</h3>
-                            <span id="user-badge-tag" class="bg-amber-500/20 text-amber-300 text-[9px] px-2 py-0.5 rounded-full border border-amber-500/40">🌟 شارة الشهر</span>
-                        </div>
+                        <h3 id="profile-display-name" class="text-base font-bold text-purple-200">اسم المستخدم</h3>
                         <p id="profile-display-id" class="text-xs text-slate-400 mt-1">ID: 110789</p>
                     </div>
                 </div>
             </div>
-            <div class="space-y-3 text-xs px-1 pb-6">
-                <div id="settings-logout-switch" class="bg-gradient-to-r from-purple-900/30 to-pink-900/30 p-4 rounded-2xl flex justify-between items-center border border-purple-500/40 cursor-pointer">
-                    <span class="font-bold text-pink-200">تسجيل الخروج</span>
-                    <i class="fa-solid fa-right-from-bracket text-pink-300"></i>
-                </div>
+            <div id="settings-logout-switch" class="bg-gradient-to-r from-purple-900/30 to-pink-900/30 p-4 rounded-2xl flex justify-between items-center border border-purple-500/40 cursor-pointer">
+                <span class="font-bold text-pink-200 text-xs">تسجيل الخروج</span>
+                <i class="fa-solid fa-right-from-bracket text-pink-300"></i>
             </div>
         </div>
     </div>
 
-    <!-- 4. شاشة الغرفة الداخلية مع الدردشة النصية اللحظية -->
+    <!-- 4. شاشة الغرفة الداخلية والمايكات والشات -->
     <div id="room-view-screen" class="w-full max-w-lg hidden flex flex-col h-[88vh] relative">
         <div class="flex justify-between items-center mb-2 border-b border-purple-500/20 pb-2 px-1">
             <div class="flex items-center gap-3">
                 <img id="room-header-avatar" src="https://via.placeholder.com/150" class="w-10 h-10 rounded-xl object-cover border border-purple-400">
                 <div>
                     <h2 id="current-room-title" class="text-sm font-bold text-purple-200">اسم الغرفة</h2>
-                    <p id="room-owner-tag" class="text-[9px] text-amber-400">👑 المالك: جاري التحميل...</p>
+                    <p id="room-owner-tag" class="text-[9px] text-amber-400">👑 المالك</p>
                 </div>
             </div>
             <button id="opt-leave" class="bg-red-950/60 text-red-300 px-3 py-1.5 rounded-xl text-xs border border-red-500/30 cursor-pointer">خروج</button>
         </div>
 
-        <!-- شبكة الميكات (8 مايكات تفاعلية فورية) -->
+        <!-- 8 مايكات -->
         <div class="grid grid-cols-4 gap-3 mb-2 text-center px-1">
-            <div class="flex flex-col items-center"><div id="seat-0" class="w-12 h-12 rounded-full bg-slate-900 border-2 border-purple-500 flex items-center justify-center relative cursor-pointer shadow-lg"></div><span id="seat-name-0" class="text-[9px] text-slate-300 truncate w-16 mt-0.5">مايك 1</span></div>
+            <div class="flex flex-col items-center"><div id="seat-0" class="w-12 h-12 rounded-full bg-slate-900 border-2 border-purple-500 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-0" class="text-[9px] text-slate-300 truncate w-16 mt-0.5">مايك 1</span></div>
             <div class="flex flex-col items-center"><div id="seat-1" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-1" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 2</span></div>
             <div class="flex flex-col items-center"><div id="seat-2" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-2" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 3</span></div>
             <div class="flex flex-col items-center"><div id="seat-3" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-3" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 4</span></div>
@@ -155,11 +99,11 @@
             <div class="flex flex-col items-center"><div id="seat-7" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-7" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 8</span></div>
         </div>
 
-        <!-- صندوق الدردشة النصية (Chat) -->
+        <!-- الشات النصي -->
         <div class="flex-1 bg-slate-900/60 border border-purple-500/20 rounded-2xl p-2.5 flex flex-col mb-2 overflow-hidden">
-            <div class="text-[10px] text-purple-400 font-bold border-b border-purple-500/20 pb-1 mb-1">💬 الدردشة النصية الفورية</div>
+            <div class="text-[10px] text-purple-400 font-bold border-b border-purple-500/20 pb-1 mb-1">💬 الدردشة الفورية</div>
             <div id="chat-messages-container" class="flex-1 overflow-y-auto space-y-1.5 text-xs pr-1">
-                <p class="text-slate-500 text-[10px] text-center">أهلاً بك في الغرفة الصوتيّة!</p>
+                <p class="text-slate-500 text-[10px] text-center">أهلاً بك في الغرفة!</p>
             </div>
             <form id="chat-form" class="flex gap-2 mt-2">
                 <input type="text" id="chat-input" placeholder="اكتب رسالة..." class="flex-1 bg-slate-950 px-3 py-2 rounded-xl text-xs border border-purple-500/30 text-white focus:outline-none">
@@ -167,7 +111,6 @@
             </form>
         </div>
 
-        <!-- زر المايك السريع العائم -->
         <div class="absolute bottom-16 left-4 z-30">
             <button id="floating-mic-toggle-btn" class="w-11 h-11 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-2xl border-2 border-purple-400 cursor-pointer">
                 <i class="fa-solid fa-microphone text-sm" id="floating-mic-icon"></i>
