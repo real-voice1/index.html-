@@ -7,10 +7,7 @@ import {
     signInWithRedirect,
     getRedirectResult,
     signOut,
-    onAuthStateChanged,
-    deleteUser,
-    EmailAuthProvider,
-    reauthenticateWithCredential
+    onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
     getFirestore, 
@@ -48,7 +45,6 @@ let currentRoomDocData = null;
 let userData = null;
 let selectedSeatIndex = null;
 let selectedTargetUser = null;
-let myCurrentSeatIndex = null;
 let isLoginMode = false;
 let roomUnsubscribe = null;
 
@@ -97,7 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileDisplayName = document.getElementById('profile-display-name');
     const profileDisplayId = document.getElementById('profile-display-id');
     const profileImgPreview = document.getElementById('profile-img-preview');
-    const userBadgeTag = document.getElementById('user-badge-tag');
     const settingsLogoutSwitch = document.getElementById('settings-logout-switch');
 
     const chatForm = document.getElementById('chat-form');
@@ -232,7 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     userId: userData.userId
                 };
 
-                myCurrentSeatIndex = selectedSeatIndex;
                 await updateDoc(roomRef, { seats: currentSeats });
 
                 if (!localAudioTrack && agoraClient) {
@@ -319,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 profileDisplayId.textContent = `ID: ${userData.userId}`;
                 profileDisplayName.textContent = userData.nickname || "مستخدم";
                 profileImgPreview.src = userData.avatar || "https://via.placeholder.com/150";
-                userBadgeTag.textContent = getUserBadgeMonthly();
             } else {
                 userData = {
                     uid: user.uid, email: user.email, userId: Math.floor(100000 + Math.random() * 900000),
@@ -348,10 +341,6 @@ getRedirectResult(auth).then(async (result) => {
         }
     }
 }).catch(e => console.error(e));
-
-function getUserBadgeMonthly() {
-    return ["🌟 نجم الشهر", "💎 ملك التفاعل", "👑 أسطورة السهرة"][Math.floor(Date.now() / 2592000000) % 3];
-}
 
 function compressImage(file) {
     return new Promise((resolve) => {
