@@ -1,4 +1,3 @@
-// استيراد مكتبات Firebase الأساسية من الـ CDN الحديثة
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
     getAuth, 
@@ -14,7 +13,6 @@ import {
     serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// مفاتيح مشروعك الحقيقية من فايربيس
 const firebaseConfig = {
   apiKey: "AIzaSyDyx4MBxvRM0L5FrrjVOfVePlKRSxGpMg4",
   authDomain: "real-voice-aec71.firebaseapp.com",
@@ -24,14 +22,10 @@ const firebaseConfig = {
   appId: "1:1051527775983:web:ae3794c162184fd56b7d1a"
 };
 
-// تشغيل Firebase وتصدير الخدمات للتطبيق
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-console.log("✅ تم ربط تطبيق REAL VOICE بقاعدة البيانات بنجاح!");
-
-// عناصر واجهة المستخدم (UI Elements)
 const welcomeScreen = document.getElementById('welcome-screen');
 const authScreen = document.getElementById('auth-screen');
 const roomsScreen = document.getElementById('rooms-screen');
@@ -45,27 +39,26 @@ const toggleAuthModeBtn = document.getElementById('toggle-auth-mode');
 const userDisplayEmail = document.getElementById('user-display-email');
 const createRoomBtn = document.getElementById('create-room-btn');
 
-// عناصر نافذة إنشاء الغرفة
 const createRoomModal = document.getElementById('create-room-modal');
 const cancelRoomBtn = document.getElementById('cancel-room-btn');
 const confirmCreateRoom = document.getElementById('confirm-create-room');
 const roomNameInput = document.getElementById('room-name-input');
 const roomsList = document.getElementById('rooms-list');
 
-// عناصر داخل الغرفة والكراسي
 const leaveRoomBtn = document.getElementById('leave-room-btn');
 const currentRoomTitle = document.getElementById('current-room-title');
 const toggleMicBtn = document.getElementById('toggle-mic-btn');
 const requestSeatBtn = document.getElementById('request-seat-btn');
 
+const userProfileModal = document.getElementById('user-profile-modal');
+const closeProfileModal = document.getElementById('close-profile-modal');
+const modalUsername = document.getElementById('modal-username');
+
 let isLoginMode = false;
 let currentUser = null;
 let currentRoomId = null;
-
-// مصفوفة لتمثيل حالة الـ 8 كراسي محلياً (تخزين اسم المستخدم لكل كرسي)
 let roomSeats = Array(8).fill(null);
 
-// الانتقال من شاشة الترحيب إلى شاشة التسجيل
 if (startBtn) {
     startBtn.addEventListener('click', () => {
         welcomeScreen.classList.add('hidden');
@@ -73,23 +66,15 @@ if (startBtn) {
     });
 }
 
-// التبديل بين وضع "إنشاء حساب" ووضع "تسجيل الدخول"
 if (toggleAuthModeBtn) {
     toggleAuthModeBtn.addEventListener('click', () => {
         isLoginMode = !isLoginMode;
-        if (isLoginMode) {
-            authTitle.textContent = "تسجيل الدخول";
-            authSubmitBtn.textContent = "دخول";
-            toggleAuthModeBtn.textContent = "ليس لديك حساب؟ سجل حساب جديد";
-        } else {
-            authTitle.textContent = "إنشاء حساب جديد";
-            authSubmitBtn.textContent = "تسجيل الحساب";
-            toggleAuthModeBtn.textContent = "لديك حساب بالفعل؟ سجل دخولك من هنا";
-        }
+        authTitle.textContent = isLoginMode ? "تسجيل الدخول" : "إنشاء حساب جديد";
+        authSubmitBtn.textContent = isLoginMode ? "دخول" : "تسجيل الحساب";
+        toggleAuthModeBtn.textContent = isLoginMode ? "ليس لديك حساب؟ سجل حساب جديد" : "لديك حساب بالفعل؟ سجل دخولك من هنا";
     });
 }
 
-// تنفيذ عملية التسجيل أو الدخول عبر Firebase Auth
 if (authForm) {
     authForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -110,33 +95,21 @@ if (authForm) {
     });
 }
 
-// إظهار نافذة إنشاء الغرفة
 if (createRoomBtn) {
-    createRoomBtn.addEventListener('click', () => {
-        if (createRoomModal) {
-            createRoomModal.classList.remove('hidden');
-        }
-    });
+    createRoomBtn.addEventListener('click', () => createRoomModal.classList.remove('hidden'));
 }
 
-// إخفاء نافذة إنشاء الغرفة عند الإلغاء
 if (cancelRoomBtn) {
     cancelRoomBtn.addEventListener('click', () => {
-        if (createRoomModal) {
-            createRoomModal.classList.add('hidden');
-            roomNameInput.value = '';
-        }
+        createRoomModal.classList.add('hidden');
+        roomNameInput.value = '';
     });
 }
 
-// حفظ الغرفة الجديدة في قاعدة بيانات Firestore
 if (confirmCreateRoom) {
     confirmCreateRoom.addEventListener('click', async () => {
         const roomName = roomNameInput.value.trim();
-        if (!roomName) {
-            alert("⚠️ برجاء كتابة اسم الغرفة أولاً!");
-            return;
-        }
+        if (!roomName) return alert("⚠️ برجاء كتابة اسم الغرفة أولاً!");
 
         try {
             await addDoc(collection(db, "rooms"), {
@@ -144,26 +117,19 @@ if (confirmCreateRoom) {
                 host: currentUser ? currentUser.email : "مستخدم مجهول",
                 createdAt: serverTimestamp()
             });
-
             roomNameInput.value = '';
-            if (createRoomModal) {
-                createRoomModal.classList.add('hidden');
-            }
+            createRoomModal.classList.add('hidden');
             alert("🎉 تم إنشاء الغرفة بنجاح ونشرها في القاعة!");
         } catch (error) {
-            alert("❌ خطأ أثناء إنشاء الغرفة: " + error.message);
+            alert("❌ خطأ: " + error.message);
         }
     });
 }
 
-// جلب وعرض الغرف من Firestore مباشرة
 function loadRooms() {
     if (!roomsList) return;
-    const q = collection(db, "rooms");
-    
-    onSnapshot(q, (snapshot) => {
+    onSnapshot(collection(db, "rooms"), (snapshot) => {
         roomsList.innerHTML = "";
-        
         if (snapshot.empty) {
             roomsList.innerHTML = `<p class="text-center text-slate-500 text-xs py-4">لا توجد غرف متاحة حالياً. أنشئ غرفة الآن! ✨</p>`;
             return;
@@ -173,149 +139,117 @@ function loadRooms() {
             const roomData = docSnap.data();
             const roomId = docSnap.id;
             const roomCard = document.createElement('div');
-            roomCard.className = "glass p-4 rounded-2xl flex justify-between items-center border border-purple-500/20";
-            
+            roomCard.className = "glass p-4 rounded-2xl flex justify-between items-center border border-purple-500/25";
             roomCard.innerHTML = `
                 <div>
-                    <h3 class="text-sm font-bold text-purple-200">${escapeHtml(roomData.name || "غرفة بدون اسم")} 🎤</h3>
-                    <p class="text-[10px] text-slate-400 mt-0.5">المضيف: ${escapeHtml(roomData.host || "مجهول")}</p>
+                    <h3 class="text-sm font-bold text-purple-200">${escapeHtml(roomData.name)} 🎤</h3>
+                    <p class="text-[10px] text-slate-400 mt-0.5">المضيف: ${escapeHtml(roomData.host)}</p>
                 </div>
                 <button class="join-room-btn bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-purple-500/40 cursor-pointer">
                     دخول الغرفة
                 </button>
             `;
-
-            // حدث الضغط على زر "دخول الغرفة"
-            const joinBtn = roomCard.querySelector('.join-room-btn');
-            joinBtn.addEventListener('click', () => {
-                enterRoom(roomId, roomData.name || "غرفة صوتية");
-            });
-
+            roomCard.querySelector('.join-room-btn').addEventListener('click', () => enterRoom(roomId, roomData.name));
             roomsList.appendChild(roomCard);
         });
     });
 }
 
-// دالة الانتقال إلى غرفة الدردشة الداخلية
 function enterRoom(roomId, roomName) {
     currentRoomId = roomId;
-    if (roomsScreen) roomsScreen.classList.add('hidden');
-    if (roomViewScreen) roomViewScreen.classList.remove('hidden');
-    if (currentRoomTitle) currentRoomTitle.textContent = roomName;
+    roomsScreen.classList.add('hidden');
+    roomViewScreen.classList.remove('hidden');
+    currentRoomTitle.textContent = roomName;
     resetSeatsUI();
-    console.log("🚪 تم الدخول إلى الغرفة:", roomName);
 }
 
-// زر مغادرة الغرفة والعودة لقاعة الغرف
 if (leaveRoomBtn) {
     leaveRoomBtn.addEventListener('click', () => {
         currentRoomId = null;
-        if (roomViewScreen) roomViewScreen.classList.add('hidden');
-        if (roomsScreen) roomsScreen.classList.remove('hidden');
+        roomViewScreen.classList.add('hidden');
+        roomsScreen.classList.remove('hidden');
     });
 }
 
-// برمجة زر "الجلوس على كرسي" لحجز أول كرسي فارغ
 if (requestSeatBtn) {
-    requestSeatBtn.addEventListener('click', async () => {
-        if (!currentUser || !currentRoomId) {
-            alert("⚠️ يجب تسجيل الدخول والدخول إلى غرفة أولاً!");
-            return;
-        }
+    requestSeatBtn.addEventListener('click', () => {
+        if (!currentUser || !currentRoomId) return alert("⚠️ سجل الدخول وادخل غرفة أولاً!");
+        let emptyIndex = roomSeats.findIndex((seat, idx) => idx > 0 && seat === null);
+        if (emptyIndex === -1 && roomSeats[0] === null) emptyIndex = 0;
+        if (emptyIndex === -1) return alert("❌ عذراً، جميع الكراسي محجوزة!");
 
-        try {
-            let emptyIndex = roomSeats.findIndex((seat, idx) => idx > 0 && seat === null);
-            if (emptyIndex === -1 && roomSeats[0] === null) emptyIndex = 0;
-
-            if (emptyIndex === -1) {
-                alert("❌ عذراً، جميع الكراسي محجوزة!");
-                return;
-            }
-
-            const shortName = currentUser.email.split('@')[0];
-            roomSeats[emptyIndex] = shortName;
-            updateSeatUI(emptyIndex, shortName, true);
-            
-            alert(`🪑 تم جلوسك بنجاح على الكرسي رقم ${emptyIndex + 1}!`);
-        } catch (error) {
-            console.error("خطأ أثناء الجلوس على الكرسي:", error);
-        }
+        const shortName = currentUser.email.split('@')[0];
+        roomSeats[emptyIndex] = shortName;
+        updateSeatUI(emptyIndex, shortName, true);
+        alert(`🪑 تم جلوسك بنجاح على المقعد رقم ${emptyIndex + 1}!`);
     });
 }
 
-// تحديث شكل ومظهر الكرسي واجهياً عند الجلوس عليه
 function updateSeatUI(index, userName, isOccupied) {
     const seatDiv = document.getElementById(`seat-${index}`);
     const nameSpan = document.getElementById(`seat-name-${index}`);
-    
     if (!seatDiv || !nameSpan) return;
 
+    const newSeatDiv = seatDiv.cloneNode(true);
+    seatDiv.parentNode.replaceChild(newSeatDiv, seatDiv);
+    const updatedSeatDiv = document.getElementById(`seat-${index}`);
+
     if (isOccupied) {
-        seatDiv.className = "w-14 h-14 rounded-full glass border-2 border-green-500 flex items-center justify-center relative cursor-pointer shadow-lg shadow-green-500/20 hover:scale-105 transition";
-        seatDiv.innerHTML = `<i class="fa-solid fa-user text-green-300 text-lg seat-icon"></i>`;
-        if (index === 0) {
-            seatDiv.innerHTML += `<i class="fa-solid fa-crown text-amber-400 text-xs absolute -top-1 -right-1"></i>`;
-        }
+        updatedSeatDiv.className = "w-14 h-14 rounded-full glass border-2 border-green-500 flex items-center justify-center relative cursor-pointer shadow-lg shadow-green-500/20 hover:scale-105 transition";
+        updatedSeatDiv.innerHTML = `<i class="fa-solid fa-user text-green-300 text-lg seat-icon"></i>`;
+        if (index === 0) updatedSeatDiv.innerHTML += `<i class="fa-solid fa-crown text-amber-400 text-xs absolute -top-1 -right-1"></i>`;
         nameSpan.textContent = userName;
         nameSpan.className = "text-[10px] text-green-300 mt-1 truncate w-16 font-bold";
+
+        updatedSeatDiv.addEventListener('click', () => {
+            modalUsername.textContent = userName;
+            userProfileModal.classList.remove('hidden');
+        });
     } else {
-        seatDiv.className = "w-14 h-14 rounded-full glass border border-purple-500/30 flex items-center justify-center relative cursor-pointer hover:scale-105 transition";
-        seatDiv.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-sm seat-icon"></i>`;
-        if (index === 0) {
-            seatDiv.innerHTML += `<i class="fa-solid fa-crown text-amber-400 text-xs absolute -top-1 -right-1"></i>`;
-        }
+        updatedSeatDiv.className = "w-14 h-14 rounded-full glass border border-purple-500/30 flex items-center justify-center relative cursor-pointer hover:scale-105 transition";
+        updatedSeatDiv.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-sm seat-icon"></i>`;
+        if (index === 0) updatedSeatDiv.innerHTML += `<i class="fa-solid fa-crown text-amber-400 text-xs absolute -top-1 -right-1"></i>`;
         nameSpan.textContent = index === 0 ? "المضيف" : "فاضي";
         nameSpan.className = "text-[10px] text-slate-500 mt-1 truncate w-16";
     }
 }
 
-// إعادة ضبط الكراسي عند الدخول للغرفة
-function resetSeatsUI() {
-    roomSeats = Array(8).fill(null);
-    for (let i = 0; i < 8; i++) {
-        updateSeatUI(i, null, false);
-    }
+if (closeProfileModal) {
+    closeProfileModal.addEventListener('click', () => userProfileModal.classList.add('hidden'));
 }
 
-// زر فتح/قفل المايك الشخصي داخل الغرفة
-let isMicMuted = true;
+function resetSeatsUI() {
+    roomSeats = Array(8).fill(null);
+    for (let i = 0; i < 8; i++) updateSeatUI(i, null, false);
+}
+
+let isMicMuted = false;
 if (toggleMicBtn) {
     toggleMicBtn.addEventListener('click', () => {
         isMicMuted = !isMicMuted;
-        if (isMicMuted) {
-            toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone-slash"></i> كتم المايك`;
-            toggleMicBtn.className = "bg-red-600/30 hover:bg-red-600 text-red-200 hover:text-white px-4 py-2 rounded-xl text-xs transition border border-red-500/40 cursor-pointer flex items-center gap-1.5";
-        } else {
-            toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone"></i> المايك مفتوح`;
-            toggleMicBtn.className = "bg-green-600/30 hover:bg-green-600 text-green-200 hover:text-white px-4 py-2 rounded-xl text-xs transition border border-green-500/40 cursor-pointer flex items-center gap-1.5";
-        }
+        toggleMicBtn.innerHTML = isMicMuted ? `<i class="fa-solid fa-microphone-slash"></i> المايك مكتوم` : `<i class="fa-solid fa-microphone"></i> المايك مفتوح`;
+        toggleMicBtn.className = isMicMuted ? "bg-red-600/30 text-red-200 px-3 py-2 rounded-xl text-xs transition border border-red-500/40 cursor-pointer flex items-center gap-1" : "bg-green-600/30 text-green-200 px-3 py-2 rounded-xl text-xs transition border border-green-500/40 cursor-pointer flex items-center gap-1";
     });
 }
 
-// دالة أمان لمنع حقن النصوص
 function escapeHtml(text) {
     if (!text) return '';
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-// مراقبة حالة المستخدم والتنقل بين الشاشات
 onAuthStateChanged(auth, (user) => {
     currentUser = user;
     if (user) {
-        console.log("👤 المستخدم مسجل حالياً:", user.email);
-        if (welcomeScreen) welcomeScreen.classList.add('hidden');
-        if (authScreen) authScreen.classList.add('hidden');
-        if (roomViewScreen) roomViewScreen.classList.add('hidden');
-        if (roomsScreen) roomsScreen.classList.remove('hidden');
-        if (userDisplayEmail) {
-            userDisplayEmail.textContent = `حسابك: ${user.email}`;
-        }
+        welcomeScreen.classList.add('hidden');
+        authScreen.classList.add('hidden');
+        roomViewScreen.classList.add('hidden');
+        roomsScreen.classList.remove('hidden');
+        userDisplayEmail.textContent = `حسابك: ${user.email}`;
         loadRooms();
     } else {
-        console.log("👤 لا يوجد مستخدم مسجل حالياً.");
-        if (welcomeScreen) welcomeScreen.classList.remove('hidden');
-        if (authScreen) authScreen.classList.add('hidden');
-        if (roomsScreen) roomsScreen.classList.add('hidden');
-        if (roomViewScreen) roomViewScreen.classList.add('hidden');
+        welcomeScreen.classList.remove('hidden');
+        authScreen.classList.add('hidden');
+        roomsScreen.classList.add('hidden');
+        roomViewScreen.classList.add('hidden');
     }
 });
