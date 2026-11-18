@@ -1,8 +1,11 @@
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
     getAuth, 
     createUserWithEmailAndPassword, 
     signInWithEmailAndPassword, 
+    GoogleAuthProvider,
+    signInWithPopup,
     onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
@@ -52,6 +55,7 @@ const authForm = document.getElementById('auth-form');
 const authTitle = document.getElementById('auth-title');
 const authSubmitBtn = document.getElementById('auth-submit-btn');
 const toggleAuthModeBtn = document.getElementById('toggle-auth-mode');
+const googleLoginBtn = document.getElementById('google-login-btn');
 
 const createRoomBtn = document.getElementById('create-room-btn');
 const createRoomModal = document.getElementById('create-room-modal');
@@ -98,7 +102,6 @@ const profileImgPreview = document.getElementById('profile-img-preview');
 const userBadgeTag = document.getElementById('user-badge-tag');
 const mainProfileImgContainer = document.getElementById('main-profile-img-container');
 
-// مستويات البروفايل الرئيسي
 const mainCharmText = document.getElementById('main-charm-text');
 const mainCharmBox = document.getElementById('main-charm-box');
 const mainCharmIcon = document.getElementById('main-charm-icon');
@@ -115,7 +118,6 @@ const inputAvatarFile = document.getElementById('input-avatar-file');
 const avatarPickerTrigger = document.getElementById('avatar-picker-trigger');
 const modalAvatarPreview = document.getElementById('modal-avatar-preview');
 
-// عناصر البروفايل السفلي Bottom Sheet
 const roomUserProfileModal = document.getElementById('room-user-profile-modal');
 const bottomSheetContent = document.getElementById('bottom-sheet-content');
 const closeUserProfile = document.getElementById('close-user-profile');
@@ -158,7 +160,6 @@ function getUserBadgeMonthly() {
     return badges[badgeIndex];
 }
 
-// دالة لتوليد الأيقونة والتنسيق المتطور للمستويات من 1 إلى 100 (تتغير الأيقونة كل 10 لفلات)
 function getLevelStylingAndIcon(level, type = 'charm') {
     let iconClass = "fa-solid fa-heart text-pink-400";
     let boxStyle = "background: rgba(88, 28, 135, 0.4); border-color: rgba(168, 85, 247, 0.4);";
@@ -243,6 +244,37 @@ if (toggleAuthModeBtn) {
     });
 }
 
+// دالة تسجيل الدخول عبر Google
+if (googleLoginBtn) {
+    googleLoginBtn.addEventListener('click', async () => {
+        const provider = new GoogleAuthProvider();
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+
+            if (!userSnap.exists()) {
+                const randomId = Math.floor(100000 + Math.random() * 900000);
+                await setDoc(userRef, {
+                    uid: user.uid,
+                    email: user.email,
+                    userId: randomId,
+                    nickname: user.displayName || user.email.split('@')[0],
+                    avatar: user.photoURL || "https://via.placeholder.com/150",
+                    charmLevel: 1, // يبدأ من لفل 1
+                    wealthLevel: 1, // يبدأ من لفل 1
+                    createdAt: serverTimestamp()
+                });
+            }
+            alert("✅ تم تسجيل الدخول بـ Google بنجاح!");
+        } catch (error) {
+            console.error("Google Auth Error:", error);
+            alert("❌ خطأ في المصادقة عبر Google: " + error.message);
+        }
+    });
+}
+
 if (authForm) {
     authForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -268,8 +300,8 @@ if (authForm) {
                     userId: randomId,
                     nickname: email.split('@')[0],
                     avatar: "https://via.placeholder.com/150",
-                    charmLevel: 5, // مستوى الجاذبية الابتدائي
-                    wealthLevel: 15, // مستوى الثروة الابتدائي
+                    charmLevel: 1, // المستخدم الجديد يبدأ من لفل 1
+                    wealthLevel: 1, // المستخدم الجديد يبدأ من لفل 1
                     createdAt: serverTimestamp()
                 });
                 alert("🚀 تم إنشاء الحساب وتوليد الـ ID بنجاح!");
@@ -297,7 +329,6 @@ if (navRoomsBtn && navProfileBtn) {
     });
 }
 
-// تفعيل الضغط على صورة البروفايل في تبويب "خاصتي" لفتح البروفايل السفلي للمستخدم نفسه
 if (mainProfileImgContainer) {
     mainProfileImgContainer.addEventListener('click', () => {
         if (userData && currentUser) {
@@ -306,8 +337,8 @@ if (mainProfileImgContainer) {
                 nickname: userData.nickname || "مستخدم",
                 avatar: userData.avatar || "https://via.placeholder.com/150",
                 userId: userData.userId || "110789",
-                charmLevel: userData.charmLevel || 5,
-                wealthLevel: userData.wealthLevel || 15
+                charmLevel: userData.charmLevel || 1,
+                wealthLevel: userData.wealthLevel || 1
             }, null);
         }
     });
@@ -717,8 +748,8 @@ if (requestSeatBtn) {
             nickname: userData ? userData.nickname : "مستخدم",
             avatar: userData ? userData.avatar : "https://via.placeholder.com/150",
             userId: userData ? userData.userId : "110789",
-            charmLevel: userData?.charmLevel || 5,
-            wealthLevel: userData?.wealthLevel || 15
+            charmLevel: userData?.charmLevel || 1,
+            wealthLevel: userData?.wealthLevel || 1
         };
         updateSeatUI(emptyIndex, roomSeats[emptyIndex], true);
 
@@ -758,7 +789,6 @@ function updateSeatUI(index, userObj, isOccupied) {
     }
 }
 
-// دالة فتح البروفايل السفلي (Bottom Sheet) مع مستويات الجاذبية والثروة
 function openUserProfileModal(userObj, seatIdx) {
     selectedSeatUserForProfile = { ...userObj, seatIndex: seatIdx };
     if (modalProfileAvatar) modalProfileAvatar.src = userObj.avatar;
@@ -778,8 +808,8 @@ function openUserProfileModal(userObj, seatIdx) {
         if (modalUserRoleTag) modalUserRoleTag.textContent = "عضو نشط";
     }
 
-    const cLevel = userObj.charmLevel || 5;
-    const wLevel = userObj.wealthLevel || 15;
+    const cLevel = userObj.charmLevel || 1;
+    const wLevel = userObj.wealthLevel || 1;
 
     if (charmLevelText) charmLevelText.textContent = `Lv. ${cLevel}`;
     const charmStyle = getLevelStylingAndIcon(cLevel, 'charm');
@@ -953,9 +983,8 @@ onAuthStateChanged(auth, async (user) => {
                 if (profileImgPreview) profileImgPreview.src = userData.avatar || "https://via.placeholder.com/150";
                 if (userBadgeTag) userBadgeTag.textContent = getUserBadgeMonthly();
 
-                // تحديث مستويات الجاذبية والثروة في الواجهة الرئيسية للبروفايل
-                const cLvl = userData.charmLevel || 5;
-                const wLvl = userData.wealthLevel || 15;
+                const cLvl = userData.charmLevel || 1;
+                const wLvl = userData.wealthLevel || 1;
                 
                 if (mainCharmText) mainCharmText.textContent = `Lv. ${cLvl}`;
                 const cStyle = getLevelStylingAndIcon(cLvl, 'charm');
@@ -966,6 +995,25 @@ onAuthStateChanged(auth, async (user) => {
                 const wStyle = getLevelStylingAndIcon(wLvl, 'wealth');
                 if (mainWealthBox) mainWealthBox.style = wStyle.boxStyle;
                 if (mainWealthIcon) mainWealthIcon.className = wStyle.iconClass;
+            } else {
+                // إذا لم يكن مخزناً مسبقاً في قاعدة البيانات، ننشئ له بروفايل بليفيل 1 افتراضياً
+                const randomId = Math.floor(100000 + Math.random() * 900000);
+                const newUserData = {
+                    uid: user.uid,
+                    email: user.email,
+                    userId: randomId,
+                    nickname: user.displayName || user.email.split('@')[0],
+                    avatar: user.photoURL || "https://via.placeholder.com/150",
+                    charmLevel: 1,
+                    wealthLevel: 1,
+                    createdAt: serverTimestamp()
+                };
+                await setDoc(userDocRef, newUserData);
+                userData = newUserData;
+                if (headerUserId) headerUserId.textContent = `ID: ${userData.userId}`;
+                if (profileDisplayId) profileDisplayId.textContent = `ID: ${userData.userId}`;
+                if (profileDisplayName) profileDisplayName.textContent = userData.nickname;
+                if (profileImgPreview) profileImgPreview.src = userData.avatar;
             }
         } catch (e) {
             console.log("Error loading user profile", e);
