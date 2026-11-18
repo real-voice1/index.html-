@@ -74,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const roomNameInput = document.getElementById('room-name-input');
     const roomImageFile = document.getElementById('room-image-file'); 
 
-    // أزرار قائمة الثلاث نقاط داخل الغرفة
     const roomOptionsBtn = document.getElementById('room-options-btn');
     const roomOptionsDropdown = document.getElementById('room-options-dropdown');
     const optChangeName = document.getElementById('opt-change-name');
@@ -192,7 +191,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // تفعيل قائمة الثلاث نقاط في الغرفة
     if (roomOptionsBtn && roomOptionsDropdown) {
         roomOptionsBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -201,7 +199,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('click', () => roomOptionsDropdown.classList.add('hidden'));
     }
 
-    // تغيير اسم الغرفة (للمالك فقط)
     if (optChangeName) {
         optChangeName.addEventListener('click', async () => {
             if (!currentRoomDocData || currentRoomDocData.hostUid !== currentUser.uid) {
@@ -217,7 +214,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // تغيير صورة الغرفة (للمالك فقط)
     if (optChangeImg && roomNewImageFile) {
         optChangeImg.addEventListener('click', () => {
             if (!currentRoomDocData || currentRoomDocData.hostUid !== currentUser.uid) {
