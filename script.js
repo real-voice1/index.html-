@@ -50,6 +50,16 @@ const currentRoomTitle = document.getElementById('current-room-title');
 const toggleMicBtn = document.getElementById('toggle-mic-btn');
 const requestSeatBtn = document.getElementById('request-seat-btn');
 
+// عناصر إعدادات الغرفة
+const openRoomSettingsBtn = document.getElementById('open-room-settings-btn');
+const roomSettingsModal = document.getElementById('room-settings-modal');
+const closeSettingsModal = document.getElementById('close-settings-modal');
+const saveSettingsBtn = document.getElementById('save-settings-btn');
+const settingsRoomName = document.getElementById('settings-room-name');
+const settingsRoomAnnouncement = document.getElementById('settings-room-announcement');
+const roomImgFile = document.getElementById('room-img-file');
+const roomImgIcon = document.getElementById('room-img-icon');
+
 const userProfileModal = document.getElementById('user-profile-modal');
 const closeProfileModal = document.getElementById('close-profile-modal');
 const modalUsername = document.getElementById('modal-username');
@@ -122,6 +132,45 @@ if (confirmCreateRoom) {
             alert("🎉 تم إنشاء الغرفة بنجاح ونشرها في القاعة!");
         } catch (error) {
             alert("❌ خطأ: " + error.message);
+        }
+    });
+}
+
+// التحكم في إعدادات الغرفة
+if (openRoomSettingsBtn) {
+    openRoomSettingsBtn.addEventListener('click', () => {
+        if (settingsRoomName && currentRoomTitle) {
+            settingsRoomName.value = currentRoomTitle.textContent;
+        }
+        roomSettingsModal.classList.remove('hidden');
+    });
+}
+
+if (closeSettingsModal) {
+    closeSettingsModal.addEventListener('click', () => roomSettingsModal.classList.add('hidden'));
+}
+
+if (saveSettingsBtn) {
+    saveSettingsBtn.addEventListener('click', () => {
+        const newName = settingsRoomName.value.trim();
+        if (newName && currentRoomTitle) {
+            currentRoomTitle.textContent = newName;
+        }
+        alert("✅ تم حفظ إعدادات الغرفة بنجاح!");
+        roomSettingsModal.classList.add('hidden');
+    });
+}
+
+// المعاينة عند رفع صورة الغرفة
+if (roomImgFile) {
+    roomImgFile.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                roomImgIcon.outerHTML = `<img src="${event.target.result}" class="w-full h-full object-cover rounded-2xl" id="room-img-icon">`;
+            }
+            reader.readAsDataURL(file);
         }
     });
 }
