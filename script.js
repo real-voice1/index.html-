@@ -26,6 +26,11 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+// إعدادات Agora الصوتية (معرف تجريبي جاهز للاختبار الحي)
+const AGORA_APP_ID = "9449195b0b3e400494432244036cb569"; 
+let agoraClient = null;
+let localAudioTrack = null;
+
 const welcomeScreen = document.getElementById('welcome-screen');
 const authScreen = document.getElementById('auth-screen');
 const roomsScreen = document.getElementById('rooms-screen');
@@ -50,13 +55,15 @@ const currentRoomTitle = document.getElementById('current-room-title');
 const toggleMicBtn = document.getElementById('toggle-mic-btn');
 const requestSeatBtn = document.getElementById('request-seat-btn');
 
-// عناصر إعدادات الغرفة
+const chatForm = document.getElementById('chat-form');
+const chatInput = document.getElementById('chat-input');
+const chatMessagesList = document.getElementById('chat-messages-list');
+
 const openRoomSettingsBtn = document.getElementById('open-room-settings-btn');
 const roomSettingsModal = document.getElementById('room-settings-modal');
 const closeSettingsModal = document.getElementById('close-settings-modal');
 const saveSettingsBtn = document.getElementById('save-settings-btn');
 const settingsRoomName = document.getElementById('settings-room-name');
-const settingsRoomAnnouncement = document.getElementById('settings-room-announcement');
 const roomImgFile = document.getElementById('room-img-file');
 const roomImgIcon = document.getElementById('room-img-icon');
 
@@ -136,7 +143,24 @@ if (confirmCreateRoom) {
     });
 }
 
-// التحكم في إعدادات الغرفة
+// الشات النصي
+if (chatForm) {
+    chatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = chatInput.value.trim();
+        if (!text || !currentUser) return;
+
+        const senderName = currentUser.email.split('@')[0];
+        const msgDiv = document.createElement('div');
+        msgDiv.className = "text-[11px] leading-relaxed";
+        msgDiv.innerHTML = `<span class="text-purple-300 font-bold">${escapeHtml(senderName)}:</span> <span class="text-white">${escapeHtml(text)}</span>`;
+        chatMessagesList.appendChild(msgDiv);
+        chatMessagesList.scrollTop = chatMessagesList.scrollHeight;
+        chatInput.value = '';
+    });
+}
+
+// الإعدادات
 if (openRoomSettingsBtn) {
     openRoomSettingsBtn.addEventListener('click', () => {
         if (settingsRoomName && currentRoomTitle) {
@@ -161,7 +185,6 @@ if (saveSettingsBtn) {
     });
 }
 
-// المعاينة عند رفع صورة الغرفة
 if (roomImgFile) {
     roomImgFile.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -204,24 +227,58 @@ function loadRooms() {
     });
 }
 
-function enterRoom(roomId, roomName) {
+// الدخول للغرفة وتفعيل الاتصال الصوتي الحي
+async function enterRoom(roomId, roomName) {
     currentRoomId = roomId;
     roomsScreen.classList.add('hidden');
     roomViewScreen.classList.remove('hidden');
     currentRoomTitle.textContent = roomName;
     resetSeatsUI();
+    if (chatMessagesList) {
+        chatMessagesList.innerHTML = `<div class="text-slate-400 text-[10px]">مرحباً بك في الغرفة! استمتع بالصوت الحي ✨</div>`;
+    }
+
+    // تهيئة والانضمام لغرفة الصوت عبر Agora
+    try {
+        agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+        await agoraClient.join(AGORA_APP_ID, roomId, null, null);
+        console.log("🎙️ تم الاتصال بالقناة الصوتية للغرفة بنجاح!");
+
+        // الاستماع للمستخدمين الآخرين عند التحدث
+        agoraClient.on("user-published", async (user, mediaType) => {
+            await agoraClient.subscribe(user, mediaType);
+            if (mediaType === "audio") {
+                user.audioTrack.play();
+                console.🔊("تم تشغيل صوت مستخدم آخر في الغرفة");
+            }
+        });
+    } catch (error) {
+        console.error("خطأ في الاتصال الصوتي:", error);
+    }
+}
+
+// مغادرة الغرفة وقطع الصوت
+async function leaveRoom() {
+    if (localAudioTrack) {
+        localAudioTrack.close();
+        localAudioTrack = null;
+    }
+    if (agoraClient) {
+        await agoraClient.leave();
+        agoraClient = null;
+    }
+    currentRoomId = null;
+    roomViewScreen.classList.add('hidden');
+    roomsScreen.classList.remove('hidden');
 }
 
 if (leaveRoomBtn) {
-    leaveRoomBtn.addEventListener('click', () => {
-        currentRoomId = null;
-        roomViewScreen.classList.add('hidden');
-        roomsScreen.classList.remove('hidden');
-    });
+    leaveRoomBtn.addEventListener('click', leaveRoom);
 }
 
+// الجلوس على المايك وتشغيل صوت الميكروفون الحقيقي للمستخدم
 if (requestSeatBtn) {
-    requestSeatBtn.addEventListener('click', () => {
+    requestSeatBtn.addEventListener('click', async () => {
         if (!currentUser || !currentRoomId) return alert("⚠️ سجل الدخول وادخل غرفة أولاً!");
         let emptyIndex = roomSeats.findIndex((seat, idx) => idx > 0 && seat === null);
         if (emptyIndex === -1 && roomSeats[0] === null) emptyIndex = 0;
@@ -230,7 +287,17 @@ if (requestSeatBtn) {
         const shortName = currentUser.email.split('@')[0];
         roomSeats[emptyIndex] = shortName;
         updateSeatUI(emptyIndex, shortName, true);
-        alert(`🪑 تم جلوسك بنجاح على المقعد رقم ${emptyIndex + 1}!`);
+
+        // فتح الميكروفون وبث الصوت حياً للموجودين
+        try {
+            if (!localAudioTrack && agoraClient) {
+                localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+                await agoraClient.publish([localAudioTrack]);
+                alert(`🪑 جلست على المقعد ${emptyIndex + 1} وتم فتح المايك الصوتي الحي!`);
+            }
+        } catch (e) {
+            alert("⚠️ يرجى السماح للمتصفح بالوصول إلى الميكروفون.");
+        }
     });
 }
 
@@ -244,22 +311,22 @@ function updateSeatUI(index, userName, isOccupied) {
     const updatedSeatDiv = document.getElementById(`seat-${index}`);
 
     if (isOccupied) {
-        updatedSeatDiv.className = "w-14 h-14 rounded-full glass border-2 border-green-500 flex items-center justify-center relative cursor-pointer shadow-lg shadow-green-500/20 hover:scale-105 transition";
-        updatedSeatDiv.innerHTML = `<i class="fa-solid fa-user text-green-300 text-lg seat-icon"></i>`;
-        if (index === 0) updatedSeatDiv.innerHTML += `<i class="fa-solid fa-crown text-amber-400 text-xs absolute -top-1 -right-1"></i>`;
+        updatedSeatDiv.className = "w-12 h-12 rounded-full glass border-2 border-green-500 flex items-center justify-center relative cursor-pointer shadow-lg shadow-green-500/20 hover:scale-105 transition";
+        updatedSeatDiv.innerHTML = `<i class="fa-solid fa-user text-green-300 text-base seat-icon"></i>`;
+        if (index === 0) updatedSeatDiv.innerHTML += `<i class="fa-solid fa-crown text-amber-400 text-[10px] absolute -top-1 -right-1"></i>`;
         nameSpan.textContent = userName;
-        nameSpan.className = "text-[10px] text-green-300 mt-1 truncate w-16 font-bold";
+        nameSpan.className = "text-[9px] text-green-300 mt-1 truncate w-14 font-bold";
 
         updatedSeatDiv.addEventListener('click', () => {
             modalUsername.textContent = userName;
             userProfileModal.classList.remove('hidden');
         });
     } else {
-        updatedSeatDiv.className = "w-14 h-14 rounded-full glass border border-purple-500/30 flex items-center justify-center relative cursor-pointer hover:scale-105 transition";
-        updatedSeatDiv.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-sm seat-icon"></i>`;
-        if (index === 0) updatedSeatDiv.innerHTML += `<i class="fa-solid fa-crown text-amber-400 text-xs absolute -top-1 -right-1"></i>`;
+        updatedSeatDiv.className = "w-12 h-12 rounded-full glass border border-purple-500/30 flex items-center justify-center relative cursor-pointer hover:scale-105 transition";
+        updatedSeatDiv.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-xs seat-icon"></i>`;
+        if (index === 0) updatedSeatDiv.innerHTML += `<i class="fa-solid fa-crown text-amber-400 text-[10px] absolute -top-1 -right-1"></i>`;
         nameSpan.textContent = index === 0 ? "المضيف" : "فاضي";
-        nameSpan.className = "text-[10px] text-slate-500 mt-1 truncate w-16";
+        nameSpan.className = "text-[9px] text-slate-500 mt-1 truncate w-14";
     }
 }
 
@@ -272,12 +339,16 @@ function resetSeatsUI() {
     for (let i = 0; i < 8; i++) updateSeatUI(i, null, false);
 }
 
+// زر كتم / فتح الميكروفون الشخصي
 let isMicMuted = false;
 if (toggleMicBtn) {
-    toggleMicBtn.addEventListener('click', () => {
+    toggleMicBtn.addEventListener('click', async () => {
         isMicMuted = !isMicMuted;
+        if (localAudioTrack) {
+            await localAudioTrack.setMuted(isMicMuted);
+        }
         toggleMicBtn.innerHTML = isMicMuted ? `<i class="fa-solid fa-microphone-slash"></i> المايك مكتوم` : `<i class="fa-solid fa-microphone"></i> المايك مفتوح`;
-        toggleMicBtn.className = isMicMuted ? "bg-red-600/30 text-red-200 px-3 py-2 rounded-xl text-xs transition border border-red-500/40 cursor-pointer flex items-center gap-1" : "bg-green-600/30 text-green-200 px-3 py-2 rounded-xl text-xs transition border border-green-500/40 cursor-pointer flex items-center gap-1";
+        toggleMicBtn.className = isMicMuted ? "bg-red-600/30 text-red-200 px-3 py-1.5 rounded-xl text-xs transition border border-red-500/40 cursor-pointer flex items-center gap-1" : "bg-green-600/30 text-green-200 px-3 py-1.5 rounded-xl text-xs transition border border-green-500/40 cursor-pointer flex items-center gap-1";
     });
 }
 
