@@ -37,9 +37,6 @@
             cursor: grab;
             z-index: 9999;
         }
-        #floating-mini-player:active {
-            cursor: grabbing;
-        }
     </style>
 </head>
 <body class="flex flex-col items-center justify-start min-h-screen p-3 bg-slate-950 text-white pb-24">
@@ -77,11 +74,11 @@
         <form id="auth-form" class="space-y-4">
             <div>
                 <label class="block text-xs text-purple-300 mb-1">البريد الإلكتروني (Gmail)</label>
-                <input type="email" id="email" required class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 text-sm border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white" placeholder="name@gmail.com">
+                <input type="email" id="email" required class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 text-sm border border-purple-500/30 text-white" placeholder="name@gmail.com">
             </div>
             <div>
                 <label class="block text-xs text-purple-300 mb-1">كلمة المرور</label>
-                <input type="password" id="password" required class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 text-sm border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white" placeholder="••••••••">
+                <input type="password" id="password" required class="w-full px-4 py-3 rounded-2xl bg-slate-900/80 text-sm border border-purple-500/30 text-white" placeholder="••••••••">
             </div>
 
             <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3.5 rounded-2xl shadow-lg text-sm cursor-pointer">
@@ -117,7 +114,7 @@
         <div id="tab-profile" class="w-full p-4 hidden flex flex-col">
             <div class="flex items-center justify-between mb-6 border-b border-purple-500/20 pb-5 px-1">
                 <div class="flex items-center gap-3.5">
-                    <div id="main-profile-img-container" class="w-18 h-18 rounded-full border-2 border-amber-400 p-0.5 relative cursor-pointer shadow-lg hover:scale-105 transition">
+                    <div class="w-18 h-18 rounded-full border-2 border-amber-400 p-0.5 relative cursor-pointer shadow-lg">
                         <img id="profile-img-preview" src="https://via.placeholder.com/150" class="w-full h-full rounded-full object-cover">
                     </div>
                     <div>
@@ -128,131 +125,64 @@
                         <p id="profile-display-id" class="text-xs text-slate-400 mt-1">ID: 110789</p>
                     </div>
                 </div>
-                <button id="edit-profile-btn" class="text-purple-300 text-xs bg-purple-900/40 px-3.5 py-2 rounded-xl border border-purple-500/30 cursor-pointer">
-                    <i class="fa-solid fa-pen ml-1"></i> تعديل
-                </button>
+                <button id="edit-profile-btn" class="text-purple-300 text-xs bg-purple-900/40 px-3.5 py-2 rounded-xl border border-purple-500/30 cursor-pointer">تعديل</button>
             </div>
-
-            <div class="grid grid-cols-2 gap-3 mb-6">
-                <div id="main-charm-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
-                    <div>
-                        <span id="main-charm-text" class="text-xs font-black block">Lv. 1</span>
-                        <span class="text-[10px] opacity-80 block mt-0.5">الجاذبية 💖</span>
-                    </div>
-                    <i id="main-charm-icon" class="fa-solid fa-heart text-pink-400 text-xl"></i>
-                </div>
-                <div id="main-wealth-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
-                    <div>
-                        <span id="main-wealth-text" class="text-xs font-black block">Lv. 1</span>
-                        <span class="text-[10px] opacity-80 block mt-0.5">الثروة 💰</span>
-                    </div>
-                    <i id="main-wealth-icon" class="fa-solid fa-gem text-amber-400 text-xl"></i>
-                </div>
-            </div>
-
             <div class="space-y-3 text-xs px-1 pb-6">
-                <div class="text-purple-400 font-bold mb-1">إعدادات الحساب والتطبيق ⚙️</div>
-                <div id="settings-account-center" class="bg-slate-900/60 p-4 rounded-2xl flex justify-between items-center border border-purple-500/25 cursor-pointer hover:bg-slate-900 transition">
-                    <div class="flex items-center gap-3"><i class="fa-solid fa-id-card text-purple-400 text-base"></i><span>مركز الحساب (معلومات الأمان والـ ID)</span></div>
-                    <i class="fa-solid fa-chevron-left text-slate-500 text-xs"></i>
-                </div>
-                <div id="settings-language" class="bg-slate-900/60 p-4 rounded-2xl flex justify-between items-center border border-purple-500/25 cursor-pointer hover:bg-slate-900 transition">
-                    <div class="flex items-center gap-3"><i class="fa-solid fa-globe text-blue-400 text-base"></i><span>اللغة (Language)</span></div>
-                    <span id="current-lang-label" class="text-slate-400 text-[11px]">العربية 🇪🇬</span>
-                </div>
-                <div id="settings-delete-account" class="bg-slate-900/60 p-4 rounded-2xl flex justify-between items-center border border-red-500/25 cursor-pointer hover:bg-red-950/20 transition">
-                    <div class="flex items-center gap-3"><i class="fa-solid fa-triangle-exclamation text-red-400 text-base"></i><span class="text-red-300">حذف الحساب (بشروط نهائية)</span></div>
-                    <i class="fa-solid fa-chevron-left text-slate-500 text-xs"></i>
-                </div>
-                <div id="settings-logout-switch" class="bg-gradient-to-r from-purple-900/30 to-pink-900/30 p-4 rounded-2xl flex justify-between items-center border border-purple-500/40 cursor-pointer hover:border-purple-400 transition">
-                    <div class="flex items-center gap-3"><i class="fa-solid fa-right-from-bracket text-pink-400 text-base"></i><span class="font-bold text-pink-200">تسجيل الخروج وإضافة حساب Gmail آخر</span></div>
-                    <i class="fa-solid fa-plus text-xs text-pink-300"></i>
+                <div id="settings-logout-switch" class="bg-gradient-to-r from-purple-900/30 to-pink-900/30 p-4 rounded-2xl flex justify-between items-center border border-purple-500/40 cursor-pointer">
+                    <span class="font-bold text-pink-200">تسجيل الخروج</span>
+                    <i class="fa-solid fa-right-from-bracket text-pink-300"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 4. شاشة الغرفة الداخلية -->
-    <div id="room-view-screen" class="w-full max-w-lg hidden flex flex-col h-[85vh] relative">
-        <div class="flex justify-between items-center mb-3 border-b border-purple-500/20 pb-3 px-1 relative">
+    <!-- 4. شاشة الغرفة الداخلية مع الدردشة النصية -->
+    <div id="room-view-screen" class="w-full max-w-lg hidden flex flex-col h-[88vh] relative">
+        <div class="flex justify-between items-center mb-2 border-b border-purple-500/20 pb-2 px-1">
             <div class="flex items-center gap-3">
-                <div class="relative group cursor-pointer" id="change-room-img-trigger" title="تغيير صورة الغرفة">
-                    <img id="room-header-avatar" src="https://via.placeholder.com/150" class="w-10 h-10 rounded-xl object-cover border border-purple-400 shadow-sm">
-                    <div class="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-camera text-white text-xs"></i></div>
+                <div class="relative group cursor-pointer" id="change-room-img-trigger">
+                    <img id="room-header-avatar" src="https://via.placeholder.com/150" class="w-10 h-10 rounded-xl object-cover border border-purple-400">
                 </div>
                 <input type="file" id="room-new-image-file" accept="image/*" class="hidden">
                 <div>
-                    <div class="flex items-center gap-2">
-                        <h2 id="current-room-title" class="text-sm font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">اسم الغرفة</h2>
-                        <span id="room-online-counter" class="bg-purple-900/60 text-purple-200 text-[10px] px-2 py-0.5 rounded-full border border-purple-500/40"><i class="fa-solid fa-users ml-1"></i> <span id="online-count-num">1</span> متواجد</span>
-                    </div>
+                    <h2 id="current-room-title" class="text-sm font-bold text-purple-200">اسم الغرفة</h2>
                     <p id="room-owner-tag" class="text-[9px] text-amber-400">👑 المالك: جاري التحميل...</p>
                 </div>
             </div>
-
-            <!-- زر الثلاث نقاط المنسدل -->
-            <div class="relative">
-                <button id="room-options-btn" class="bg-slate-900/80 hover:bg-slate-800 text-purple-300 w-9 h-9 rounded-xl flex items-center justify-center border border-purple-500/30 cursor-pointer shadow-md">
-                    <i class="fa-solid fa-ellipsis-vertical text-base"></i>
-                </button>
-                <div id="room-options-dropdown" class="absolute left-0 mt-2 w-48 bg-slate-900 border border-purple-500/40 rounded-2xl shadow-2xl hidden z-50 overflow-hidden py-1 text-xs">
-                    <button id="opt-minimize" class="w-full text-right px-4 py-2.5 hover:bg-purple-600/20 text-purple-200 flex items-center gap-2 cursor-pointer"><i class="fa-solid fa-compress w-4"></i> تصغير الغرفة (Mini Player)</button>
-                    <button id="opt-leave" class="w-full text-right px-4 py-2.5 hover:bg-red-600/20 text-red-300 flex items-center gap-2 cursor-pointer border-t border-purple-500/10"><i class="fa-solid fa-right-from-bracket w-4"></i> خروج نهائي من الغرفة</button>
-                </div>
-            </div>
+            <button id="opt-leave" class="bg-red-950/60 text-red-300 px-3 py-1.5 rounded-xl text-xs border border-red-500/30 cursor-pointer">خروج</button>
         </div>
 
-        <!-- شبكة الميكات (8 مايكات ثابتة) -->
-        <div class="grid grid-cols-4 gap-4 mb-4 text-center px-2">
+        <!-- شبكة الميكات (8 مايكات تفاعلية فورية) -->
+        <div class="grid grid-cols-4 gap-3 mb-2 text-center px-1">
             <div class="flex flex-col items-center">
-                <div id="seat-0" class="w-14 h-14 rounded-full bg-slate-900 border-2 border-purple-500 flex items-center justify-center relative cursor-pointer shadow-lg">
-                    <i class="fa-solid fa-crown text-amber-400 text-xs absolute -top-1 -right-1"></i>
-                    <i class="fa-solid fa-user text-purple-300 text-lg seat-icon"></i>
-                </div>
-                <span class="text-[9px] text-purple-400 font-bold mt-1">مايك 1 (المضيف)</span>
-                <span id="seat-name-0" class="text-[10px] text-slate-300 truncate w-16">فاضي</span>
+                <div id="seat-0" class="w-12 h-12 rounded-full bg-slate-900 border-2 border-purple-500 flex items-center justify-center relative cursor-pointer shadow-lg"></div>
+                <span id="seat-name-0" class="text-[9px] text-slate-300 truncate w-16 mt-0.5">مايك 1</span>
             </div>
-            <div class="flex flex-col items-center">
-                <div id="seat-1" class="w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"><i class="fa-solid fa-microphone-slash text-slate-500 text-sm seat-icon"></i></div>
-                <span class="text-[9px] text-purple-400 font-bold mt-1">مايك 2</span>
-                <span id="seat-name-1" class="text-[10px] text-slate-500 truncate w-16">فاضي</span>
-            </div>
-            <div class="flex flex-col items-center">
-                <div id="seat-2" class="w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"><i class="fa-solid fa-microphone-slash text-slate-500 text-sm seat-icon"></i></div>
-                <span class="text-[9px] text-purple-400 font-bold mt-1">مايك 3</span>
-                <span id="seat-name-2" class="text-[10px] text-slate-500 truncate w-16">فاضي</span>
-            </div>
-            <div class="flex flex-col items-center">
-                <div id="seat-3" class="w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"><i class="fa-solid fa-microphone-slash text-slate-500 text-sm seat-icon"></i></div>
-                <span class="text-[9px] text-purple-400 font-bold mt-1">مايك 4</span>
-                <span id="seat-name-3" class="text-[10px] text-slate-500 truncate w-16">فاضي</span>
-            </div>
-            <div class="flex flex-col items-center">
-                <div id="seat-4" class="w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"><i class="fa-solid fa-microphone-slash text-slate-500 text-sm seat-icon"></i></div>
-                <span class="text-[9px] text-purple-400 font-bold mt-1">مايك 5</span>
-                <span id="seat-name-4" class="text-[10px] text-slate-500 truncate w-16">فاضي</span>
-            </div>
-            <div class="flex flex-col items-center">
-                <div id="seat-5" class="w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"><i class="fa-solid fa-microphone-slash text-slate-500 text-sm seat-icon"></i></div>
-                <span class="text-[9px] text-purple-400 font-bold mt-1">مايك 6</span>
-                <span id="seat-name-5" class="text-[10px] text-slate-500 truncate w-16">فاضي</span>
-            </div>
-            <div class="flex flex-col items-center">
-                <div id="seat-6" class="w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"><i class="fa-solid fa-microphone-slash text-slate-500 text-sm seat-icon"></i></div>
-                <span class="text-[9px] text-purple-400 font-bold mt-1">مايك 7</span>
-                <span id="seat-name-6" class="text-[10px] text-slate-500 truncate w-16">فاضي</span>
-            </div>
-            <div class="flex flex-col items-center">
-                <div id="seat-7" class="w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"><i class="fa-solid fa-microphone-slash text-slate-500 text-sm seat-icon"></i></div>
-                <span class="text-[9px] text-purple-400 font-bold mt-1">مايك 8</span>
-                <span id="seat-name-7" class="text-[10px] text-slate-500 truncate w-16">فاضي</span>
-            </div>
+            <div class="flex flex-col items-center"><div id="seat-1" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-1" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 2</span></div>
+            <div class="flex flex-col items-center"><div id="seat-2" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-2" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 3</span></div>
+            <div class="flex flex-col items-center"><div id="seat-3" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-3" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 4</span></div>
+            <div class="flex flex-col items-center"><div id="seat-4" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-4" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 5</span></div>
+            <div class="flex flex-col items-center"><div id="seat-5" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-5" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 6</span></div>
+            <div class="flex flex-col items-center"><div id="seat-6" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-6" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 7</span></div>
+            <div class="flex flex-col items-center"><div id="seat-7" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-7" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 8</span></div>
         </div>
 
-        <!-- زرار جانبي للتحكم السريع في فتح وقفل المايك -->
-        <div class="absolute bottom-6 left-4 z-30">
-            <button id="floating-mic-toggle-btn" class="w-12 h-12 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-2xl border-2 border-purple-400 cursor-pointer hover:scale-105 transition" title="فتح/قفل المايك السريع">
-                <i class="fa-solid fa-microphone text-base" id="floating-mic-icon"></i>
+        <!-- صندوق الدردشة النصية اللحظية (Chat) -->
+        <div class="flex-1 bg-slate-900/60 border border-purple-500/20 rounded-2xl p-2.5 flex flex-col mb-2 overflow-hidden">
+            <div class="text-[10px] text-purple-400 font-bold border-b border-purple-500/20 pb-1 mb-1">💬 الدردشة النصية الفورية</div>
+            <div id="chat-messages-container" class="flex-1 overflow-y-auto space-y-1.5 text-xs pr-1">
+                <p class="text-slate-500 text-[10px] text-center">أهلاً بك في الغرفة الصوتيّة!</p>
+            </div>
+            <form id="chat-form" class="flex gap-2 mt-2">
+                <input type="text" id="chat-input" placeholder="اكتب رسالة..." class="flex-1 bg-slate-950 px-3 py-2 rounded-xl text-xs border border-purple-500/30 text-white focus:outline-none">
+                <button type="submit" class="bg-purple-600 px-4 py-2 rounded-xl text-xs font-bold text-white cursor-pointer"><i class="fa-solid fa-paper-plane"></i></button>
+            </form>
+        </div>
+
+        <!-- زر المايك السائم -->
+        <div class="absolute bottom-16 left-4 z-30">
+            <button id="floating-mic-toggle-btn" class="w-11 h-11 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-2xl border-2 border-purple-400 cursor-pointer">
+                <i class="fa-solid fa-microphone text-sm" id="floating-mic-icon"></i>
             </button>
         </div>
     </div>
@@ -260,143 +190,47 @@
     <!-- نافذة خيارات المقعد -->
     <div id="seat-options-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end hidden">
         <div id="seat-sheet-content" class="bottom-sheet p-5 w-full max-w-lg mx-auto text-white flex flex-col space-y-2 text-center text-xs">
-            <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-2"></div>
-            <button id="opt-sit-seat" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 rounded-2xl font-bold text-purple-200 border border-purple-500/20 cursor-pointer shadow">الجلوس على المقعد 🪑</button>
-            <button id="opt-toggle-mic-seat" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 rounded-2xl font-bold text-slate-200 border border-purple-500/20 cursor-pointer shadow">تعطيل الميكروفون 🎤</button>
-            <button id="opt-lock-seat" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 rounded-2xl font-bold text-amber-300 border border-purple-500/20 cursor-pointer shadow">قفل المقعد 🔒</button>
-            <button id="close-seat-modal" class="w-full py-3.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl font-bold text-white cursor-pointer mt-3 shadow-lg">إلغاء</button>
+            <button id="opt-sit-seat" class="w-full py-3.5 bg-slate-900 rounded-2xl font-bold text-purple-200 border border-purple-500/20 cursor-pointer">الجلوس على المقعد 🪑</button>
+            <button id="opt-lock-seat" class="w-full py-3.5 bg-slate-900 rounded-2xl font-bold text-amber-300 border border-purple-500/20 cursor-pointer">قفل المقعد 🔒</button>
+            <button id="close-seat-modal" class="w-full py-3.5 bg-purple-600 rounded-2xl font-bold text-white cursor-pointer mt-2">إلغاء</button>
         </div>
     </div>
 
-    <!-- نافذة بروفايل المستخدم والصلاحيات (للمالك) -->
+    <!-- نافذة بروفايل المستخدم وإدارة المالك -->
     <div id="room-user-profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end hidden">
-        <div id="profile-sheet-content" class="bottom-sheet p-6 w-full max-w-lg mx-auto text-white flex flex-col max-h-[85vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4 relative">
-                <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto"></div>
-                <button id="close-user-profile" class="absolute left-2 text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div class="flex items-center gap-4 mb-5 pb-4 border-b border-purple-500/20">
-                <div class="w-20 h-20 rounded-full border-2 border-amber-400 p-0.5 relative shrink-0 shadow-xl">
-                    <img id="modal-profile-avatar" src="https://via.placeholder.com/150" class="w-full h-full rounded-full object-cover">
-                </div>
-                <div class="flex-1 text-right">
-                    <div class="flex items-center gap-2">
-                        <h3 id="modal-profile-name" class="text-base font-bold text-purple-200">اسم المستخدم</h3>
-                        <span class="bg-blue-500/20 text-blue-300 text-[10px] px-2 py-0.5 rounded-md border border-blue-500/30">مصر 🇪🇬</span>
-                    </div>
-                    <p id="modal-profile-id" class="text-xs text-slate-400 mt-1">ID: 110789</p>
-                    <div class="flex items-center gap-2 mt-2">
-                        <span id="modal-profile-badge" class="bg-amber-500/20 text-amber-300 text-[9px] px-2.5 py-0.5 rounded-full border border-amber-500/40 font-bold">🌟 نجم الشهر</span>
-                        <span id="modal-user-role-tag" class="bg-purple-600/30 text-purple-200 text-[9px] px-2.5 py-0.5 rounded-full border border-purple-500/40">عضو</span>
-                    </div>
+        <div id="profile-sheet-content" class="bottom-sheet p-5 w-full max-w-lg mx-auto text-white flex flex-col">
+            <div class="flex items-center gap-3 mb-4 border-b border-purple-500/20 pb-3">
+                <img id="modal-profile-avatar" src="https://via.placeholder.com/150" class="w-14 h-14 rounded-full object-cover">
+                <div>
+                    <h3 id="modal-profile-name" class="text-sm font-bold text-purple-200">اسم المستخدم</h3>
+                    <p id="modal-profile-id" class="text-[10px] text-slate-400">ID: 110789</p>
                 </div>
             </div>
-
-            <!-- أزرار الإدارة الخاصة بمالك الغرفة -->
-            <div id="admin-actions-container" class="space-y-2.5 mt-2 hidden border-t border-purple-500/20 pt-4 text-xs">
-                <p class="text-purple-400 font-bold mb-2 text-right">لوحة تحكم مدير الغرفة 👑🛠️</p>
-                <div class="grid grid-cols-2 gap-2">
-                    <button id="action-kick-mic" class="bg-slate-800 hover:bg-slate-700 text-amber-300 p-3 rounded-xl border border-amber-500/30 cursor-pointer font-bold">🔽 إنزال من المايك</button>
-                    <button id="action-ban-24h" class="bg-orange-950/40 hover:bg-orange-900/40 text-orange-300 p-3 rounded-xl border border-orange-500/30 cursor-pointer font-bold">⏳ طرد 24 ساعة</button>
-                    <button id="action-ban-year" class="col-span-2 bg-red-950/50 hover:bg-red-900/50 text-red-300 p-3 rounded-xl border border-red-500/30 cursor-pointer font-bold">🚫 حظر وطرد لمدة سنة كاملة</button>
-                </div>
+            <div id="admin-actions-container" class="space-y-2 hidden text-xs">
+                <p class="text-purple-400 font-bold mb-1">أدوات مالك الغرفة 👑</p>
+                <button id="action-kick-mic" class="w-full bg-slate-800 text-amber-300 py-2.5 rounded-xl font-bold cursor-pointer">🔽 إنزال من المايك</button>
+                <button id="action-ban-24h" class="w-full bg-red-950/40 text-red-300 py-2.5 rounded-xl font-bold cursor-pointer">🚫 طرد من الغرفة</button>
             </div>
+            <button id="close-user-profile" class="w-full bg-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-bold cursor-pointer mt-3">إغلاق</button>
         </div>
-    </div>
-
-    <!-- نافذة تعديل البروفايل الشخصي -->
-    <div id="edit-profile-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-slate-900 border border-purple-500/40 p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl">
-            <h3 class="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">تعديل الملف الشخصي</h3>
-            
-            <div class="flex flex-col items-center mb-4">
-                <div id="avatar-picker-trigger" class="w-20 h-20 rounded-full border-2 border-purple-400 p-0.5 relative cursor-pointer group">
-                    <img id="modal-avatar-preview" src="https://via.placeholder.com/150" class="w-full h-full rounded-full object-cover">
-                    <div class="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-camera text-white text-sm"></i></div>
-                </div>
-                <input type="file" id="input-avatar-file" accept="image/*" class="hidden">
-                <span class="text-[10px] text-slate-400 mt-2">اضغط لتغيير الصورة الشخصية</span>
-            </div>
-
-            <div class="text-right mb-4">
-                <label class="block text-xs text-purple-300 mb-1">الاسم المستعار</label>
-                <input type="text" id="input-nickname" placeholder="اكتب اسمك الجديد..." class="w-full px-4 py-3 rounded-xl bg-slate-950 text-xs border border-purple-500/30 text-white">
-            </div>
-
-            <div class="flex gap-2.5">
-                <button type="button" id="close-edit-profile" class="w-1/2 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl text-xs cursor-pointer">إلغاء</button>
-                <button type="button" id="save-profile-btn" class="w-1/2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-xl text-xs shadow-lg cursor-pointer">حفظ التغييرات</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- نافذة مركز الحساب -->
-    <div id="modal-account-center" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-slate-900 border border-purple-500/40 p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl space-y-4">
-            <h3 class="text-lg font-bold text-purple-200">مركز الحساب 🆔</h3>
-            <div class="bg-slate-950 p-4 rounded-2xl text-right space-y-2 text-xs border border-purple-500/20">
-                <p class="text-slate-400">البريد الإلكتروني: <span id="acc-center-email" class="text-purple-300 font-bold block truncate">...</span></p>
-                <p class="text-slate-400 mt-2">معرف الحساب (UID): <span id="acc-center-uid" class="text-amber-300 font-bold block">...</span></p>
-            </div>
-            <button id="close-account-center" class="w-full bg-purple-600 text-white py-3 rounded-xl font-bold text-xs cursor-pointer">إغلاق</button>
-        </div>
-    </div>
-
-    <!-- نافذة اللغة -->
-    <div id="modal-language" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-slate-900 border border-purple-500/40 p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl space-y-3">
-            <h3 class="text-lg font-bold text-purple-200 mb-2">اختر لغة التطبيق 🌍</h3>
-            <button id="lang-ar-btn" class="w-full py-3 bg-slate-950 hover:bg-slate-800 rounded-xl text-xs font-bold text-purple-200 border border-purple-500/30 cursor-pointer">العربية 🇪🇬</button>
-            <button id="lang-en-btn" class="w-full py-3 bg-slate-950 hover:bg-slate-800 rounded-xl text-xs font-bold text-purple-200 border border-purple-500/30 cursor-pointer">English 🇺🇸</button>
-            <button id="close-language" class="w-full bg-slate-800 text-slate-300 py-2.5 rounded-xl text-xs cursor-pointer mt-2">إلغاء</button>
-        </div>
-    </div>
-
-    <!-- نافذة حذف الحساب -->
-    <div id="modal-delete-account" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-slate-900 border border-red-500/40 p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl space-y-3">
-            <h3 class="text-lg font-bold text-red-400 mb-1">⚠️ تحذير: حذف الحساب</h3>
-            <p class="text-[11px] text-slate-400">أدخل كلمة المرور الحالية لتأكيد حذف حسابك نهائياً:</p>
-            <input type="password" id="delete-confirm-password" placeholder="كلمة المرور..." class="w-full px-4 py-3 rounded-xl bg-slate-950 text-xs border border-red-500/30 text-white">
-            <div class="flex gap-2.5 mt-2">
-                <button id="close-delete-modal" class="w-1/2 bg-slate-800 text-slate-300 py-3 rounded-xl text-xs font-bold cursor-pointer">إلغاء</button>
-                <button id="confirm-delete-btn" class="w-1/2 bg-red-600 text-white py-3 rounded-xl text-xs font-bold cursor-pointer shadow-lg">حذف نهائي</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- المربع العائم المصغر (Mini Player) -->
-    <div id="floating-mini-player" class="fixed top-20 left-4 bg-slate-900/95 border-2 border-purple-500/80 p-2.5 rounded-2xl shadow-2xl hidden flex items-center gap-3 backdrop-blur-md">
-        <div id="mini-player-trigger" class="flex items-center gap-3 cursor-pointer">
-            <img id="mini-player-img" src="https://via.placeholder.com/150" class="w-11 h-11 rounded-xl object-cover border border-purple-400">
-            <div>
-                <h4 id="mini-player-title" class="text-xs font-bold text-purple-200 truncate w-28">اسم الغرفة</h4>
-                <p class="text-[9px] text-green-400 flex items-center gap-1 mt-0.5"><span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> الصوت يعمل بالخلفية</p>
-            </div>
-        </div>
-        <button id="mini-player-close" class="text-red-400 hover:text-red-300 p-1.5 rounded-lg bg-red-950/40 cursor-pointer" title="خروج نهائي"><i class="fa-solid fa-xmark text-sm"></i></button>
     </div>
 
     <!-- نافذة إنشاء غرفة -->
     <div id="create-room-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-slate-900 border border-purple-500/40 p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl">
-            <h3 class="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">إنشاء غرفتك الخاصة</h3>
-            <input type="text" id="room-name-input" placeholder="اسم الغرفة (مثلاً: سهرة فنانين 🎤)" class="w-full px-4 py-3 rounded-xl bg-slate-950 text-xs border border-purple-500/30 text-white mb-3.5">
-            <div class="text-right mb-5">
-                <label class="block text-xs text-purple-300 mb-1.5">صورة الغرفة من المعرض 🖼️</label>
-                <input type="file" id="room-image-file" accept="image/*" class="w-full p-2 rounded-xl bg-slate-950 border border-purple-500/30 text-white text-[11px] cursor-pointer">
-            </div>
-            <div class="flex gap-2.5">
-                <button type="button" id="cancel-room-btn" class="w-1/2 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl text-xs cursor-pointer">إلغاء</button>
-                <button type="button" id="confirm-create-room" class="w-1/2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-xl text-xs shadow-lg cursor-pointer">إنشاء الغرفة</button>
+            <h3 class="text-lg font-bold text-purple-200 mb-4">إنشاء غرفتك الخاصة</h3>
+            <input type="text" id="room-name-input" placeholder="اسم الغرفة..." class="w-full px-4 py-3 rounded-xl bg-slate-950 text-xs border border-purple-500/30 text-white mb-3">
+            <input type="file" id="room-image-file" accept="image/*" class="w-full p-2 rounded-xl bg-slate-950 border border-purple-500/30 text-white text-[11px] mb-4">
+            <div class="flex gap-2">
+                <button type="button" id="cancel-room-btn" class="w-1/2 bg-slate-800 text-slate-300 py-3 rounded-xl text-xs cursor-pointer">إلغاء</button>
+                <button type="button" id="confirm-create-room" class="w-1/2 bg-purple-600 text-white py-3 rounded-xl text-xs font-bold cursor-pointer">إنشاء</button>
             </div>
         </div>
     </div>
 
-    <!-- شريط التنقل السفلي -->
     <div id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 border-t border-purple-500/20 py-3 px-6 flex justify-around items-center z-40 hidden max-w-lg mx-auto rounded-t-2xl">
         <button id="nav-rooms-btn" class="flex flex-col items-center text-purple-400 cursor-pointer"><i class="fa-solid fa-house text-lg"></i><span class="text-[11px] mt-1">غرفة</span></button>
-        <button id="nav-profile-btn" class="flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer"><i class="fa-solid fa-user text-lg"></i><span class="text-[11px] mt-1">خاصتي</span></button>
+        <button id="nav-profile-btn" class="flex flex-col items-center text-slate-400 cursor-pointer"><i class="fa-solid fa-user text-lg"></i><span class="text-[11px] mt-1">خاصتي</span></button>
     </div>
 
     <script type="module" src="script.js"></script>
