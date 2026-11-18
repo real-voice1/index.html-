@@ -11,8 +11,6 @@ import {
     collection, 
     addDoc, 
     onSnapshot, 
-    query, 
-    orderBy, 
     serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -37,7 +35,7 @@ console.log("✅ تم ربط تطبيق REAL VOICE بقاعدة البيانات
 const welcomeScreen = document.getElementById('welcome-screen');
 const authScreen = document.getElementById('auth-screen');
 const roomsScreen = document.getElementById('rooms-screen');
-const roomViewScreen = document.getElementById('room-view-screen'); // شاشة الغرفة الداخلية الجديدة
+const roomViewScreen = document.getElementById('room-view-screen'); // شاشة الغرفة الداخلية
 
 const startBtn = document.getElementById('start-btn');
 const authForm = document.getElementById('auth-form');
@@ -153,10 +151,12 @@ if (confirmCreateRoom) {
     });
 }
 
-// جلب وعرض الغرف من Firestore بشكل لحظي (Real-time)
+// جلب وعرض الغرف من Firestore مباشرة بدون شروط معقدة لتجنب مشاكل الفهرسة
 function loadRooms() {
     if (!roomsList) return;
-    const q = query(collection(db, "rooms"), orderBy("createdAt", "desc"));
+    
+    const q = collection(db, "rooms");
+    
     onSnapshot(q, (snapshot) => {
         roomsList.innerHTML = ""; // تفريغ القائمة القديمة
         
@@ -172,8 +172,8 @@ function loadRooms() {
             
             roomCard.innerHTML = `
                 <div>
-                    <h3 class="text-sm font-bold text-purple-200">${escapeHtml(roomData.name)} 🎤</h3>
-                    <p class="text-[10px] text-slate-400 mt-0.5">المضيف: ${escapeHtml(roomData.host)}</p>
+                    <h3 class="text-sm font-bold text-purple-200">${escapeHtml(roomData.name || "غرفة بدون اسم")} 🎤</h3>
+                    <p class="text-[10px] text-slate-400 mt-0.5">المضيف: ${escapeHtml(roomData.host || "مجهول")}</p>
                 </div>
                 <button class="join-room-btn bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-purple-500/40 cursor-pointer">
                     دخول الغرفة
@@ -183,7 +183,7 @@ function loadRooms() {
             // حدث الضغط على زر "دخول الغرفة" للانتقال لشاشة الكراسي
             const joinBtn = roomCard.querySelector('.join-room-btn');
             joinBtn.addEventListener('click', () => {
-                enterRoom(roomData.name);
+                enterRoom(roomData.name || "غرفة صوتية");
             });
 
             roomsList.appendChild(roomCard);
