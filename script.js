@@ -58,8 +58,8 @@ const createRoomModal = document.getElementById('create-room-modal');
 const cancelRoomBtn = document.getElementById('cancel-room-btn');
 const confirmCreateRoom = document.getElementById('confirm-create-room');
 const roomNameInput = document.getElementById('room-name-input');
-const roomImageFile = document.getElementById('room-image-file'); // رفع صورة الغرفة من المعرض
-const roomsGrid = document.getElementById('rooms-grid'); // شبكة مربعات الغرف الكبرى
+const roomImageFile = document.getElementById('room-image-file'); 
+const roomsGrid = document.getElementById('rooms-grid'); 
 
 const leaveRoomBtn = document.getElementById('leave-room-btn');
 const currentRoomTitle = document.getElementById('current-room-title');
@@ -79,7 +79,7 @@ const editProfileModal = document.getElementById('edit-profile-modal');
 const closeEditProfile = document.getElementById('close-edit-profile');
 const saveProfileBtn = document.getElementById('save-profile-btn');
 const inputNickname = document.getElementById('input-nickname');
-const inputAvatarFile = document.getElementById('input-avatar-file'); // ملف صورة البروفايل من المعرض
+const inputAvatarFile = document.getElementById('input-avatar-file'); 
 
 let isLoginMode = false;
 let currentUser = null;
@@ -88,7 +88,7 @@ let roomSeats = Array(8).fill(null);
 let userData = null;
 let myCurrentSeatIndex = null;
 
-// دالة مساعدة لتحويل صورة المعرض إلى Base64 لكي تخزن وتظهر فوراً
+// تحويل صور المعرض إلى Base64 بدقة
 function convertFileToBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -168,7 +168,6 @@ if (navRoomsBtn && navProfileBtn) {
     });
 }
 
-// تعديل البروفايل واختيار صورة من معرض الهاتف
 if (editProfileBtn) {
     editProfileBtn.addEventListener('click', () => {
         if (userData) {
@@ -208,7 +207,7 @@ if (saveProfileBtn) {
             userData.nickname = newNick;
             userData.avatar = avatarBase64;
 
-            alert("✅ تم تحديث الملف الشخصي والصورة بنجاح!");
+            alert("✅ تم تحديث الملف الشخصي بنجاح!");
             if (editProfileModal) editProfileModal.classList.add('hidden');
         } catch (error) {
             alert("❌ خطأ أثناء الحفظ: " + error.message);
@@ -239,7 +238,6 @@ if (cancelRoomBtn) {
     });
 }
 
-// إنشاء الغرفة واشتراط اختيار صورة الغرفة من معرض الهاتف
 if (confirmCreateRoom) {
     confirmCreateRoom.addEventListener('click', async () => {
         if (!roomNameInput || !roomImageFile) return;
@@ -247,7 +245,7 @@ if (confirmCreateRoom) {
 
         if (!roomName) return alert("⚠️ برجاء كتابة اسم الغرفة أولاً!");
         if (!roomImageFile.files || roomImageFile.files.length === 0) {
-            return alert("⚠️ برجاء اختيار صورة للغرفة من معرض الهاتف أولاً!");
+            return alert("⚠️ برجاء اختيار صورة للغرفة من المعرض أولاً!");
         }
 
         try {
@@ -271,7 +269,6 @@ if (confirmCreateRoom) {
     });
 }
 
-// استعراض الغرف في مربعات كبرى ومنسقة (Grid) بدون كلمة "دخول"
 function loadRooms() {
     if (!roomsGrid) return;
     onSnapshot(collection(db, "rooms"), (snapshot) => {
@@ -287,14 +284,12 @@ function loadRooms() {
             const roomCard = document.createElement('div');
             roomCard.className = "glass p-3 rounded-2xl flex flex-col items-center text-center border border-purple-500/30 cursor-pointer hover:border-purple-400 transition transform hover:scale-105 shadow-lg";
             
-            // تصميم المربعات الكبرى لصور الغرف
             roomCard.innerHTML = `
                 <img src="${escapeHtml(roomData.image || 'https://via.placeholder.com/150')}" class="w-full h-28 rounded-xl object-cover border border-purple-500/40 mb-2 shadow-md">
                 <h3 class="text-xs font-bold text-purple-200 truncate w-full">${escapeHtml(roomData.name)} 🎤</h3>
                 <p class="text-[9px] text-slate-400 truncate w-full mt-0.5">المضيف: ${escapeHtml(roomData.host)}</p>
             `;
             
-            // الضغط على المربع بالكامل يدخل الغرفة
             roomCard.addEventListener('click', () => enterRoom(roomId, roomData.name));
             roomsGrid.appendChild(roomCard);
         });
@@ -366,9 +361,13 @@ function updateSeatUI(index, name, isOccupied) {
     const seatDiv = document.getElementById(`seat-${index}`);
     const nameSpan = document.getElementById(`seat-name-${index}`);
     if (!seatDiv || !nameSpan) return;
+    
+    // استخدام صورة البروفايل الثابتة للمستخدم على المايك إذا متوفرة
+    const userAvatarImg = (userData && userData.avatar) ? userData.avatar : "https://via.placeholder.com/150";
+
     if (isOccupied) {
-        seatDiv.className = "w-12 h-12 rounded-full glass border-2 border-green-500 flex items-center justify-center relative";
-        seatDiv.innerHTML = `<i class="fa-solid fa-user text-green-300 text-base"></i>`;
+        seatDiv.className = "w-12 h-12 rounded-full glass border-2 border-green-500 flex items-center justify-center relative overflow-hidden";
+        seatDiv.innerHTML = `<img src="${userAvatarImg}" class="w-full h-full object-cover">`;
         nameSpan.textContent = name;
         nameSpan.className = "text-[9px] text-green-300 mt-1 truncate w-14 font-bold";
     }
