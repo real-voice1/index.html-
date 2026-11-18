@@ -33,6 +33,20 @@
             animation: speak-pulse 1.5s infinite;
             border-color: #22c55e !important;
         }
+        /* تصميم نافذة البروفايل السفلي (Bottom Sheet) */
+        .bottom-sheet {
+            background: rgba(11, 15, 25, 0.98);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(168, 85, 247, 0.3);
+            border-top-left-radius: 30px;
+            border-top-right-radius: 30px;
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.8);
+            transform: translateY(100%);
+            transition: transform 0.3s ease-in-out;
+        }
+        .bottom-sheet.show {
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body class="flex flex-col items-center justify-start min-h-screen p-3 bg-slate-950 text-white pb-24">
@@ -87,7 +101,6 @@
                     <h2 class="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">استكشاف الغرف الصوتية</h2>
                     <p id="header-user-id" class="text-xs text-slate-400">ID: جاري التحميل...</p>
                 </div>
-                <!-- زر إنشاء غرفة يختفي تماماً إذا كان المستخدم قد أنشأ غرفة مسبقاً -->
                 <button id="create-room-btn" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg cursor-pointer">
                     <i class="fa-solid fa-plus ml-1"></i> إنشاء غرفة
                 </button>
@@ -144,11 +157,10 @@
         </div>
     </div>
 
-    <!-- 4. شاشة الغرفة الداخلية مع قائمة الـ 3 نقط الاحترافية وشعار الغرفة الثابت -->
+    <!-- 4. شاشة الغرفة الداخلية -->
     <div id="room-view-screen" class="w-full max-w-lg hidden flex flex-col h-[85vh]">
         <div class="flex justify-between items-center mb-3 border-b border-purple-500/20 pb-3 px-1 relative">
             <div class="flex items-center gap-3">
-                <!-- شعار / صورة الغرفة الصغيرة بجانب الاسم بشكل احترافي -->
                 <img id="room-header-avatar" src="https://via.placeholder.com/150" class="w-10 h-10 rounded-xl object-cover border border-purple-400 shadow-sm">
                 <div>
                     <h2 id="current-room-title" class="text-sm font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">اسم الغرفة</h2>
@@ -156,13 +168,11 @@
                 </div>
             </div>
 
-            <!-- زر الـ 3 نقط الاحترافي (Options Menu) -->
             <div class="relative">
                 <button id="room-options-btn" class="bg-slate-900/80 hover:bg-slate-800 text-purple-300 w-9 h-9 rounded-xl flex items-center justify-center border border-purple-500/30 cursor-pointer shadow-md">
                     <i class="fa-solid fa-ellipsis-vertical text-base"></i>
                 </button>
 
-                <!-- القائمة المنسدلة (تظهر عند الضغط على الـ 3 نقط) -->
                 <div id="room-options-dropdown" class="absolute left-0 mt-2 w-40 bg-slate-900 border border-purple-500/40 rounded-2xl shadow-2xl hidden z-50 overflow-hidden py-1 text-xs">
                     <button id="opt-minimize" class="w-full text-right px-4 py-2.5 hover:bg-purple-600/20 text-purple-200 flex items-center gap-2 cursor-pointer">
                         <i class="fa-solid fa-compress w-4"></i> تصغير الغرفة
@@ -177,7 +187,6 @@
             </div>
         </div>
 
-        <!-- شعار الغرفة الثابت (الذي يظهر لكل من يدخل الغرفة ولا يختفي إلا إذا حذفه المالك) -->
         <div id="room-banner-container" class="bg-gradient-to-r from-purple-900/40 to-pink-900/40 border border-purple-500/30 rounded-2xl p-2.5 mb-3 flex items-center gap-2.5 shadow-inner">
             <i class="fa-solid fa-bullhorn text-amber-400 text-sm shrink-0 animate-bounce"></i>
             <p id="room-banner-text" class="text-xs text-purple-200 truncate flex-1 font-medium">مرحباً بالجميع في الغرفة! استمتعوا بالدردشة الصوتية ✨</p>
@@ -229,7 +238,87 @@
         </div>
     </div>
 
-    <!-- نافذة إعدادات الغرفة (تعديل الاسم والشعار وصورة الغرفة باحترافية) -->
+    <!-- نافذة بروفايل المستخدم من الأسفل (Bottom Sheet الاحترافي المطابق للصورة) -->
+    <div id="room-user-profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end hidden">
+        <div id="bottom-sheet-content" class="bottom-sheet p-6 w-full max-w-lg mx-auto text-white flex flex-col max-h-[85vh] overflow-y-auto">
+            
+            <!-- زر الإغلاق -->
+            <div class="flex justify-between items-center mb-4">
+                <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto"></div>
+                <button id="close-user-profile" class="absolute left-6 text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <!-- معلومات المستخدم الأساسية (صورة، اسم، ID، علم الدولة، النوع) -->
+            <div class="flex items-center gap-4 mb-4 pb-4 border-b border-purple-500/20">
+                <div class="w-20 h-20 rounded-full border-2 border-amber-400 p-0.5 relative shrink-0 shadow-xl">
+                    <img id="modal-profile-avatar" src="https://via.placeholder.com/150" class="w-full h-full rounded-full object-cover">
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                        <h3 id="modal-profile-name" class="text-base font-bold text-purple-200">اسم المستخدم</h3>
+                        <span id="modal-user-gender-flag" class="bg-blue-500/20 text-blue-300 text-[10px] px-2 py-0.5 rounded-md border border-blue-500/30">مصر 🇪🇬 ♂</span>
+                    </div>
+                    <p id="modal-profile-id" class="text-xs text-slate-400 mt-1">ID: 110789</p>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span id="modal-profile-badge" class="bg-amber-500/20 text-amber-300 text-[9px] px-2.5 py-0.5 rounded-full border border-amber-500/40 font-bold">🌟 نجم الشهر</span>
+                        <span id="modal-user-role-tag" class="bg-purple-600/30 text-purple-200 text-[9px] px-2.5 py-0.5 rounded-full border border-purple-500/40">عضو</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- بوكس نبذة تعريفي أو الحالة -->
+            <div class="bg-slate-900/80 p-3.5 rounded-2xl mb-4 border border-purple-500/20 text-xs text-slate-300 text-center">
+                مرحباً بك في ملفي الشخصي، استمتع بصوتي وأوقاتك معنا في REAL VOICE ✨
+            </div>
+
+            <!-- مستويات الجاذبية والثروة (من 1 إلى 100 وتتغير الأيقونة كل 10 لفلات) -->
+            <div class="grid grid-cols-2 gap-3 mb-5">
+                <!-- مستوى الجاذبية -->
+                <div id="charm-level-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
+                    <div>
+                        <span id="charm-level-text" class="text-xs font-black block">Lv. 2</span>
+                        <span class="text-[10px] opacity-80 block mt-0.5">الجاذبية 💖</span>
+                    </div>
+                    <i id="charm-level-icon" class="fa-solid fa-heart text-pink-400 text-xl"></i>
+                </div>
+
+                <!-- مستوى الثروة -->
+                <div id="wealth-level-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
+                    <div>
+                        <span id="wealth-level-text" class="text-xs font-black block">Lv. 10</span>
+                        <span class="text-[10px] opacity-80 block mt-0.5">الثروة 💰</span>
+                    </div>
+                    <i id="wealth-level-icon" class="fa-solid fa-gem text-amber-400 text-xl"></i>
+                </div>
+            </div>
+
+            <!-- زر امتيازات الـ VIP -->
+            <div class="bg-gradient-to-r from-amber-900/30 to-purple-900/30 border border-amber-500/30 p-3.5 rounded-2xl flex justify-between items-center mb-5 cursor-pointer">
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-crown text-amber-400 text-base"></i>
+                    <span class="text-xs font-bold text-amber-200">امتيازات وشارات الـ VIP العظمى</span>
+                </div>
+                <i class="fa-solid fa-chevron-left text-slate-400 text-xs"></i>
+            </div>
+
+            <!-- أقسام تحكم المشرف والمالك (تظهر فقط للإدارة عند النقر على الآخرين) -->
+            <div id="moderator-controls" class="space-y-2.5 hidden pt-2 border-t border-purple-500/20">
+                <button id="mod-toggle-admin" class="w-full bg-purple-600/30 hover:bg-purple-600 text-purple-200 py-2.5 rounded-xl text-xs transition cursor-pointer font-bold">
+                    👑 تعيين / إلغاء مشرف
+                </button>
+                <button id="mod-kick-seat" class="w-full bg-orange-500/20 hover:bg-orange-500 text-orange-200 py-2.5 rounded-xl text-xs transition cursor-pointer font-bold">
+                    🪑 إنزال من الكرسي
+                </button>
+                <button id="mod-ban-user" class="w-full bg-red-500/20 hover:bg-red-500 text-red-200 py-2.5 rounded-xl text-xs transition cursor-pointer font-bold">
+                    🚫 طرد من الغرفة (24 ساعة)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- النافذة الأخرى (تعديل الملف الشخصي، إعدادات الغرفة، إنشاء غرفة، إلخ...) -->
+    <!-- (باقي النوافذ مثل تعديل البروفايل وإنشاء الغرفة تظل كما هي بنفس الأكواد المتقدمة) -->
+    
     <div id="edit-room-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-slate-900 border border-purple-500/40 p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl">
             <h3 class="text-lg font-bold text-amber-300 mb-4">إعدادات الغرفة ⚙️</h3>
@@ -259,43 +348,6 @@
         </div>
     </div>
 
-    <!-- نافذة البروفايل الشخصي للمستخدم داخل الغرفة -->
-    <div id="room-user-profile-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-slate-900 border border-purple-500/40 p-6 rounded-3xl w-full max-w-xs text-white text-center shadow-2xl relative">
-            <button id="close-user-profile" class="absolute top-4 left-4 text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
-            
-            <div class="w-20 h-20 rounded-full border-2 border-amber-400 mx-auto p-0.5 mb-3 shadow-lg overflow-hidden">
-                <img id="modal-profile-avatar" src="https://via.placeholder.com/150" class="w-full h-full object-cover">
-            </div>
-            
-            <h3 id="modal-profile-name" class="text-base font-bold text-purple-200 mb-1">اسم المستخدم</h3>
-            <p id="modal-profile-id" class="text-xs text-slate-400 mb-4">ID: 123456</p>
-            <div id="modal-profile-badge" class="inline-block bg-purple-500/20 text-purple-300 text-[10px] px-3 py-1 rounded-full border border-purple-500/30 mb-5">🌟 شارة التفاعل الشهرية</div>
-
-            <div id="moderator-controls" class="space-y-2 hidden pt-3 border-t border-purple-500/20">
-                <button id="mod-toggle-admin" class="w-full bg-purple-600/30 hover:bg-purple-600 text-purple-200 py-2 rounded-xl text-xs transition cursor-pointer">
-                    👑 تعيين / إلغاء مشرف
-                </button>
-                <button id="mod-kick-seat" class="w-full bg-orange-500/20 hover:bg-orange-500 text-orange-200 py-2 rounded-xl text-xs transition cursor-pointer">
-                    🪑 إنزال من الكرسي
-                </button>
-                <button id="mod-ban-user" class="w-full bg-red-500/20 hover:bg-red-500 text-red-200 py-2 rounded-xl text-xs transition cursor-pointer">
-                    🚫 طرد من الغرفة (24 ساعة)
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- مربع الغرفة المصغر العائم -->
-    <div id="minimized-room-widget" class="fixed top-20 right-4 bg-slate-900 border border-purple-500 p-2.5 rounded-2xl flex items-center gap-2.5 z-50 hidden shadow-2xl">
-        <img id="mini-room-img" src="https://via.placeholder.com/150" class="w-11 h-11 rounded-xl object-cover border border-purple-400 pointer-events-none">
-        <div class="text-right pr-1 pointer-events-none">
-            <h4 id="mini-room-name" class="text-xs font-bold text-purple-200 truncate w-28">الغرفة</h4>
-            <span class="text-[10px] text-green-400 flex items-center gap-1"><i class="fa-solid fa-volume-high"></i> متصل بالصوت</span>
-        </div>
-    </div>
-
-    <!-- نافذة تعديل الملف الشخصي -->
     <div id="edit-profile-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-slate-900 border border-purple-500/40 p-6 rounded-3xl w-full max-w-sm text-white text-center shadow-2xl">
             <div class="flex justify-between items-center mb-4 border-b border-purple-500/20 pb-2">
@@ -323,7 +375,6 @@
         </div>
     </div>
 
-    <!-- نافذة إنشاء غرفة -->
     <div id="create-room-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-slate-900 border border-purple-500/40 p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl">
             <h3 class="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">إنشاء غرفتك الخاصة</h3>
