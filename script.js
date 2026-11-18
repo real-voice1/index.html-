@@ -61,7 +61,6 @@ const roomNameInput = document.getElementById('room-name-input');
 const roomImageFile = document.getElementById('room-image-file'); 
 const roomsGrid = document.getElementById('rooms-grid'); 
 
-// عناصر قائمة الـ 3 نقط الجديدة
 const roomOptionsBtn = document.getElementById('room-options-btn');
 const roomOptionsDropdown = document.getElementById('room-options-dropdown');
 const optMinimize = document.getElementById('opt-minimize');
@@ -106,12 +105,25 @@ const inputAvatarFile = document.getElementById('input-avatar-file');
 const avatarPickerTrigger = document.getElementById('avatar-picker-trigger');
 const modalAvatarPreview = document.getElementById('modal-avatar-preview');
 
+// عناصر البروفايل السفلي Bottom Sheet
 const roomUserProfileModal = document.getElementById('room-user-profile-modal');
+const bottomSheetContent = document.getElementById('bottom-sheet-content');
 const closeUserProfile = document.getElementById('close-user-profile');
 const modalProfileAvatar = document.getElementById('modal-profile-avatar');
 const modalProfileName = document.getElementById('modal-profile-name');
 const modalProfileId = document.getElementById('modal-profile-id');
 const modalProfileBadge = document.getElementById('modal-profile-badge');
+const modalUserRoleTag = document.getElementById('modal-user-role-tag');
+
+// مستويات الجاذبية والثروة
+const charmLevelText = document.getElementById('charm-level-text');
+const charmLevelBox = document.getElementById('charm-level-box');
+const charmLevelIcon = document.getElementById('charm-level-icon');
+
+const wealthLevelText = document.getElementById('wealth-level-text');
+const wealthLevelBox = document.getElementById('wealth-level-box');
+const wealthLevelIcon = document.getElementById('wealth-level-icon');
+
 const moderatorControls = document.getElementById('moderator-controls');
 const modToggleAdmin = document.getElementById('mod-toggle-admin');
 const modKickSeat = document.getElementById('mod-kick-seat');
@@ -136,6 +148,30 @@ function getUserBadgeMonthly() {
     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
     const badgeIndex = Math.floor(now / thirtyDaysMs) % badges.length;
     return badges[badgeIndex];
+}
+
+// دالة لتوليد شكل المستوى والأيقونة الاحترافية (من 1 إلى 100، وكل 10 مستويات تتغير الأيقونة)
+function getLevelStylingAndIcon(level, type = 'charm') {
+    let iconClass = "fa-solid fa-heart text-pink-400";
+    let boxStyle = "background: rgba(88, 28, 135, 0.4); border-color: rgba(168, 85, 247, 0.4);";
+    
+    if (type === 'wealth') {
+        iconClass = "fa-solid fa-gem text-amber-400";
+        boxStyle = "background: rgba(6, 78, 59, 0.4); border-color: rgba(16, 185, 129, 0.4);";
+    }
+
+    if (level >= 90) {
+        iconClass = type === 'charm' ? "fa-solid fa-fire text-red-500 animate-pulse" : "fa-solid fa-crown text-yellow-300 animate-bounce";
+        boxStyle = "background: linear-gradient(135deg, rgba(220, 38, 38, 0.3), rgba(88, 28, 135, 0.6)); border-color: #f59e0b;";
+    } else if (level >= 70) {
+        iconClass = type === 'charm' ? "fa-solid fa-bolt text-amber-400" : "fa-solid fa-sack-dollar text-emerald-400";
+        boxStyle = "background: rgba(180, 83, 9, 0.3); border-color: #f59e0b;";
+    } else if (level >= 40) {
+        iconClass = type === 'charm' ? "fa-solid fa-star text-purple-400" : "fa-solid fa-coins text-yellow-400";
+        boxStyle = "background: rgba(79, 70, 229, 0.3); border-color: #818cf8;";
+    }
+
+    return { iconClass, boxStyle };
 }
 
 function compressImage(file) {
@@ -224,6 +260,8 @@ if (authForm) {
                     userId: randomId,
                     nickname: email.split('@')[0],
                     avatar: "https://via.placeholder.com/150",
+                    charmLevel: 2, // مستوى الجاذبية الافتراضي
+                    wealthLevel: 10, // مستوى الثروة الافتراضي
                     createdAt: serverTimestamp()
                 });
                 alert("🚀 تم إنشاء الحساب وتوليد الـ ID بنجاح!");
@@ -321,13 +359,12 @@ if (saveProfileBtn) {
     });
 }
 
-// فحص زر إنشاء الغرفة وإخفائه إذا كان المستخدم قد أنشأ غرفة مسبقاً
 async function checkUserRoomStatus(uid) {
     if (!createRoomBtn) return;
     const q = query(collection(db, "rooms"), where("hostUid", "==", uid));
     onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
-            createRoomBtn.classList.add('hidden'); // إخفاء زر الإنشاء نهائياً إذا عنده غرفة
+            createRoomBtn.classList.add('hidden');
         } else {
             createRoomBtn.classList.remove('hidden');
         }
@@ -377,7 +414,6 @@ if (confirmCreateRoom) {
             roomImageFile.value = '';
             if (createRoomModal) createRoomModal.classList.add('hidden');
             
-            // دخول الغرفة فوراً بعد إنشائها
             const newRoomSnap = await getDoc(docRef);
             enterRoom(docRef.id, { id: docRef.id, ...newRoomSnap.data() });
         } catch (error) {
@@ -387,7 +423,6 @@ if (confirmCreateRoom) {
     });
 }
 
-// تشغيل قائمة الـ 3 نقط الاحترافية
 if (roomOptionsBtn && roomOptionsDropdown) {
     roomOptionsBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -399,7 +434,6 @@ if (roomOptionsBtn && roomOptionsDropdown) {
     });
 }
 
-// خيارات قائمة الـ 3 نقط
 if (optMinimize) {
     optMinimize.addEventListener('click', () => {
         if (roomViewScreen) roomViewScreen.classList.add('hidden');
@@ -540,7 +574,6 @@ async function enterRoom(roomId, roomData) {
     if (roomOwnerTag) roomOwnerTag.textContent = `👑 المالك: ${roomData.host || 'غير معروف'}`;
     if (roomBannerText) roomBannerText.textContent = roomData.banner || "مرحباً بالجميع في الغرفة!";
 
-    // إظهار خيار "الإعدادات" في قائمة الـ 3 نقط حصراً لمالك الغرفة
     if (optSettings) {
         if (currentUser && roomData.hostUid === currentUser.uid) {
             optSettings.classList.remove('hidden');
@@ -659,7 +692,9 @@ if (requestSeatBtn) {
             uid: currentUser.uid,
             nickname: userData ? userData.nickname : "مستخدم",
             avatar: userData ? userData.avatar : "https://via.placeholder.com/150",
-            userId: userData ? userData.userId : "110789"
+            userId: userData ? userData.userId : "110789",
+            charmLevel: userData?.charmLevel || 2,
+            wealthLevel: userData?.wealthLevel || 10
         };
         updateSeatUI(emptyIndex, roomSeats[emptyIndex], true);
 
@@ -688,6 +723,7 @@ function updateSeatUI(index, userObj, isOccupied) {
         nameSpan.textContent = userObj.nickname;
         nameSpan.className = "text-[10px] text-green-300 mt-1.5 truncate w-16 font-bold";
 
+        // الضغط على صورتك أو صورة أي شخص في المايك يفتح بروفايل الأسفل Bottom Sheet
         newSeatDiv.addEventListener('click', () => {
             openUserProfileModal(userObj, index);
         });
@@ -699,6 +735,7 @@ function updateSeatUI(index, userObj, isOccupied) {
     }
 }
 
+// دالة فتح البروفايل السفلي (Bottom Sheet) بالشكل المطابق للصورة
 function openUserProfileModal(userObj, seatIdx) {
     selectedSeatUserForProfile = { ...userObj, seatIndex: seatIdx };
     if (modalProfileAvatar) modalProfileAvatar.src = userObj.avatar;
@@ -706,13 +743,38 @@ function openUserProfileModal(userObj, seatIdx) {
     if (modalProfileId) modalProfileId.textContent = `ID: ${userObj.userId}`;
     if (modalProfileBadge) modalProfileBadge.textContent = getUserBadgeMonthly();
 
+    // تحديد اللقب (مالك، مشرف، أو عضو)
+    if (currentRoomDocData) {
+        if (userObj.uid === currentRoomDocData.hostUid) {
+            if (modalUserRoleTag) modalUserRoleTag.textContent = "👑 مالك الغرفة";
+        } else if (currentRoomDocData.admins && currentRoomDocData.admins.includes(userObj.uid)) {
+            if (modalUserRoleTag) modalUserRoleTag.textContent = "⭐ مشرف";
+        } else {
+            if (modalUserRoleTag) modalUserRoleTag.textContent = "عضو نشط";
+        }
+    }
+
+    // تعيين مستويات الجاذبية والثروة والأيقونات المتطورة
+    const cLevel = userObj.charmLevel || 2;
+    const wLevel = userObj.wealthLevel || 10;
+
+    if (charmLevelText) charmLevelText.textContent = `Lv. ${cLevel}`;
+    const charmStyle = getLevelStylingAndIcon(cLevel, 'charm');
+    if (charmLevelBox) charmLevelBox.style = charmStyle.boxStyle;
+    if (charmLevelIcon) charmLevelIcon.className = charmStyle.iconClass;
+
+    if (wealthLevelText) wealthLevelText.textContent = `Lv. ${wLevel}`;
+    const wealthStyle = getLevelStylingAndIcon(wLevel, 'wealth');
+    if (wealthLevelBox) wealthLevelBox.style = wealthStyle.boxStyle;
+    if (wealthLevelIcon) wealthLevelIcon.className = wealthStyle.iconClass;
+
+    // صلاحيات التحكم للإدارة
     if (currentUser && currentRoomDocData) {
         const isOwner = currentRoomDocData.hostUid === currentUser.uid;
         const isAdmin = currentRoomDocData.admins && currentRoomDocData.admins.includes(currentUser.uid);
         
         if ((isOwner || isAdmin) && userObj.uid !== currentRoomDocData.hostUid && userObj.uid !== currentUser.uid) {
             if (moderatorControls) moderatorControls.classList.remove('hidden');
-            
             const isTargetAdmin = currentRoomDocData.admins && currentRoomDocData.admins.includes(userObj.uid);
             if (modToggleAdmin) {
                 modToggleAdmin.textContent = isTargetAdmin ? "⭐ إزالة من المشرفين" : "👑 تعيين مشرف";
@@ -724,12 +786,16 @@ function openUserProfileModal(userObj, seatIdx) {
         }
     }
 
-    if (roomUserProfileModal) roomUserProfileModal.classList.remove('hidden');
+    if (roomUserProfileModal) {
+        roomUserProfileModal.classList.remove('hidden');
+        setTimeout(() => bottomSheetContent.classList.add('show'), 10);
+    }
 }
 
 if (closeUserProfile) {
     closeUserProfile.addEventListener('click', () => {
-        if (roomUserProfileModal) roomUserProfileModal.classList.add('hidden');
+        if (bottomSheetContent) bottomSheetContent.classList.remove('show');
+        setTimeout(() => roomUserProfileModal.classList.add('hidden'), 300);
     });
 }
 
