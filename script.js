@@ -31,6 +31,7 @@ const authScreen = document.getElementById('auth-screen');
 const roomsScreen = document.getElementById('rooms-screen');
 const roomViewScreen = document.getElementById('room-view-screen');
 
+const startBtn = document.getElementById('start-btn');
 const authForm = document.getElementById('auth-form');
 const authTitle = document.getElementById('auth-title');
 const authSubmitBtn = document.getElementById('auth-submit-btn');
@@ -70,11 +71,13 @@ let currentUser = null;
 let currentRoomId = null;
 let roomSeats = Array(8).fill(null);
 
-// دالة الانتقال من شاشة الترحيب لصفحة التسجيل
-window.goToAuth = function() {
-    if (welcomeScreen) welcomeScreen.classList.add('hidden');
-    if (authScreen) authScreen.classList.remove('hidden');
-};
+// ربط زر الترحيب بشكل برمجى سليم 100%
+if (startBtn) {
+    startBtn.addEventListener('click', () => {
+        if (welcomeScreen) welcomeScreen.classList.add('hidden');
+        if (authScreen) authScreen.classList.remove('hidden');
+    });
+}
 
 // صوت تفاعلي عند الجلوس على المايك
 function playSeatSound() {
