@@ -82,7 +82,7 @@ const onlineCountNum = document.getElementById('online-count-num');
 const floatingMicToggleBtn = document.getElementById('floating-mic-toggle-btn');
 const floatingMicIcon = document.getElementById('floating-mic-icon');
 
-// عناصر نافذة خيارات المقعد
+// نافذة خيارات المقعد
 const seatOptionsModal = document.getElementById('seat-options-modal');
 const seatSheetContent = document.getElementById('seat-sheet-content');
 const closeSeatModal = document.getElementById('close-seat-modal');
@@ -90,7 +90,7 @@ const optSitSeat = document.getElementById('opt-sit-seat');
 const optToggleMicSeat = document.getElementById('opt-toggle-mic-seat');
 const optLockSeat = document.getElementById('opt-lock-seat');
 
-// عناصر بروفايل المستخدم داخل الغرفة وصلاحيات المالك
+// بروفايل المستخدم داخل الغرفة وصلاحيات المالك
 const roomUserProfileModal = document.getElementById('room-user-profile-modal');
 const profileSheetContent = document.getElementById('profile-sheet-content');
 const closeUserProfile = document.getElementById('close-user-profile');
@@ -128,7 +128,7 @@ let currentUser = null;
 let currentRoomId = null;
 let currentRoomDocData = null;
 let roomSeats = Array(8).fill(null);
-let seatLockedStatus = Array(8).fill(false); // مصفوفة لتتبع المقاعد المقفلة
+let seatLockedStatus = Array(8).fill(false); // حالة قفل المقاعد
 let userData = null;
 let selectedSeatIndex = null;
 let selectedTargetUser = null;
@@ -209,7 +209,7 @@ if (floatingMicToggleBtn) {
     });
 }
 
-// رسم الكراسي (مع دعم حالة القفل والفتح والضغط لعرض البروفايل أو الجلوس)
+// رسم الكراسي وعرض حالات المقاعد (مقفل أو مشهود أو فاضي)
 function renderSeats() {
     for (let i = 0; i < 8; i++) {
         const seatBox = document.getElementById(`seat-${i}`);
@@ -223,35 +223,29 @@ function renderSeats() {
         const isLocked = seatLockedStatus[i];
 
         if (isLocked) {
-            // المقعد مقفل
             newSeatBox.className = "w-14 h-14 rounded-full bg-slate-950 border-2 border-red-500/80 flex items-center justify-center relative cursor-pointer shadow-md";
             newSeatBox.innerHTML = `<i class="fa-solid fa-lock text-red-400 text-sm"></i>`;
             nameSpan.textContent = "مقفل 🔒";
             nameSpan.className = "text-[10px] text-red-400 truncate w-16 font-bold";
         } else if (occupant) {
-            // المقعد محجوز بشخص
             newSeatBox.className = "w-14 h-14 rounded-full bg-slate-900 border-2 border-green-500 flex items-center justify-center relative overflow-hidden shadow-md cursor-pointer";
             newSeatBox.innerHTML = `<img src="${occupant.avatar}" class="w-full h-full object-cover">`;
             nameSpan.textContent = occupant.nickname;
             nameSpan.className = "text-[10px] text-green-300 truncate w-16 font-bold";
         } else {
-            // المقعد فاضي
             newSeatBox.className = "w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer hover:border-purple-400 transition";
             newSeatBox.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-sm"></i>`;
             nameSpan.textContent = "فاضي";
             nameSpan.className = "text-[10px] text-slate-500 truncate w-16";
         }
 
-        // حدث الضغط على المايك
         newSeatBox.addEventListener('click', (e) => {
             e.stopPropagation();
             selectedSeatIndex = i;
 
             if (occupant) {
-                // إذا كان هناك شخص قاعد على المايك، افتح بروفايله
                 openUserProfileModal(occupant, i);
             } else {
-                // إذا كان المقعد فاضي أو مقفل، اعرض خيارات المقعد (للمالك أو المستخدم)
                 if (isLocked) {
                     optLockSeat.textContent = "فتح المقعد 🔓";
                 } else {
@@ -271,7 +265,6 @@ if (closeSeatModal) {
     });
 }
 
-// تنفيذ خيار الجلوس من القائمة
 if (optSitSeat) {
     optSitSeat.addEventListener('click', async () => {
         if (selectedSeatIndex === null || !currentUser) return;
@@ -312,7 +305,7 @@ if (optSitSeat) {
     });
 }
 
-// قفل / فتح المقعد (للتحكم في أن محدش يقعد عليه)
+// قفل وفتح المقعد للجميع
 if (optLockSeat) {
     optLockSeat.addEventListener('click', () => {
         if (selectedSeatIndex === null) return;
@@ -324,11 +317,10 @@ if (optLockSeat) {
         renderSeats();
         seatSheetContent.classList.remove('show');
         setTimeout(() => seatOptionsModal.classList.add('hidden'), 300);
-        alert(seatLockedStatus[selectedSeatIndex] ? "🔒 تم قفل المقعد ولن يتمكن أحد من الجلوس عليه." : "🔓 تم فتح المقعد.");
+        alert(seatLockedStatus[selectedSeatIndex] ? "🔒 تم قفل المقعد بنجاح!" : "🔓 تم فتح المقعد.");
     });
 }
 
-// تعطيل الميكروفون السريع
 if (optToggleMicSeat) {
     optToggleMicSeat.addEventListener('click', async () => {
         if (localAudioTrack) {
@@ -343,7 +335,7 @@ if (optToggleMicSeat) {
     });
 }
 
-// فتح بروفايل المستخدم أو بروفايلك الخاص (كمدير الغرفة)
+// عرض بروفايل المستخدم أو بروفايلك الخاص كمدير للغرفة
 function openUserProfileModal(userObj, seatIdx) {
     selectedTargetUser = { ...userObj, seatIdx };
     modalProfileAvatar.src = userObj.avatar;
@@ -351,7 +343,6 @@ function openUserProfileModal(userObj, seatIdx) {
     modalProfileId.textContent = `ID: ${userObj.userId}`;
     modalProfileBadge.textContent = getUserBadgeMonthly();
 
-    // التحقق هل هو مالك الغرفة أم مستخدم عادي
     const isHost = currentRoomDocData && currentRoomDocData.hostUid === currentUser.uid;
     const isSelf = userObj.uid === currentUser.uid;
 
@@ -361,7 +352,6 @@ function openUserProfileModal(userObj, seatIdx) {
         modalUserRoleTag.textContent = "عضو";
     }
 
-    // إذا كان المالك ضغط على مستخدم آخر قاعد معه، يظهر له خيارات الطرد
     if (isHost && !isSelf) {
         adminActionsContainer.classList.remove('hidden');
     } else {
@@ -379,7 +369,7 @@ if (closeUserProfile) {
     });
 }
 
-// مهام الإدارة للمالك (إنزال من المايك، طرد 24 ساعة، طرد سنة كاملة)
+// وظائف طرد وطرد سنة وإنزال من المايك
 if (actionKickMic) {
     actionKickMic.addEventListener('click', () => {
         if (!selectedTargetUser) return;
@@ -399,14 +389,14 @@ if (actionKickMic) {
 if (actionBan24h) {
     actionBan24h.addEventListener('click', async () => {
         if (!selectedTargetUser || !currentRoomId) return;
-        if (confirm(`هل تريد حقاً طرد ${selectedTargetUser.nickname} لمدة 24 ساعة؟`)) {
+        if (confirm(`هل تريد طرد ${selectedTargetUser.nickname} لمدة 24 ساعة؟`)) {
             try {
                 const roomRef = doc(db, "rooms", currentRoomId);
                 const currentBanned = currentRoomDocData.bannedUsers || [];
                 const banExpiry = Date.now() + (24 * 60 * 60 * 1000);
                 currentBanned.push({ uid: selectedTargetUser.uid, expiry: banExpiry });
                 await updateDoc(roomRef, { bannedUsers: currentBanned });
-                alert(`⏳ تم طرد المستخدم لمدة 24 ساعة.`);
+                alert(`⏳ تم طرد المستخدم بنجاح.`);
                 profileSheetContent.classList.remove('show');
                 setTimeout(() => roomUserProfileModal.classList.add('hidden'), 300);
             } catch (e) { alert("❌ خطأ: " + e.message); }
@@ -417,7 +407,7 @@ if (actionBan24h) {
 if (actionBanYear) {
     actionBanYear.addEventListener('click', async () => {
         if (!selectedTargetUser || !currentRoomId) return;
-        if (confirm(`⚠️ تحذير: هل تريد حظر وطرد ${selectedTargetUser.nickname} لمدة سنة كاملة نهائياً من غرفتك؟`)) {
+        if (confirm(`⚠️ هل تريد حظر وطرد ${selectedTargetUser.nickname} لمدة سنة كاملة نهائياً من الغرفة؟`)) {
             try {
                 const roomRef = doc(db, "rooms", currentRoomId);
                 const currentBanned = currentRoomDocData.bannedUsers || [];
@@ -432,7 +422,7 @@ if (actionBanYear) {
     });
 }
 
-// تغيير صورة الغرفة (للمالك فقط)
+// تغيير صورة الغرفة
 if (changeRoomImgTrigger && roomNewImageFile) {
     changeRoomImgTrigger.addEventListener('click', () => {
         if (currentRoomDocData && currentUser && currentRoomDocData.hostUid === currentUser.uid) {
@@ -528,7 +518,7 @@ async function leaveRoom() {
 if (optLeave) optLeave.addEventListener('click', leaveRoom);
 if (miniPlayerClose) miniPlayerClose.addEventListener('click', leaveRoom);
 
-// الإعدادات والتسجيل
+// المصادقة ومراقبة المستخدم
 onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     if (user) {
@@ -572,7 +562,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// تفعيل الضغط على صورتك الشخصية داخل الغرفة أو في الخاصة
+// تفعيل الضغط على صورتك الشخصية لعرض البروفايل الخاص بك كمدير للغرفة
 if (profileImgPreview) {
     profileImgPreview.addEventListener('click', () => {
         if (userData && currentUser) {
