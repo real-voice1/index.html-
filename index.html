@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .glass {
-            background: rgba(15, 23, 42, 0.75);
+            background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(168, 85, 247, 0.2);
@@ -82,9 +82,14 @@
     <!-- 4. شاشة الغرفة الداخلية ومسرح الـ 8 كراسي -->
     <div id="room-view-screen" class="glass neon-border p-6 rounded-3xl w-full max-w-md hidden">
         <div class="flex justify-between items-center mb-6 border-b border-purple-500/20 pb-3">
-            <div>
-                <h2 id="current-room-title" class="text-base font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">اسم الغرفة</h2>
-                <p class="text-[10px] text-slate-400">ID: 505303 | 11/18 🎤</p>
+            <div class="flex items-center gap-2">
+                <button id="open-room-settings-btn" class="text-slate-400 hover:text-white text-sm cursor-pointer" title="إعدادات الغرفة">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+                <div>
+                    <h2 id="current-room-title" class="text-base font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">اسم الغرفة</h2>
+                    <p class="text-[10px] text-slate-400">ID: 505303 | 11/18 🎤</p>
+                </div>
             </div>
             <button id="leave-room-btn" class="bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-red-500/40 cursor-pointer">
                 مغادرة 🚪
@@ -93,7 +98,6 @@
 
         <!-- مسرح المايكات (8 كراسي) -->
         <div class="grid grid-cols-4 gap-4 mb-6 text-center">
-            <!-- الكرسي 0 (المضيف) -->
             <div class="flex flex-col items-center">
                 <div id="seat-0" class="w-14 h-14 rounded-full glass border-2 border-purple-500 flex items-center justify-center relative cursor-pointer shadow-lg shadow-purple-500/20 hover:scale-105 transition">
                     <i class="fa-solid fa-crown text-amber-400 text-xs absolute -top-1 -right-1"></i>
@@ -101,7 +105,6 @@
                 </div>
                 <span id="seat-name-0" class="text-[10px] text-slate-300 mt-1 truncate w-16">المضيف</span>
             </div>
-            <!-- الكراسي من 1 لـ 7 -->
             <script>
                 for(let i=1; i<=7; i++) {
                     document.write(`
@@ -127,7 +130,64 @@
         </div>
     </div>
 
-    <!-- 5. نافذة بروفايل المستخدم الفخمة داخل الغرفة -->
+    <!-- 5. نافذة إعدادات الغرفة (مطابقة للصورة بدقة) -->
+    <div id="room-settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="glass neon-border p-6 rounded-3xl w-full max-w-md text-white relative max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4 border-b border-purple-500/20 pb-3">
+                <h3 class="text-base font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">الإعدادات</h3>
+                <button id="close-settings-modal" class="text-slate-400 hover:text-white text-lg cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- صورة الغرفة مع زر الكاميرا -->
+            <div class="flex flex-col items-center mb-6">
+                <div class="w-20 h-20 rounded-2xl glass border border-purple-500/40 relative flex items-center justify-center overflow-hidden group">
+                    <i class="fa-solid fa-image text-purple-300 text-2xl" id="room-img-icon"></i>
+                    <label class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer">
+                        <i class="fa-solid fa-camera text-white text-sm"></i>
+                        <input type="file" id="room-img-file" accept="image/*" class="hidden">
+                    </label>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[11px] text-purple-300 mb-1">الإعدادات الأساسية</label>
+                    <input type="text" id="settings-room-name" placeholder="اسم الغرفة" class="w-full px-4 py-2.5 rounded-xl glass text-xs bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white mb-2">
+                    <textarea id="settings-room-announcement" placeholder="إعلان" rows="3" class="w-full px-4 py-2.5 rounded-xl glass text-xs bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white resize-none"></textarea>
+                </div>
+
+                <div>
+                    <input type="password" id="settings-room-password" placeholder="****" class="w-full px-4 py-2.5 rounded-xl glass text-xs bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white">
+                </div>
+
+                <div>
+                    <label class="block text-[11px] text-purple-300 mb-2">إعدادات الوظائف</label>
+                    <div class="space-y-2">
+                        <div class="glass p-3 rounded-xl flex justify-between items-center border border-purple-500/20 cursor-pointer hover:border-purple-500/50 transition">
+                            <span class="text-xs text-slate-300">عدد مقاعد الميكروفون</span>
+                            <i class="fa-solid fa-chevron-left text-xs text-slate-400"></i>
+                        </div>
+                        <div class="glass p-3 rounded-xl flex justify-between items-center border border-purple-500/20 cursor-pointer hover:border-purple-500/50 transition">
+                            <span class="text-xs text-slate-300">المسؤولون</span>
+                            <i class="fa-solid fa-chevron-left text-xs text-slate-400"></i>
+                        </div>
+                        <div class="glass p-3 rounded-xl flex justify-between items-center border border-purple-500/20 cursor-pointer hover:border-purple-500/50 transition">
+                            <span class="text-xs text-slate-300">القائمة السوداء</span>
+                            <i class="fa-solid fa-chevron-left text-xs text-slate-400"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="save-settings-btn" class="w-full bg-gradient-to-r from-emerald-600 to-green-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition text-xs cursor-pointer mt-4">
+                    إرسال
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. نافذة بروفايل المستخدم الفخمة داخل الغرفة -->
     <div id="user-profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end justify-center hidden z-50">
         <div class="glass neon-border p-6 rounded-t-3xl w-full max-w-md text-white relative">
             <button id="close-profile-modal" class="absolute top-4 left-4 text-slate-400 hover:text-white text-lg cursor-pointer">
@@ -150,7 +210,6 @@
                 </div>
             </div>
 
-            <!-- المستويات الاحترافية -->
             <div class="grid grid-cols-3 gap-2 mb-6 text-center">
                 <div class="glass p-2 rounded-xl border border-purple-500/20">
                     <span class="text-[10px] text-slate-400 block">الجاذبية</span>
