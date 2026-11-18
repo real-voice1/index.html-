@@ -21,7 +21,7 @@
         <h1 class="text-2xl font-black mb-1 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">REAL VOICE</h1>
         <p class="text-slate-400 text-xs mb-6">تطبيق الدردشة الصوتية والألعاب الاجتماعية</p>
         
-        <button id="start-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition text-sm">
+        <button id="start-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition text-sm cursor-pointer">
             دخول التطبيق 🚀
         </button>
     </div>
@@ -43,13 +43,13 @@
                 <input type="password" id="password" required class="w-full px-4 py-3 rounded-xl glass text-sm bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white" placeholder="••••••••">
             </div>
 
-            <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition text-sm">
+            <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition text-sm cursor-pointer">
                 تسجيل الحساب
             </button>
         </form>
 
         <div class="text-center mt-4">
-            <button id="toggle-auth-mode" class="text-xs text-purple-300 hover:underline">
+            <button type="button" id="toggle-auth-mode" class="text-xs text-purple-300 hover:underline cursor-pointer">
                 لديك حساب بالفعل؟ سجل دخولك من هنا
             </button>
         </div>
@@ -62,20 +62,30 @@
                 <h2 class="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">غرف الدردشة المتاحة</h2>
                 <p id="user-display-email" class="text-[10px] text-slate-400">مرحباً بك</p>
             </div>
-            <button id="create-room-btn" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg hover:opacity-90 transition">
+            <button id="create-room-btn" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg hover:opacity-90 transition cursor-pointer">
                 <i class="fa-solid fa-plus ml-1"></i> إنشاء غرفة
             </button>
         </div>
 
         <!-- قائمة الغرف -->
         <div id="rooms-list" class="space-y-3 max-h-96 overflow-y-auto pr-1">
-            <div class="glass p-4 rounded-2xl flex justify-between items-center border border-purple-500/20">
-                <div>
-                    <h3 class="text-sm font-bold text-purple-200">غرفة السهرة والضحك 🎤</h3>
-                    <p class="text-[10px] text-slate-400 mt-0.5">المضيف: محمد السيد</p>
-                </div>
-                <button class="bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-purple-500/40">
-                    دخول الغرفة
+            <p class="text-center text-slate-500 text-xs py-4">جاري تحميل الغرف...</p>
+        </div>
+    </div>
+
+    <!-- نافذة منبثقة (Modal) لإنشاء غرفة جديدة -->
+    <div id="create-room-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="glass neon-border p-6 rounded-3xl w-full max-w-sm text-center">
+            <h3 class="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">إنشاء غرفة صوتية جديدة</h3>
+            
+            <input type="text" id="room-name-input" placeholder="اسم الغرفة (مثلاً: سهرة فنانين 🎤)" class="w-full px-4 py-3 rounded-xl glass text-sm bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white mb-4">
+            
+            <div class="flex gap-2">
+                <button type="button" id="cancel-room-btn" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition cursor-pointer">
+                    إلغاء
+                </button>
+                <button type="button" id="confirm-create-room" class="w-1/2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-2.5 rounded-xl text-xs shadow-lg hover:opacity-90 transition cursor-pointer">
+                    إرسال وإنشاء
                 </button>
             </div>
         </div>
