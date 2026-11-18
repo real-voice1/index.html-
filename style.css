@@ -1,1 +1,34 @@
 
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+
+body {
+    font-family: 'Cairo', sans-serif;
+    background-color: #030712;
+    color: #f8fafc;
+    overflow-x: hidden;
+}
+
+/* تصميم الزجاج (Glassmorphism) */
+.glass {
+    background: rgba(17, 24, 39, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* إطار نيون متوهج */
+.neon-border {
+    box-shadow: 0 0 25px rgba(168, 85, 247, 0.15), inset 0 0 15px rgba(236, 72, 153, 0.05);
+}
+
+/* مخصص لشريط التمرير */
+::-webkit-scrollbar {
+    width: 4px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(168, 85, 247, 0.4);
+    border-radius: 4px;
+}
