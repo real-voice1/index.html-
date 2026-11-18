@@ -74,7 +74,7 @@
         </div>
     </div>
 
-    <!-- 4. شاشة الغرفة الداخلية مع زر 3 نقاط للتحكم -->
+    <!-- 4. شاشة الغرفة الداخلية مع المايكات والشات وقائمة التحكم (3 نقاط) -->
     <div id="room-view-screen" class="w-full max-w-lg hidden flex flex-col h-[88vh] relative">
         <div class="flex justify-between items-center mb-2 border-b border-purple-500/20 pb-2 px-1 relative">
             <div class="flex items-center gap-3">
@@ -86,7 +86,7 @@
             </div>
 
             <div class="flex items-center gap-2">
-                <!-- زر الثلاث نقاط للتحكم في الغرفة -->
+                <!-- زر الثلاث نقاط لتغيير اسم وصورة الغرفة (للمالك) -->
                 <div class="relative">
                     <button id="room-options-btn" class="bg-slate-900 text-purple-300 w-9 h-9 rounded-xl flex items-center justify-center border border-purple-500/30 cursor-pointer"><i class="fa-solid fa-ellipsis-vertical"></i></button>
                     <div id="room-options-dropdown" class="absolute left-0 mt-2 w-44 bg-slate-900 border border-purple-500/40 rounded-2xl shadow-2xl hidden z-50 overflow-hidden py-1 text-xs">
@@ -100,7 +100,7 @@
 
         <input type="file" id="room-new-image-file" accept="image/*" class="hidden">
 
-        <!-- 8 مايكات -->
+        <!-- 8 مايكات تفاعلية أونلاين -->
         <div class="grid grid-cols-4 gap-3 mb-2 text-center px-1">
             <div class="flex flex-col items-center"><div id="seat-0" class="w-12 h-12 rounded-full bg-slate-900 border-2 border-purple-500 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-0" class="text-[9px] text-slate-300 truncate w-16 mt-0.5">مايك 1</span></div>
             <div class="flex flex-col items-center"><div id="seat-1" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-1" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 2</span></div>
@@ -112,7 +112,7 @@
             <div class="flex flex-col items-center"><div id="seat-7" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-7" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 8</span></div>
         </div>
 
-        <!-- الشات النصي -->
+        <!-- الشات النصي الفوري -->
         <div class="flex-1 bg-slate-900/60 border border-purple-500/20 rounded-2xl p-2.5 flex flex-col mb-2 overflow-hidden">
             <div class="text-[10px] text-purple-400 font-bold border-b border-purple-500/20 pb-1 mb-1">💬 الدردشة الفورية</div>
             <div id="chat-messages-container" class="flex-1 overflow-y-auto space-y-1.5 text-xs pr-1">
