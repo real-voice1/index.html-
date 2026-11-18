@@ -42,6 +42,7 @@ export const db = getFirestore(app);
 const AGORA_APP_ID = "9449195b0b3e400494432244036cb569"; 
 let agoraClient = null;
 let localAudioTrack = null;
+let isMicMuted = false;
 
 const welcomeScreen = document.getElementById('welcome-screen');
 const authScreen = document.getElementById('auth-screen');
@@ -69,7 +70,12 @@ const roomNameInput = document.getElementById('room-name-input');
 const roomImageFile = document.getElementById('room-image-file'); 
 const roomsGrid = document.getElementById('rooms-grid'); 
 
+// عناصر الثلاث نقاط والغرفة
+const roomOptionsBtn = document.getElementById('room-options-btn');
+const roomOptionsDropdown = document.getElementById('room-options-dropdown');
+const optMinimize = document.getElementById('opt-minimize');
 const optLeave = document.getElementById('opt-leave');
+
 const toggleMicBtn = document.getElementById('toggle-mic-btn');
 const requestSeatBtn = document.getElementById('request-seat-btn');
 
@@ -116,6 +122,7 @@ const settingsLogoutSwitch = document.getElementById('settings-logout-switch');
 let isLoginMode = false;
 let currentUser = null;
 let currentRoomId = null;
+let roomSeats = Array(8).fill(null);
 let userData = null;
 let tempSelectedAvatar = null;
 
@@ -176,7 +183,80 @@ getRedirectResult(auth)
         console.error("Google Redirect Error:", error);
     });
 
-// أزرار الإعدادات والنوافذ
+// تفعيل قائمة الثلاث نقاط داخل الغرفة
+if (roomOptionsBtn && roomOptionsDropdown) {
+    roomOptionsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        roomOptionsDropdown.classList.toggle('hidden');
+    });
+    document.addEventListener('click', () => {
+        roomOptionsDropdown.classList.add('hidden');
+    });
+}
+
+// تصغير الغرفة
+if (optMinimize) {
+    optMinimize.addEventListener('click', () => {
+        roomViewScreen.classList.add('hidden');
+        mainAppContainer.classList.remove('hidden');
+        bottomNav.classList.remove('hidden');
+        roomOptionsDropdown.classList.add('hidden');
+    });
+}
+
+// تفعيل زر كتم / فتح المايك
+if (toggleMicBtn) {
+    toggleMicBtn.addEventListener('click', async () => {
+        if (!localAudioTrack) {
+            return alert("⚠️ يجب أن تجلس على كرسي أولاً لتفعيل المايك!");
+        }
+        isMicMuted = !isMicMuted;
+        await localAudioTrack.setMuted(isMicMuted);
+        if (isMicMuted) {
+            toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone-slash text-red-400"></i> فتح المايك`;
+            toggleMicBtn.className = "bg-red-600/30 text-red-200 px-4 py-2.5 rounded-xl text-xs border border-red-500/40 cursor-pointer flex items-center gap-1.5";
+        } else {
+            toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone text-green-400"></i> كتم المايك`;
+            toggleMicBtn.className = "bg-purple-600/30 text-purple-200 px-4 py-2.5 rounded-xl text-xs border border-purple-500/40 cursor-pointer flex items-center gap-1.5";
+        }
+    });
+}
+
+// الجلوس على كرسي وربط الصوت بـ Agora
+if (requestSeatBtn) {
+    requestSeatBtn.addEventListener('click', async () => {
+        if (!currentUser || !currentRoomId) return alert("⚠️ ادخل غرفة أولاً!");
+        let emptyIndex = roomSeats.findIndex((seat, idx) => idx > 0 && seat === null);
+        if (emptyIndex === -1 && roomSeats[0] === null) emptyIndex = 0;
+        if (emptyIndex === -1) return alert("❌ جميع الكراسي محجوزة!");
+
+        roomSeats[emptyIndex] = {
+            uid: currentUser.uid,
+            nickname: userData ? userData.nickname : "مستخدم",
+            avatar: userData ? userData.avatar : "https://via.placeholder.com/150",
+            userId: userData ? userData.userId : "110789"
+        };
+        
+        const seatDiv = document.getElementById(`seat-${emptyIndex}`);
+        const nameSpan = document.getElementById(`seat-name-${emptyIndex}`);
+        if (seatDiv && nameSpan) {
+            seatDiv.className = "w-14 h-14 rounded-full bg-slate-900 border-2 border-green-500 flex items-center justify-center relative overflow-hidden shadow-md";
+            seatDiv.innerHTML = `<img src="${roomSeats[emptyIndex].avatar}" class="w-full h-full object-cover">`;
+            nameSpan.textContent = roomSeats[emptyIndex].nickname;
+            nameSpan.className = "text-[10px] text-green-300 mt-1.5 truncate w-16 font-bold";
+        }
+
+        try {
+            if (!localAudioTrack && agoraClient) {
+                localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+                await agoraClient.publish([localAudioTrack]);
+                alert("🎤 تم فتح المايك وبث صوتك بنجاح في الغرفة!");
+            }
+        } catch (e) { alert("⚠️ سماح للمتصفح بالوصول للمايك مطلوب."); }
+    });
+}
+
+// أزرار الإعدادات
 if (settingsAccountCenter) {
     settingsAccountCenter.addEventListener('click', () => {
         if (currentUser && userData) {
