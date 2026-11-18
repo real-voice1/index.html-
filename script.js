@@ -87,7 +87,6 @@ let roomSeats = Array(8).fill(null);
 let userData = null;
 let myCurrentSeatIndex = null;
 
-// دالة ذكية لضغط وتصغير حجم الصورة تلقائياً لكي لا تتجاوز حد فايربيس أبداً
 function compressImage(file) {
     return new Promise((resolve) => {
         if (!file) {
@@ -101,7 +100,7 @@ function compressImage(file) {
             img.src = event.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 300; // تصغير الأبعاد لعرض أقصى 300 بكسل
+                const MAX_WIDTH = 300;
                 const MAX_HEIGHT = 300;
                 let width = img.width;
                 let height = img.height;
@@ -122,8 +121,6 @@ function compressImage(file) {
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                
-                // ضغط الجودة إلى 70% للحصول على حجم خفيف جداً
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                 resolve(dataUrl);
             };
@@ -218,7 +215,6 @@ if (closeEditProfile) {
     });
 }
 
-// زر حفظ تعديلات البروفايل مع ضغط الصورة تلقائياً
 if (saveProfileBtn) {
     saveProfileBtn.addEventListener('click', async () => {
         if (!currentUser) return;
@@ -231,12 +227,14 @@ if (saveProfileBtn) {
                 avatarBase64 = await compressImage(inputAvatarFile.files[0]);
             }
 
+            let safeUserId = (userData && userData.userId) ? userData.userId : Math.floor(100000 + Math.random() * 900000);
+
             const userRef = doc(db, "users", currentUser.uid);
             
             await setDoc(userRef, {
                 uid: currentUser.uid,
                 email: currentUser.email,
-                userId: userData ? userData.userId : Math.floor(100000 + Math.random() * 900000),
+                userId: safeUserId,
                 nickname: newNick,
                 avatar: avatarBase64
             }, { merge: true });
@@ -247,6 +245,7 @@ if (saveProfileBtn) {
             if (!userData) userData = {};
             userData.nickname = newNick;
             userData.avatar = avatarBase64;
+            userData.userId = safeUserId;
 
             alert("✅ تم تحديث الملف الشخصي والصورة بنجاح!");
             if (editProfileModal) editProfileModal.classList.add('hidden');
@@ -280,7 +279,6 @@ if (cancelRoomBtn) {
     });
 }
 
-// زر إنشاء الغرفة مع ضغط صورة الغرفة تلقائياً
 if (confirmCreateRoom) {
     confirmCreateRoom.addEventListener('click', async () => {
         if (!roomNameInput || !roomImageFile) return;
