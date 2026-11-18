@@ -35,7 +35,7 @@ console.log("✅ تم ربط تطبيق REAL VOICE بقاعدة البيانات
 const welcomeScreen = document.getElementById('welcome-screen');
 const authScreen = document.getElementById('auth-screen');
 const roomsScreen = document.getElementById('rooms-screen');
-const roomViewScreen = document.getElementById('room-view-screen'); // شاشة الغرفة الداخلية
+const roomViewScreen = document.getElementById('room-view-screen');
 
 const startBtn = document.getElementById('start-btn');
 const authForm = document.getElementById('auth-form');
@@ -52,13 +52,18 @@ const confirmCreateRoom = document.getElementById('confirm-create-room');
 const roomNameInput = document.getElementById('room-name-input');
 const roomsList = document.getElementById('rooms-list');
 
-// عناصر داخل الغرفة
+// عناصر داخل الغرفة والكراسي
 const leaveRoomBtn = document.getElementById('leave-room-btn');
 const currentRoomTitle = document.getElementById('current-room-title');
 const toggleMicBtn = document.getElementById('toggle-mic-btn');
+const requestSeatBtn = document.getElementById('request-seat-btn');
 
 let isLoginMode = false;
 let currentUser = null;
+let currentRoomId = null;
+
+// مصفوفة لتمثيل حالة الـ 8 كراسي محلياً (تخزين اسم المستخدم لكل كرسي)
+let roomSeats = Array(8).fill(null);
 
 // الانتقال من شاشة الترحيب إلى شاشة التسجيل
 if (startBtn) {
@@ -151,14 +156,13 @@ if (confirmCreateRoom) {
     });
 }
 
-// جلب وعرض الغرف من Firestore مباشرة بدون شروط معقدة لتجنب مشاكل الفهرسة
+// جلب وعرض الغرف من Firestore مباشرة
 function loadRooms() {
     if (!roomsList) return;
-    
     const q = collection(db, "rooms");
     
     onSnapshot(q, (snapshot) => {
-        roomsList.innerHTML = ""; // تفريغ القائمة القديمة
+        roomsList.innerHTML = "";
         
         if (snapshot.empty) {
             roomsList.innerHTML = `<p class="text-center text-slate-500 text-xs py-4">لا توجد غرف متاحة حالياً. أنشئ غرفة الآن! ✨</p>`;
@@ -167,6 +171,7 @@ function loadRooms() {
 
         snapshot.forEach((docSnap) => {
             const roomData = docSnap.data();
+            const roomId = docSnap.id;
             const roomCard = document.createElement('div');
             roomCard.className = "glass p-4 rounded-2xl flex justify-between items-center border border-purple-500/20";
             
@@ -180,10 +185,10 @@ function loadRooms() {
                 </button>
             `;
 
-            // حدث الضغط على زر "دخول الغرفة" للانتقال لشاشة الكراسي
+            // حدث الضغط على زر "دخول الغرفة"
             const joinBtn = roomCard.querySelector('.join-room-btn');
             joinBtn.addEventListener('click', () => {
-                enterRoom(roomData.name || "غرفة صوتية");
+                enterRoom(roomId, roomData.name || "غرفة صوتية");
             });
 
             roomsList.appendChild(roomCard);
@@ -192,19 +197,86 @@ function loadRooms() {
 }
 
 // دالة الانتقال إلى غرفة الدردشة الداخلية
-function enterRoom(roomName) {
+function enterRoom(roomId, roomName) {
+    currentRoomId = roomId;
     if (roomsScreen) roomsScreen.classList.add('hidden');
     if (roomViewScreen) roomViewScreen.classList.remove('hidden');
     if (currentRoomTitle) currentRoomTitle.textContent = roomName;
+    resetSeatsUI();
     console.log("🚪 تم الدخول إلى الغرفة:", roomName);
 }
 
 // زر مغادرة الغرفة والعودة لقاعة الغرف
 if (leaveRoomBtn) {
     leaveRoomBtn.addEventListener('click', () => {
+        currentRoomId = null;
         if (roomViewScreen) roomViewScreen.classList.add('hidden');
         if (roomsScreen) roomsScreen.classList.remove('hidden');
     });
+}
+
+// برمجة زر "الجلوس على كرسي" لحجز أول كرسي فارغ
+if (requestSeatBtn) {
+    requestSeatBtn.addEventListener('click', () => {
+        if (!currentUser) {
+            alert("⚠️ يجب تسجيل الدخول أولاً للجلوس على كرسي!");
+            return;
+        }
+
+        // البحث عن أول كرسي فاضي (يبدأ من الكرسي 1 إلى 7، أو الكرسي 0 لو متاح)
+        let emptySeatIndex = roomSeats.findIndex((seat, index) => index > 0 && seat === null);
+        
+        if (emptySeatIndex === -1 && roomSeats[0] === null) {
+            emptySeatIndex = 0; // حجز كرسي المضيف لو فاضي
+        }
+
+        if (emptySeatIndex === -1) {
+            alert("❌ عذراً، جميع الكراسي محجوزة حالياً!");
+            return;
+        }
+
+        // استخراج اسم المستخدم المختصر قبل الـ @
+        const shortName = currentUser.email.split('@')[0];
+        
+        // تحديث الكرسي محلياً وعرضه واجهياً
+        roomSeats[emptySeatIndex] = shortName;
+        updateSeatUI(emptySeatIndex, shortName, true);
+        alert(`🪑 تم جلوسك بنجاح على الكرسي رقم ${emptySeatIndex + 1}!`);
+    });
+}
+
+// تحديث شكل ومظهر الكرسي واجهياً عند الجلوس عليه
+function updateSeatUI(index, userName, isOccupied) {
+    const seatDiv = document.getElementById(`seat-${index}`);
+    const nameSpan = document.getElementById(`seat-name-${index}`);
+    
+    if (!seatDiv || !nameSpan) return;
+
+    if (isOccupied) {
+        seatDiv.className = "w-14 h-14 rounded-full glass border-2 border-green-500 flex items-center justify-center relative cursor-pointer shadow-lg shadow-green-500/20 hover:scale-105 transition";
+        seatDiv.innerHTML = `<i class="fa-solid fa-user text-green-300 text-lg seat-icon"></i>`;
+        if (index === 0) {
+            seatDiv.innerHTML += `<i class="fa-solid fa-crown text-amber-400 text-xs absolute -top-1 -right-1"></i>`;
+        }
+        nameSpan.textContent = userName;
+        nameSpan.className = "text-[10px] text-green-300 mt-1 truncate w-16 font-bold";
+    } else {
+        seatDiv.className = "w-14 h-14 rounded-full glass border border-purple-500/30 flex items-center justify-center relative cursor-pointer hover:scale-105 transition";
+        seatDiv.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-sm seat-icon"></i>`;
+        if (index === 0) {
+            seatDiv.innerHTML += `<i class="fa-solid fa-crown text-amber-400 text-xs absolute -top-1 -right-1"></i>`;
+        }
+        nameSpan.textContent = index === 0 ? "المضيف" : "فاضي";
+        nameSpan.className = "text-[10px] text-slate-500 mt-1 truncate w-16";
+    }
+}
+
+// إعادة ضبط الكراسي عند الدخول للغرفة
+function resetSeatsUI() {
+    roomSeats = Array(8).fill(null);
+    for (let i = 0; i < 8; i++) {
+        updateSeatUI(i, null, false);
+    }
 }
 
 // زر فتح/قفل المايك الشخصي داخل الغرفة
@@ -240,7 +312,7 @@ onAuthStateChanged(auth, (user) => {
         if (userDisplayEmail) {
             userDisplayEmail.textContent = `حسابك: ${user.email}`;
         }
-        loadRooms(); // استدعاء جلب الغرف
+        loadRooms();
     } else {
         console.log("👤 لا يوجد مستخدم مسجل حالياً.");
         if (welcomeScreen) welcomeScreen.classList.remove('hidden');
