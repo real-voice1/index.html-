@@ -26,11 +26,6 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// إعدادات Agora الصوتية (معرف تجريبي جاهز للاختبار الحي)
-const AGORA_APP_ID = "9449195b0b3e400494432244036cb569"; 
-let agoraClient = null;
-let localAudioTrack = null;
-
 const welcomeScreen = document.getElementById('welcome-screen');
 const authScreen = document.getElementById('auth-screen');
 const roomsScreen = document.getElementById('rooms-screen');
@@ -55,10 +50,12 @@ const currentRoomTitle = document.getElementById('current-room-title');
 const toggleMicBtn = document.getElementById('toggle-mic-btn');
 const requestSeatBtn = document.getElementById('request-seat-btn');
 
+// عناصر الشات النصي
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
 const chatMessagesList = document.getElementById('chat-messages-list');
 
+// عناصر إعدادات الغرفة والبروفايل
 const openRoomSettingsBtn = document.getElementById('open-room-settings-btn');
 const roomSettingsModal = document.getElementById('room-settings-modal');
 const closeSettingsModal = document.getElementById('close-settings-modal');
@@ -75,6 +72,26 @@ let isLoginMode = false;
 let currentUser = null;
 let currentRoomId = null;
 let roomSeats = Array(8).fill(null);
+
+// دالة تشغيل صوت التفاعل عند الجلوس على المايك
+function playSeatSound() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15);
+        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.2);
+    } catch (e) {
+        console.log("Audio not supported");
+    }
+}
 
 if (startBtn) {
     startBtn.addEventListener('click', () => {
@@ -143,7 +160,7 @@ if (confirmCreateRoom) {
     });
 }
 
-// الشات النصي
+// الشات النصي داخل الغرفة
 if (chatForm) {
     chatForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -160,7 +177,7 @@ if (chatForm) {
     });
 }
 
-// الإعدادات
+// إعدادات الغرفة
 if (openRoomSettingsBtn) {
     openRoomSettingsBtn.addEventListener('click', () => {
         if (settingsRoomName && currentRoomTitle) {
@@ -227,58 +244,27 @@ function loadRooms() {
     });
 }
 
-// الدخول للغرفة وتفعيل الاتصال الصوتي الحي
-async function enterRoom(roomId, roomName) {
+function enterRoom(roomId, roomName) {
     currentRoomId = roomId;
     roomsScreen.classList.add('hidden');
     roomViewScreen.classList.remove('hidden');
     currentRoomTitle.textContent = roomName;
     resetSeatsUI();
     if (chatMessagesList) {
-        chatMessagesList.innerHTML = `<div class="text-slate-400 text-[10px]">مرحباً بك في الغرفة! استمتع بالصوت الحي ✨</div>`;
+        chatMessagesList.innerHTML = `<div class="text-slate-400 text-[10px]">مرحباً بك في الغرفة! استمتع بالدردشة الصوتية والنصية ✨</div>`;
     }
-
-    // تهيئة والانضمام لغرفة الصوت عبر Agora
-    try {
-        agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-        await agoraClient.join(AGORA_APP_ID, roomId, null, null);
-        console.log("🎙️ تم الاتصال بالقناة الصوتية للغرفة بنجاح!");
-
-        // الاستماع للمستخدمين الآخرين عند التحدث
-        agoraClient.on("user-published", async (user, mediaType) => {
-            await agoraClient.subscribe(user, mediaType);
-            if (mediaType === "audio") {
-                user.audioTrack.play();
-                console.🔊("تم تشغيل صوت مستخدم آخر في الغرفة");
-            }
-        });
-    } catch (error) {
-        console.error("خطأ في الاتصال الصوتي:", error);
-    }
-}
-
-// مغادرة الغرفة وقطع الصوت
-async function leaveRoom() {
-    if (localAudioTrack) {
-        localAudioTrack.close();
-        localAudioTrack = null;
-    }
-    if (agoraClient) {
-        await agoraClient.leave();
-        agoraClient = null;
-    }
-    currentRoomId = null;
-    roomViewScreen.classList.add('hidden');
-    roomsScreen.classList.remove('hidden');
 }
 
 if (leaveRoomBtn) {
-    leaveRoomBtn.addEventListener('click', leaveRoom);
+    leaveRoomBtn.addEventListener('click', () => {
+        currentRoomId = null;
+        roomViewScreen.classList.add('hidden');
+        roomsScreen.classList.remove('hidden');
+    });
 }
 
-// الجلوس على المايك وتشغيل صوت الميكروفون الحقيقي للمستخدم
 if (requestSeatBtn) {
-    requestSeatBtn.addEventListener('click', async () => {
+    requestSeatBtn.addEventListener('click', () => {
         if (!currentUser || !currentRoomId) return alert("⚠️ سجل الدخول وادخل غرفة أولاً!");
         let emptyIndex = roomSeats.findIndex((seat, idx) => idx > 0 && seat === null);
         if (emptyIndex === -1 && roomSeats[0] === null) emptyIndex = 0;
@@ -286,18 +272,11 @@ if (requestSeatBtn) {
 
         const shortName = currentUser.email.split('@')[0];
         roomSeats[emptyIndex] = shortName;
+        
+        // تشغيل صوت التفاعل عند الجلوس على المايك
+        playSeatSound();
+        
         updateSeatUI(emptyIndex, shortName, true);
-
-        // فتح الميكروفون وبث الصوت حياً للموجودين
-        try {
-            if (!localAudioTrack && agoraClient) {
-                localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-                await agoraClient.publish([localAudioTrack]);
-                alert(`🪑 جلست على المقعد ${emptyIndex + 1} وتم فتح المايك الصوتي الحي!`);
-            }
-        } catch (e) {
-            alert("⚠️ يرجى السماح للمتصفح بالوصول إلى الميكروفون.");
-        }
     });
 }
 
@@ -339,14 +318,10 @@ function resetSeatsUI() {
     for (let i = 0; i < 8; i++) updateSeatUI(i, null, false);
 }
 
-// زر كتم / فتح الميكروفون الشخصي
 let isMicMuted = false;
 if (toggleMicBtn) {
-    toggleMicBtn.addEventListener('click', async () => {
+    toggleMicBtn.addEventListener('click', () => {
         isMicMuted = !isMicMuted;
-        if (localAudioTrack) {
-            await localAudioTrack.setMuted(isMicMuted);
-        }
         toggleMicBtn.innerHTML = isMicMuted ? `<i class="fa-solid fa-microphone-slash"></i> المايك مكتوم` : `<i class="fa-solid fa-microphone"></i> المايك مفتوح`;
         toggleMicBtn.className = isMicMuted ? "bg-red-600/30 text-red-200 px-3 py-1.5 rounded-xl text-xs transition border border-red-500/40 cursor-pointer flex items-center gap-1" : "bg-green-600/30 text-green-200 px-3 py-1.5 rounded-xl text-xs transition border border-green-500/40 cursor-pointer flex items-center gap-1";
     });
