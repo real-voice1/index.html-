@@ -87,7 +87,6 @@ let currentRoomId = null;
 let roomSeats = Array(8).fill(null);
 let userData = null;
 
-// الانتقال من شاشة الترحيب لصفحة الدخول
 if (startBtn) {
     startBtn.addEventListener('click', () => {
         if (welcomeScreen) welcomeScreen.classList.add('hidden');
@@ -95,7 +94,6 @@ if (startBtn) {
     });
 }
 
-// التبديل بين وضع تسجيل الدخول أو إنشاء حساب جديد
 if (toggleAuthModeBtn) {
     toggleAuthModeBtn.addEventListener('click', () => {
         isLoginMode = !isLoginMode;
@@ -107,7 +105,6 @@ if (toggleAuthModeBtn) {
     });
 }
 
-// معالجة نموذج التسجيل أو الدخول بالبريد الإلكتروني وكلمة المرور
 if (authForm) {
     authForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -146,7 +143,6 @@ if (authForm) {
     });
 }
 
-// التنقل السفلي بين التبويبات (الغرف / الملف الشخصي)
 if (navRoomsBtn && navProfileBtn) {
     navRoomsBtn.addEventListener('click', () => {
         if (tabRooms) tabRooms.classList.remove('hidden');
@@ -163,7 +159,6 @@ if (navRoomsBtn && navProfileBtn) {
     });
 }
 
-// تعديل الملف الشخصي
 if (editProfileBtn) {
     editProfileBtn.addEventListener('click', () => {
         if (userData) {
@@ -202,7 +197,6 @@ if (saveProfileBtn) {
     });
 }
 
-// إنشاء غرفة (مع التحقق من أن المستخدم لديه غرفة واحدة فقط)
 if (createRoomBtn) {
     createRoomBtn.addEventListener('click', async () => {
         if (!currentUser) return;
@@ -247,7 +241,6 @@ if (confirmCreateRoom) {
     });
 }
 
-// جلب واستعراض الغرف
 function loadRooms() {
     if (!roomsList) return;
     onSnapshot(collection(db, "rooms"), (snapshot) => {
@@ -277,7 +270,6 @@ function loadRooms() {
     });
 }
 
-// دخول الغرفة والصوت الحي
 async function enterRoom(roomId, roomName) {
     currentRoomId = roomId;
     if (mainAppContainer) mainAppContainer.classList.add('hidden');
@@ -357,12 +349,25 @@ function resetSeatsUI() {
     }
 }
 
+// زر كتم / فتح الميكروفون الحقيقي (يقطع الصوت عن الباقيين ويعيده فوراً)
 let isMicMuted = false;
 if (toggleMicBtn) {
     toggleMicBtn.addEventListener('click', async () => {
+        if (!localAudioTrack) {
+            return alert("⚠️ يجب أن تكون جالساً على كرسي ومفعلاً للمايك أولاً!");
+        }
+        
         isMicMuted = !isMicMuted;
-        if (localAudioTrack) await localAudioTrack.setMuted(isMicMuted);
-        toggleMicBtn.innerHTML = isMicMuted ? `<i class="fa-solid fa-microphone-slash"></i> مكتوم` : `<i class="fa-solid fa-microphone"></i> مفتوح`;
+        // قطع الصوت أو إعادته عبر مكتبة Agora
+        await localAudioTrack.setMuted(isMicMuted);
+
+        if (isMicMuted) {
+            toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone-slash"></i> المايك مكتوم`;
+            toggleMicBtn.className = "bg-red-600/30 hover:bg-red-600 text-red-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-red-500/40 cursor-pointer flex items-center gap-1";
+        } else {
+            toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone"></i> كتم المايك`;
+            toggleMicBtn.className = "bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-purple-500/40 cursor-pointer flex items-center gap-1";
+        }
     });
 }
 
@@ -388,7 +393,6 @@ function escapeHtml(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// مراقبة حالة تسجيل الدخول في Firebase
 onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     if (user) {
@@ -414,7 +418,7 @@ onAuthStateChanged(auth, async (user) => {
     } else {
         if (welcomeScreen) welcomeScreen.classList.remove('hidden');
         if (authScreen) authScreen.classList.add('hidden');
-        if (mainAppContainer) authScreen.classList.add('hidden'); // safe guard
+        if (mainAppContainer) mainAppContainer.classList.add('hidden');
         if (roomViewScreen) roomViewScreen.classList.add('hidden');
         if (bottomNav) bottomNav.classList.add('hidden');
     }
