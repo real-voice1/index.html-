@@ -26,6 +26,11 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+// معرف Agora الصوتي للاختبار الحي
+const AGORA_APP_ID = "9449195b0b3e400494432244036cb569"; 
+let agoraClient = null;
+let localAudioTrack = null;
+
 const welcomeScreen = document.getElementById('welcome-screen');
 const authScreen = document.getElementById('auth-screen');
 const roomsScreen = document.getElementById('rooms-screen');
@@ -71,32 +76,11 @@ let currentUser = null;
 let currentRoomId = null;
 let roomSeats = Array(8).fill(null);
 
-// ربط زر الترحيب بشكل برمجى سليم 100%
 if (startBtn) {
     startBtn.addEventListener('click', () => {
         if (welcomeScreen) welcomeScreen.classList.add('hidden');
         if (authScreen) authScreen.classList.remove('hidden');
     });
-}
-
-// صوت تفاعلي عند الجلوس على المايك
-function playSeatSound() {
-    try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15);
-        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-        osc.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.2);
-    } catch (e) {
-        console.log("Audio not supported");
-    }
 }
 
 if (toggleAuthModeBtn) {
@@ -243,27 +227,56 @@ function loadRooms() {
     });
 }
 
-function enterRoom(roomId, roomName) {
+// الدخول للغرفة وتفعيل الاتصال الصوتي الحي عبر Agora
+async function enterRoom(roomId, roomName) {
     currentRoomId = roomId;
     roomsScreen.classList.add('hidden');
     roomViewScreen.classList.remove('hidden');
     currentRoomTitle.textContent = roomName;
     resetSeatsUI();
     if (chatMessagesList) {
-        chatMessagesList.innerHTML = `<div class="text-slate-400 text-[10px]">مرحباً بك في الغرفة! استمتع بالدردشة الصوتية والنصية ✨</div>`;
+        chatMessagesList.innerHTML = `<div class="text-slate-400 text-[10px]">مرحباً بك في الغرفة! استمتع بالصوت الحي ✨</div>`;
+    }
+
+    try {
+        agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+        await agoraClient.join(AGORA_APP_ID, roomId, null, null);
+        console.log("🎙️ تم الاتصال بالقناة الصوتية للغرفة بنجاح!");
+
+        agoraClient.on("user-published", async (user, mediaType) => {
+            await agoraClient.subscribe(user, mediaType);
+            if (mediaType === "audio") {
+                user.audioTrack.play();
+                console.log("تم تشغيل صوت مستخدم آخر في الغرفة");
+            }
+        });
+    } catch (error) {
+        console.error("خطأ في الاتصال الصوتي:", error);
     }
 }
 
-if (leaveRoomBtn) {
-    leaveRoomBtn.addEventListener('click', () => {
-        currentRoomId = null;
-        roomViewScreen.classList.add('hidden');
-        roomsScreen.classList.remove('hidden');
-    });
+// مغادرة الغرفة وقطع الصوت
+async function leaveRoom() {
+    if (localAudioTrack) {
+        localAudioTrack.close();
+        localAudioTrack = null;
+    }
+    if (agoraClient) {
+        await agoraClient.leave();
+        agoraClient = null;
+    }
+    currentRoomId = null;
+    roomViewScreen.classList.add('hidden');
+    roomsScreen.classList.remove('hidden');
 }
 
+if (leaveRoomBtn) {
+    leaveRoomBtn.addEventListener('click', leaveRoom);
+}
+
+// الجلوس على المايك وبث الصوت الحقيقي
 if (requestSeatBtn) {
-    requestSeatBtn.addEventListener('click', () => {
+    requestSeatBtn.addEventListener('click', async () => {
         if (!currentUser || !currentRoomId) return alert("⚠️ سجل الدخول وادخل غرفة أولاً!");
         let emptyIndex = roomSeats.findIndex((seat, idx) => idx > 0 && seat === null);
         if (emptyIndex === -1 && roomSeats[0] === null) emptyIndex = 0;
@@ -271,8 +284,17 @@ if (requestSeatBtn) {
 
         const shortName = currentUser.email.split('@')[0];
         roomSeats[emptyIndex] = shortName;
-        playSeatSound();
         updateSeatUI(emptyIndex, shortName, true);
+
+        try {
+            if (!localAudioTrack && agoraClient) {
+                localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+                await agoraClient.publish([localAudioTrack]);
+                alert(`🪑 جلست على المقعد ${emptyIndex + 1} وتم تفعيل المايك الصوتي الحي!`);
+            }
+        } catch (e) {
+            alert("⚠️ يرجى السماح للمتصفح بالوصول إلى الميكروفون.");
+        }
     });
 }
 
@@ -314,10 +336,14 @@ function resetSeatsUI() {
     for (let i = 0; i < 8; i++) updateSeatUI(i, null, false);
 }
 
+// زر كتم / فتح الميكروفون
 let isMicMuted = false;
 if (toggleMicBtn) {
-    toggleMicBtn.addEventListener('click', () => {
+    toggleMicBtn.addEventListener('click', async () => {
         isMicMuted = !isMicMuted;
+        if (localAudioTrack) {
+            await localAudioTrack.setMuted(isMicMuted);
+        }
         toggleMicBtn.innerHTML = isMicMuted ? `<i class="fa-solid fa-microphone-slash"></i> المايك مكتوم` : `<i class="fa-solid fa-microphone"></i> المايك مفتوح`;
         toggleMicBtn.className = isMicMuted ? "bg-red-600/30 text-red-200 px-3 py-1.5 rounded-xl text-xs transition border border-red-500/40 cursor-pointer flex items-center gap-1" : "bg-green-600/30 text-green-200 px-3 py-1.5 rounded-xl text-xs transition border border-green-500/40 cursor-pointer flex items-center gap-1";
     });
