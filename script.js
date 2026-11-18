@@ -258,7 +258,7 @@ floatingMiniPlayer.addEventListener('pointerup', (e) => {
 // تفعيل كتم / فتح المايك
 if (toggleMicBtn) {
     toggleMicBtn.addEventListener('click', async () => {
-        if (!localAudioTrack) return alert("⚠️ يجب أن تجلس على كرسي أولاً عبر الضغط على أي مايك فارغ!");
+        if (!localAudioTrack) return alert("⚠️ يجب أن تجلس على كرسي أولاً بالضغط على أي مايك فارغ!");
         isMicMuted = !isMicMuted;
         await localAudioTrack.setMuted(isMicMuted);
         if (isMicMuted) {
@@ -271,34 +271,42 @@ if (toggleMicBtn) {
     });
 }
 
-// رسم الكراسي وتفعيل الصعود التلقائي عند الضغط على أي مايك فارغ
+// رسم الكراسي وتفعيل الاستجابة الفورية عند الضغط
 function renderSeats() {
     for (let i = 0; i < 8; i++) {
-        const seatDiv = document.getElementById(`seat-${i}`);
+        const seatBox = document.getElementById(`seat-${i}`);
         const nameSpan = document.getElementById(`seat-name-${i}`);
-        if (!seatDiv || !nameSpan) continue;
+        if (!seatBox || !nameSpan) continue;
 
-        const newSeatDiv = seatDiv.cloneNode(true);
-        seatDiv.parentNode.replaceChild(newSeatDiv, seatDiv);
+        // إزالة أي أحداث سابقة لتجنب التكرار وضمان الاستجابة
+        const newSeatBox = seatBox.cloneNode(true);
+        seatBox.parentNode.replaceChild(newSeatBox, seatBox);
 
         const occupant = roomSeats[i];
         if (occupant) {
-            newSeatDiv.className = "w-14 h-14 rounded-full bg-slate-900 border-2 border-green-500 flex items-center justify-center relative overflow-hidden shadow-md cursor-pointer";
-            newSeatDiv.innerHTML = `<img src="${occupant.avatar}" class="w-full h-full object-cover">`;
+            // الكرسي محجوز (عرض صورة المستخدم وفتح بروفايله عند الضغط)
+            newSeatBox.className = "w-14 h-14 rounded-full bg-slate-900 border-2 border-green-500 flex items-center justify-center relative overflow-hidden shadow-md cursor-pointer";
+            newSeatBox.innerHTML = `<img src="${occupant.avatar}" class="w-full h-full object-cover">`;
             nameSpan.textContent = occupant.nickname;
             nameSpan.className = "text-[10px] text-green-300 truncate w-16 font-bold";
-            newSeatDiv.addEventListener('click', () => openUserProfileModal(occupant, i));
+            
+            newSeatBox.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openUserProfileModal(occupant, i);
+            });
         } else {
-            newSeatDiv.className = "w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer hover:border-purple-400 transition";
-            newSeatDiv.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-sm"></i>`;
+            // الكرسي فاضي (الضغط عليه يدخلك تلقائياً)
+            newSeatBox.className = "w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer hover:border-purple-400 transition";
+            newSeatBox.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-sm"></i>`;
             nameSpan.textContent = "فاضي";
             nameSpan.className = "text-[10px] text-slate-500 truncate w-16";
 
-            // الضغط على مايك فاضي يقعدك عليه تلقائياً
-            newSeatDiv.addEventListener('click', async () => {
+            newSeatBox.addEventListener('click', async (e) => {
+                e.stopPropagation();
                 if (!currentUser || !currentRoomId) return;
+
+                // لو المستخدم قاعد على مايك تاني، فضيه الأول
                 if (myCurrentSeatIndex !== null) {
-                    // لو قاعد على مايك تاني، قوم منه الأول
                     roomSeats[myCurrentSeatIndex] = null;
                 }
 
@@ -309,15 +317,18 @@ function renderSeats() {
                     avatar: userData ? userData.avatar : "https://via.placeholder.com/150",
                     userId: userData ? userData.userId : "110789"
                 };
+                
                 renderSeats();
 
                 try {
                     if (!localAudioTrack && agoraClient) {
                         localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
                         await agoraClient.publish([localAudioTrack]);
-                        alert(`🎤 صعدت على (مايك ${i+1}) وتم فتح المايك وبث صوتك بنجاح!`);
                     }
-                } catch (e) { alert("⚠️ سماح المتصفح للوصول إلى المايك مطلوب."); }
+                } catch (err) {
+                    console.error("Mic error:", err);
+                    alert("⚠️ يرجى السماح للمتصفح بالوصول للمايك.");
+                }
             });
         }
     }
@@ -362,7 +373,7 @@ if (closeUserProfile) {
     });
 }
 
-// مهام الإدارة (إنزال من المايك، طرد مؤقت ونهائي)
+// مهام الإدارة
 if (actionKickMic) {
     actionKickMic.addEventListener('click', () => {
         if (!selectedTargetUser) return;
@@ -373,7 +384,6 @@ if (actionKickMic) {
             myCurrentSeatIndex = null;
         }
         renderSeats();
-        alert(`🔽 تم إنزال ${selectedTargetUser.nickname} من المايك.`);
         bottomSheetContent.classList.remove('show');
         setTimeout(() => roomUserProfileModal.classList.add('hidden'), 300);
     });
@@ -389,7 +399,6 @@ if (actionBan24h) {
                 const banExpiry = Date.now() + (24 * 60 * 60 * 1000);
                 currentBanned.push({ uid: selectedTargetUser.uid, expiry: banExpiry });
                 await updateDoc(roomRef, { bannedUsers: currentBanned });
-                alert(`⏳ تم طرد المستخدم.`);
                 leaveRoom();
             } catch (e) { alert("❌ خطأ: " + e.message); }
         }
@@ -422,7 +431,6 @@ if (actionBanYear) {
                 const banExpiry = Date.now() + (365 * 24 * 60 * 60 * 1000);
                 currentBanned.push({ uid: selectedTargetUser.uid, expiry: banExpiry });
                 await updateDoc(roomRef, { bannedUsers: currentBanned });
-                alert(`🚫 تم الحظر.`);
                 leaveRoom();
             } catch (e) { alert("❌ خطأ: " + e.message); }
         }
