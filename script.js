@@ -86,6 +86,7 @@ let currentUser = null;
 let currentRoomId = null;
 let roomSeats = Array(8).fill(null);
 let userData = null;
+let myCurrentSeatIndex = null; // تتبع الكرسي الخاص بالمستخدم الحالي
 
 if (startBtn) {
     startBtn.addEventListener('click', () => {
@@ -272,6 +273,7 @@ function loadRooms() {
 
 async function enterRoom(roomId, roomName) {
     currentRoomId = roomId;
+    myCurrentSeatIndex = null; // إعادة تعيين الكرسي عند الدخول
     if (mainAppContainer) mainAppContainer.classList.add('hidden');
     if (bottomNav) bottomNav.classList.add('hidden');
     if (roomViewScreen) roomViewScreen.classList.remove('hidden');
@@ -294,6 +296,7 @@ async function leaveRoom() {
     if (localAudioTrack) { localAudioTrack.close(); localAudioTrack = null; }
     if (agoraClient) { await agoraClient.leave(); agoraClient = null; }
     currentRoomId = null;
+    myCurrentSeatIndex = null;
     if (roomViewScreen) roomViewScreen.classList.add('hidden');
     if (mainAppContainer) mainAppContainer.classList.remove('hidden');
     if (bottomNav) bottomNav.classList.remove('hidden');
@@ -301,13 +304,21 @@ async function leaveRoom() {
 
 if (leaveRoomBtn) leaveRoomBtn.addEventListener('click', leaveRoom);
 
+// 🪑 التحقق من عدم تكرار حجز الكراسي للمستخدم نفسه
 if (requestSeatBtn) {
     requestSeatBtn.addEventListener('click', async () => {
         if (!currentUser || !currentRoomId) return alert("⚠️ ادخل غرفة أولاً!");
+        
+        // التحقق هل المستخدم جالس على كرسي بالفعل؟
+        if (myCurrentSeatIndex !== null) {
+            return alert("⚠️ أنت جالس على مقعد بالفعل ولا يمكنك الجلوس مرة أخرى!");
+        }
+
         let emptyIndex = roomSeats.findIndex((seat, idx) => idx > 0 && seat === null);
         if (emptyIndex === -1 && roomSeats[0] === null) emptyIndex = 0;
-        if (emptyIndex === -1) return alert("❌ عذراً، الكراسي محجوزة!");
+        if (emptyIndex === -1) return alert("❌ عذراً، جميع الكراسي محجوزة!");
 
+        myCurrentSeatIndex = emptyIndex; // حفظ رقم كرسي المستخدم الحالي
         const shortName = userData ? userData.nickname : "مستخدم";
         roomSeats[emptyIndex] = shortName;
         updateSeatUI(emptyIndex, shortName, true);
@@ -337,6 +348,7 @@ function updateSeatUI(index, name, isOccupied) {
 
 function resetSeatsUI() {
     roomSeats = Array(8).fill(null);
+    myCurrentSeatIndex = null;
     for (let i = 0; i < 8; i++) {
         const seatDiv = document.getElementById(`seat-${i}`);
         const nameSpan = document.getElementById(`seat-name-${i}`);
@@ -349,16 +361,14 @@ function resetSeatsUI() {
     }
 }
 
-// زر كتم / فتح الميكروفون الحقيقي (يقطع الصوت عن الباقيين ويعيده فوراً)
 let isMicMuted = false;
 if (toggleMicBtn) {
     toggleMicBtn.addEventListener('click', async () => {
         if (!localAudioTrack) {
-            return alert("⚠️ يجب أن تكون جالساً على كرسي ومفعلاً للمايك أولاً!");
+            return alert("⚠️ يجب أن تكون جالساً على كرسي أولاً!");
         }
         
         isMicMuted = !isMicMuted;
-        // قطع الصوت أو إعادته عبر مكتبة Agora
         await localAudioTrack.setMuted(isMicMuted);
 
         if (isMicMuted) {
