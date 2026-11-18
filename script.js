@@ -87,8 +87,8 @@ let roomSeats = Array(8).fill(null);
 let userData = null;
 let myCurrentSeatIndex = null;
 
-// تحويل صور المعرض إلى Base64 مع معالجة الأخطاء
-function convertFileToBase64(file) {
+// دالة ذكية لضغط وتصغير حجم الصورة تلقائياً لكي لا تتجاوز حد فايربيس أبداً
+function compressImage(file) {
     return new Promise((resolve) => {
         if (!file) {
             resolve("https://via.placeholder.com/150");
@@ -96,7 +96,39 @@ function convertFileToBase64(file) {
         }
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 300; // تصغير الأبعاد لعرض أقصى 300 بكسل
+                const MAX_HEIGHT = 300;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // ضغط الجودة إلى 70% للحصول على حجم خفيف جداً
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                resolve(dataUrl);
+            };
+            img.onerror = () => resolve("https://via.placeholder.com/150");
+        };
         reader.onerror = () => resolve("https://via.placeholder.com/150");
     });
 }
@@ -186,7 +218,7 @@ if (closeEditProfile) {
     });
 }
 
-// زر حفظ تعديلات البروفايل باستخدام setDoc مع merge لتجنب أخطاء عدم وجود المستند
+// زر حفظ تعديلات البروفايل مع ضغط الصورة تلقائياً
 if (saveProfileBtn) {
     saveProfileBtn.addEventListener('click', async () => {
         if (!currentUser) return;
@@ -196,7 +228,7 @@ if (saveProfileBtn) {
         try {
             let avatarBase64 = (userData && userData.avatar) ? userData.avatar : "https://via.placeholder.com/150";
             if (inputAvatarFile && inputAvatarFile.files && inputAvatarFile.files[0]) {
-                avatarBase64 = await convertFileToBase64(inputAvatarFile.files[0]);
+                avatarBase64 = await compressImage(inputAvatarFile.files[0]);
             }
 
             const userRef = doc(db, "users", currentUser.uid);
@@ -216,7 +248,7 @@ if (saveProfileBtn) {
             userData.nickname = newNick;
             userData.avatar = avatarBase64;
 
-            alert("✅ تم تحديث الملف الشخصي بنجاح!");
+            alert("✅ تم تحديث الملف الشخصي والصورة بنجاح!");
             if (editProfileModal) editProfileModal.classList.add('hidden');
         } catch (error) {
             console.error("Profile update error:", error);
@@ -248,6 +280,7 @@ if (cancelRoomBtn) {
     });
 }
 
+// زر إنشاء الغرفة مع ضغط صورة الغرفة تلقائياً
 if (confirmCreateRoom) {
     confirmCreateRoom.addEventListener('click', async () => {
         if (!roomNameInput || !roomImageFile) return;
@@ -259,11 +292,11 @@ if (confirmCreateRoom) {
         }
 
         try {
-            const roomImgBase64 = await convertFileToBase64(roomImageFile.files[0]);
+            const roomImgCompressed = await compressImage(roomImageFile.files[0]);
 
             await addDoc(collection(db, "rooms"), {
                 name: roomName,
-                image: roomImgBase64,
+                image: roomImgCompressed,
                 hostUid: currentUser.uid,
                 host: userData ? userData.nickname : currentUser.email,
                 createdAt: serverTimestamp()
