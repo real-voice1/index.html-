@@ -4,7 +4,8 @@ import {
     createUserWithEmailAndPassword, 
     signInWithEmailAndPassword, 
     GoogleAuthProvider,
-    signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
     signOut,
     onAuthStateChanged,
     deleteUser,
@@ -190,6 +191,24 @@ function compressImage(file) {
     });
 }
 
+// معالجة العودة من تسجيل جوجل بالتحويل
+getRedirectResult(auth).then(async (result) => {
+    if (result && result.user) {
+        const user = result.user;
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+            const randomId = Math.floor(100000 + Math.random() * 900000);
+            await setDoc(userRef, {
+                uid: user.uid, email: user.email, userId: randomId,
+                nickname: user.displayName || user.email.split('@')[0],
+                avatar: user.photoURL || "https://via.placeholder.com/150",
+                charmLevel: 1, wealthLevel: 1, createdAt: serverTimestamp()
+            });
+        }
+    }
+}).catch((error) => console.error("Redirect Error:", error));
+
 // التنقل بين التبويبات (غرفة / خاصتي)
 if (navRoomsBtn && navProfileBtn) {
     navRoomsBtn.addEventListener('click', () => {
@@ -247,11 +266,12 @@ if (authForm) {
     });
 }
 
+// استخدام signInWithRedirect بدلاً من Popup لتجنب خطأ الموبايل
 if (googleLoginBtn) {
     googleLoginBtn.addEventListener('click', async () => {
         try {
             const provider = new GoogleAuthProvider();
-            await signInWithPopup(auth, provider);
+            await signInWithRedirect(auth, provider);
         } catch (err) {
             alert("❌ خطأ في تسجيل جوجل: " + err.message);
         }
@@ -313,7 +333,7 @@ if (saveProfileBtn) {
     });
 }
 
-// إعدادات الحساب الإضافية (مركز الحساب، اللغة، الحذف، الخروج)
+// إعدادات الحساب الإضافية
 if (settingsAccountCenter && modalAccountCenter) {
     settingsAccountCenter.addEventListener('click', () => {
         if (currentUser && userData) {
@@ -463,7 +483,7 @@ if (floatingMicToggleBtn) {
     });
 }
 
-// رسم المقاعد الثابتة (8 مايكات)
+// رسم المقاعد الثابتة
 function renderSeats() {
     for (let i = 0; i < 8; i++) {
         const seatBox = document.getElementById(`seat-${i}`);
