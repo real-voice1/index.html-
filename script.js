@@ -79,6 +79,8 @@ const closeEditProfile = document.getElementById('close-edit-profile');
 const saveProfileBtn = document.getElementById('save-profile-btn');
 const inputNickname = document.getElementById('input-nickname');
 const inputAvatarFile = document.getElementById('input-avatar-file'); 
+const avatarPickerTrigger = document.getElementById('avatar-picker-trigger');
+const modalAvatarPreview = document.getElementById('modal-avatar-preview');
 
 let isLoginMode = false;
 let currentUser = null;
@@ -86,11 +88,12 @@ let currentRoomId = null;
 let roomSeats = Array(8).fill(null);
 let userData = null;
 let myCurrentSeatIndex = null;
+let tempSelectedAvatar = null; // تخزين مؤقت للصورة المختارة قبل الحفظ
 
 function compressImage(file) {
     return new Promise((resolve) => {
         if (!file) {
-            resolve("https://via.placeholder.com/150");
+            resolve(null);
             return;
         }
         const reader = new FileReader();
@@ -100,8 +103,8 @@ function compressImage(file) {
             img.src = event.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 300;
-                const MAX_HEIGHT = 300;
+                const MAX_WIDTH = 250;
+                const MAX_HEIGHT = 250;
                 let width = img.width;
                 let height = img.height;
 
@@ -121,12 +124,12 @@ function compressImage(file) {
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
                 resolve(dataUrl);
             };
-            img.onerror = () => resolve("https://via.placeholder.com/150");
+            img.onerror = () => resolve(null);
         };
-        reader.onerror = () => resolve("https://via.placeholder.com/150");
+        reader.onerror = () => resolve(null);
     });
 }
 
@@ -200,11 +203,14 @@ if (navRoomsBtn && navProfileBtn) {
     });
 }
 
+// فتح نافذة التعديل وتعبئة البيانات الحالية
 if (editProfileBtn) {
     editProfileBtn.addEventListener('click', () => {
-        if (userData && inputNickname) {
-            inputNickname.value = userData.nickname || '';
+        if (userData) {
+            if (inputNickname) inputNickname.value = userData.nickname || '';
+            if (modalAvatarPreview) modalAvatarPreview.src = userData.avatar || "https://via.placeholder.com/150";
         }
+        tempSelectedAvatar = null;
         if (editProfileModal) editProfileModal.classList.remove('hidden');
     });
 }
@@ -215,6 +221,25 @@ if (closeEditProfile) {
     });
 }
 
+// الضغط على الإطار الدائري يفتح معرض الصور مباشرة في الموبايل
+if (avatarPickerTrigger && inputAvatarFile) {
+    avatarPickerTrigger.addEventListener('click', () => {
+        inputAvatarFile.click();
+    });
+
+    inputAvatarFile.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const compressed = await compressImage(file);
+            if (compressed) {
+                tempSelectedAvatar = compressed;
+                if (modalAvatarPreview) modalAvatarPreview.src = compressed;
+            }
+        }
+    });
+}
+
+// زر حفظ تعديلات البروفايل (الاسم المنفصل عن الصورة وتحديثها بضغطة واحدة)
 if (saveProfileBtn) {
     saveProfileBtn.addEventListener('click', async () => {
         if (!currentUser) return;
@@ -222,11 +247,7 @@ if (saveProfileBtn) {
         if (!newNick) return alert("⚠️ برجاء كتابة الاسم المستعار!");
 
         try {
-            let avatarBase64 = (userData && userData.avatar) ? userData.avatar : "https://via.placeholder.com/150";
-            if (inputAvatarFile && inputAvatarFile.files && inputAvatarFile.files[0]) {
-                avatarBase64 = await compressImage(inputAvatarFile.files[0]);
-            }
-
+            let avatarBase64 = tempSelectedAvatar ? tempSelectedAvatar : ((userData && userData.avatar) ? userData.avatar : "https://via.placeholder.com/150");
             let safeUserId = (userData && userData.userId) ? userData.userId : Math.floor(100000 + Math.random() * 900000);
 
             const userRef = doc(db, "users", currentUser.uid);
