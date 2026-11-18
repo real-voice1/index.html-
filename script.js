@@ -96,6 +96,16 @@ const profileDisplayName = document.getElementById('profile-display-name');
 const profileDisplayId = document.getElementById('profile-display-id');
 const profileImgPreview = document.getElementById('profile-img-preview');
 const userBadgeTag = document.getElementById('user-badge-tag');
+const mainProfileImgContainer = document.getElementById('main-profile-img-container');
+
+// مستويات البروفايل الرئيسي
+const mainCharmText = document.getElementById('main-charm-text');
+const mainCharmBox = document.getElementById('main-charm-box');
+const mainCharmIcon = document.getElementById('main-charm-icon');
+const mainWealthText = document.getElementById('main-wealth-text');
+const mainWealthBox = document.getElementById('main-wealth-box');
+const mainWealthIcon = document.getElementById('main-wealth-icon');
+
 const editProfileBtn = document.getElementById('edit-profile-btn');
 const editProfileModal = document.getElementById('edit-profile-modal');
 const closeEditProfile = document.getElementById('close-edit-profile');
@@ -115,11 +125,9 @@ const modalProfileId = document.getElementById('modal-profile-id');
 const modalProfileBadge = document.getElementById('modal-profile-badge');
 const modalUserRoleTag = document.getElementById('modal-user-role-tag');
 
-// مستويات الجاذبية والثروة
 const charmLevelText = document.getElementById('charm-level-text');
 const charmLevelBox = document.getElementById('charm-level-box');
 const charmLevelIcon = document.getElementById('charm-level-icon');
-
 const wealthLevelText = document.getElementById('wealth-level-text');
 const wealthLevelBox = document.getElementById('wealth-level-box');
 const wealthLevelIcon = document.getElementById('wealth-level-icon');
@@ -150,7 +158,7 @@ function getUserBadgeMonthly() {
     return badges[badgeIndex];
 }
 
-// دالة لتوليد شكل المستوى والأيقونة الاحترافية (من 1 إلى 100، وكل 10 مستويات تتغير الأيقونة)
+// دالة لتوليد الأيقونة والتنسيق المتطور للمستويات من 1 إلى 100 (تتغير الأيقونة كل 10 لفلات)
 function getLevelStylingAndIcon(level, type = 'charm') {
     let iconClass = "fa-solid fa-heart text-pink-400";
     let boxStyle = "background: rgba(88, 28, 135, 0.4); border-color: rgba(168, 85, 247, 0.4);";
@@ -260,8 +268,8 @@ if (authForm) {
                     userId: randomId,
                     nickname: email.split('@')[0],
                     avatar: "https://via.placeholder.com/150",
-                    charmLevel: 2, // مستوى الجاذبية الافتراضي
-                    wealthLevel: 10, // مستوى الثروة الافتراضي
+                    charmLevel: 5, // مستوى الجاذبية الابتدائي
+                    wealthLevel: 15, // مستوى الثروة الابتدائي
                     createdAt: serverTimestamp()
                 });
                 alert("🚀 تم إنشاء الحساب وتوليد الـ ID بنجاح!");
@@ -286,6 +294,22 @@ if (navRoomsBtn && navProfileBtn) {
         if (tabRooms) tabRooms.classList.add('hidden');
         navProfileBtn.className = "flex flex-col items-center text-purple-400 cursor-pointer";
         navRoomsBtn.className = "flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer";
+    });
+}
+
+// تفعيل الضغط على صورة البروفايل في تبويب "خاصتي" لفتح البروفايل السفلي للمستخدم نفسه
+if (mainProfileImgContainer) {
+    mainProfileImgContainer.addEventListener('click', () => {
+        if (userData && currentUser) {
+            openUserProfileModal({
+                uid: currentUser.uid,
+                nickname: userData.nickname || "مستخدم",
+                avatar: userData.avatar || "https://via.placeholder.com/150",
+                userId: userData.userId || "110789",
+                charmLevel: userData.charmLevel || 5,
+                wealthLevel: userData.wealthLevel || 15
+            }, null);
+        }
     });
 }
 
@@ -693,8 +717,8 @@ if (requestSeatBtn) {
             nickname: userData ? userData.nickname : "مستخدم",
             avatar: userData ? userData.avatar : "https://via.placeholder.com/150",
             userId: userData ? userData.userId : "110789",
-            charmLevel: userData?.charmLevel || 2,
-            wealthLevel: userData?.wealthLevel || 10
+            charmLevel: userData?.charmLevel || 5,
+            wealthLevel: userData?.wealthLevel || 15
         };
         updateSeatUI(emptyIndex, roomSeats[emptyIndex], true);
 
@@ -723,7 +747,6 @@ function updateSeatUI(index, userObj, isOccupied) {
         nameSpan.textContent = userObj.nickname;
         nameSpan.className = "text-[10px] text-green-300 mt-1.5 truncate w-16 font-bold";
 
-        // الضغط على صورتك أو صورة أي شخص في المايك يفتح بروفايل الأسفل Bottom Sheet
         newSeatDiv.addEventListener('click', () => {
             openUserProfileModal(userObj, index);
         });
@@ -735,7 +758,7 @@ function updateSeatUI(index, userObj, isOccupied) {
     }
 }
 
-// دالة فتح البروفايل السفلي (Bottom Sheet) بالشكل المطابق للصورة
+// دالة فتح البروفايل السفلي (Bottom Sheet) مع مستويات الجاذبية والثروة
 function openUserProfileModal(userObj, seatIdx) {
     selectedSeatUserForProfile = { ...userObj, seatIndex: seatIdx };
     if (modalProfileAvatar) modalProfileAvatar.src = userObj.avatar;
@@ -743,7 +766,6 @@ function openUserProfileModal(userObj, seatIdx) {
     if (modalProfileId) modalProfileId.textContent = `ID: ${userObj.userId}`;
     if (modalProfileBadge) modalProfileBadge.textContent = getUserBadgeMonthly();
 
-    // تحديد اللقب (مالك، مشرف، أو عضو)
     if (currentRoomDocData) {
         if (userObj.uid === currentRoomDocData.hostUid) {
             if (modalUserRoleTag) modalUserRoleTag.textContent = "👑 مالك الغرفة";
@@ -752,11 +774,12 @@ function openUserProfileModal(userObj, seatIdx) {
         } else {
             if (modalUserRoleTag) modalUserRoleTag.textContent = "عضو نشط";
         }
+    } else {
+        if (modalUserRoleTag) modalUserRoleTag.textContent = "عضو نشط";
     }
 
-    // تعيين مستويات الجاذبية والثروة والأيقونات المتطورة
-    const cLevel = userObj.charmLevel || 2;
-    const wLevel = userObj.wealthLevel || 10;
+    const cLevel = userObj.charmLevel || 5;
+    const wLevel = userObj.wealthLevel || 15;
 
     if (charmLevelText) charmLevelText.textContent = `Lv. ${cLevel}`;
     const charmStyle = getLevelStylingAndIcon(cLevel, 'charm');
@@ -768,8 +791,7 @@ function openUserProfileModal(userObj, seatIdx) {
     if (wealthLevelBox) wealthLevelBox.style = wealthStyle.boxStyle;
     if (wealthLevelIcon) wealthLevelIcon.className = wealthStyle.iconClass;
 
-    // صلاحيات التحكم للإدارة
-    if (currentUser && currentRoomDocData) {
+    if (currentUser && currentRoomDocData && seatIdx !== null) {
         const isOwner = currentRoomDocData.hostUid === currentUser.uid;
         const isAdmin = currentRoomDocData.admins && currentRoomDocData.admins.includes(currentUser.uid);
         
@@ -784,6 +806,8 @@ function openUserProfileModal(userObj, seatIdx) {
         } else {
             if (moderatorControls) moderatorControls.classList.add('hidden');
         }
+    } else {
+        if (moderatorControls) moderatorControls.classList.add('hidden');
     }
 
     if (roomUserProfileModal) {
@@ -928,6 +952,20 @@ onAuthStateChanged(auth, async (user) => {
                 if (profileDisplayName) profileDisplayName.textContent = userData.nickname || "مستخدم";
                 if (profileImgPreview) profileImgPreview.src = userData.avatar || "https://via.placeholder.com/150";
                 if (userBadgeTag) userBadgeTag.textContent = getUserBadgeMonthly();
+
+                // تحديث مستويات الجاذبية والثروة في الواجهة الرئيسية للبروفايل
+                const cLvl = userData.charmLevel || 5;
+                const wLvl = userData.wealthLevel || 15;
+                
+                if (mainCharmText) mainCharmText.textContent = `Lv. ${cLvl}`;
+                const cStyle = getLevelStylingAndIcon(cLvl, 'charm');
+                if (mainCharmBox) mainCharmBox.style = cStyle.boxStyle;
+                if (mainCharmIcon) mainCharmIcon.className = cStyle.iconClass;
+
+                if (mainWealthText) mainWealthText.textContent = `Lv. ${wLvl}`;
+                const wStyle = getLevelStylingAndIcon(wLvl, 'wealth');
+                if (mainWealthBox) mainWealthBox.style = wStyle.boxStyle;
+                if (mainWealthIcon) mainWealthIcon.className = wStyle.iconClass;
             }
         } catch (e) {
             console.log("Error loading user profile", e);
