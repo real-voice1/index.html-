@@ -217,31 +217,29 @@ if (leaveRoomBtn) {
 
 // برمجة زر "الجلوس على كرسي" لحجز أول كرسي فارغ
 if (requestSeatBtn) {
-    requestSeatBtn.addEventListener('click', () => {
-        if (!currentUser) {
-            alert("⚠️ يجب تسجيل الدخول أولاً للجلوس على كرسي!");
+    requestSeatBtn.addEventListener('click', async () => {
+        if (!currentUser || !currentRoomId) {
+            alert("⚠️ يجب تسجيل الدخول والدخول إلى غرفة أولاً!");
             return;
         }
 
-        // البحث عن أول كرسي فاضي (يبدأ من الكرسي 1 إلى 7، أو الكرسي 0 لو متاح)
-        let emptySeatIndex = roomSeats.findIndex((seat, index) => index > 0 && seat === null);
-        
-        if (emptySeatIndex === -1 && roomSeats[0] === null) {
-            emptySeatIndex = 0; // حجز كرسي المضيف لو فاضي
-        }
+        try {
+            let emptyIndex = roomSeats.findIndex((seat, idx) => idx > 0 && seat === null);
+            if (emptyIndex === -1 && roomSeats[0] === null) emptyIndex = 0;
 
-        if (emptySeatIndex === -1) {
-            alert("❌ عذراً، جميع الكراسي محجوزة حالياً!");
-            return;
-        }
+            if (emptyIndex === -1) {
+                alert("❌ عذراً، جميع الكراسي محجوزة!");
+                return;
+            }
 
-        // استخراج اسم المستخدم المختصر قبل الـ @
-        const shortName = currentUser.email.split('@')[0];
-        
-        // تحديث الكرسي محلياً وعرضه واجهياً
-        roomSeats[emptySeatIndex] = shortName;
-        updateSeatUI(emptySeatIndex, shortName, true);
-        alert(`🪑 تم جلوسك بنجاح على الكرسي رقم ${emptySeatIndex + 1}!`);
+            const shortName = currentUser.email.split('@')[0];
+            roomSeats[emptyIndex] = shortName;
+            updateSeatUI(emptyIndex, shortName, true);
+            
+            alert(`🪑 تم جلوسك بنجاح على الكرسي رقم ${emptyIndex + 1}!`);
+        } catch (error) {
+            console.error("خطأ أثناء الجلوس على الكرسي:", error);
+        }
     });
 }
 
