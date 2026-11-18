@@ -61,20 +61,29 @@ const roomNameInput = document.getElementById('room-name-input');
 const roomImageFile = document.getElementById('room-image-file'); 
 const roomsGrid = document.getElementById('rooms-grid'); 
 
-const leaveRoomBtn = document.getElementById('leave-room-btn');
-const minimizeRoomBtn = document.getElementById('minimize-room-btn');
+// عناصر قائمة الـ 3 نقط الجديدة
+const roomOptionsBtn = document.getElementById('room-options-btn');
+const roomOptionsDropdown = document.getElementById('room-options-dropdown');
+const optMinimize = document.getElementById('opt-minimize');
+const optSettings = document.getElementById('opt-settings');
+const optLeave = document.getElementById('opt-leave');
+
 const minimizedRoomWidget = document.getElementById('minimized-room-widget');
 const miniRoomImg = document.getElementById('mini-room-img');
 const miniRoomName = document.getElementById('mini-room-name');
 
 const currentRoomTitle = document.getElementById('current-room-title');
+const roomHeaderAvatar = document.getElementById('room-header-avatar');
 const roomOwnerTag = document.getElementById('room-owner-tag');
-const editRoomBtn = document.getElementById('edit-room-btn');
+const roomBannerText = document.getElementById('room-banner-text');
+
 const editRoomModal = document.getElementById('edit-room-modal');
 const cancelEditRoom = document.getElementById('cancel-edit-room');
 const confirmEditRoom = document.getElementById('confirm-edit-room');
 const editRoomNameInput = document.getElementById('edit-room-name-input');
+const editRoomBannerInput = document.getElementById('edit-room-banner-input');
 const editRoomImageFile = document.getElementById('edit-room-image-file');
+const editRoomImgPreview = document.getElementById('edit-room-img-preview');
 
 const toggleMicBtn = document.getElementById('toggle-mic-btn');
 const requestSeatBtn = document.getElementById('request-seat-btn');
@@ -97,7 +106,6 @@ const inputAvatarFile = document.getElementById('input-avatar-file');
 const avatarPickerTrigger = document.getElementById('avatar-picker-trigger');
 const modalAvatarPreview = document.getElementById('modal-avatar-preview');
 
-// عناصر بروفايل العضو داخل الغرفة
 const roomUserProfileModal = document.getElementById('room-user-profile-modal');
 const closeUserProfile = document.getElementById('close-user-profile');
 const modalProfileAvatar = document.getElementById('modal-profile-avatar');
@@ -119,9 +127,9 @@ let roomSeats = Array(8).fill(null);
 let userData = null;
 let myCurrentSeatIndex = null;
 let tempSelectedAvatar = null;
+let tempRoomEditAvatar = null;
 let selectedSeatUserForProfile = null;
 
-// نظام شارات تتغير كل 30 يوم بناءً على توقيت حساب الأيام منذ التسجيل
 function getUserBadgeMonthly() {
     const badges = ["🌟 نجم الشهر", "💎 ملك التفاعل", "👑 أسطورة السهرة", "🔥 ملك الألعاب"];
     const now = new Date().getTime();
@@ -288,7 +296,6 @@ if (saveProfileBtn) {
             let safeUserId = (userData && userData.userId) ? userData.userId : Math.floor(100000 + Math.random() * 900000);
 
             const userRef = doc(db, "users", currentUser.uid);
-            
             await setDoc(userRef, {
                 uid: currentUser.uid,
                 email: currentUser.email,
@@ -305,7 +312,7 @@ if (saveProfileBtn) {
             userData.avatar = avatarBase64;
             userData.userId = safeUserId;
 
-            alert("✅ تم تحديث الملف الشخصي والصورة بنجاح!");
+            alert("✅ تم تحديث الملف الشخصي بنجاح!");
             if (editProfileModal) editProfileModal.classList.add('hidden');
         } catch (error) {
             console.error("Profile update error:", error);
@@ -314,17 +321,22 @@ if (saveProfileBtn) {
     });
 }
 
+// فحص زر إنشاء الغرفة وإخفائه إذا كان المستخدم قد أنشأ غرفة مسبقاً
+async function checkUserRoomStatus(uid) {
+    if (!createRoomBtn) return;
+    const q = query(collection(db, "rooms"), where("hostUid", "==", uid));
+    onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+            createRoomBtn.classList.add('hidden'); // إخفاء زر الإنشاء نهائياً إذا عنده غرفة
+        } else {
+            createRoomBtn.classList.remove('hidden');
+        }
+    });
+}
+
 if (createRoomBtn) {
     createRoomBtn.addEventListener('click', async () => {
         if (!currentUser) return;
-        const q = query(collection(db, "rooms"), where("hostUid", "==", currentUser.uid));
-        const querySnapshot = await new Promise((resolve) => {
-            onSnapshot(q, (snap) => resolve(snap), { once: true });
-        });
-
-        if (!querySnapshot.empty) {
-            return alert("⚠️ عذراً، مسموح لك بإنشاء غرفة واحدة فقط وقد قمت بإنشائها مسبقاً!");
-        }
         if (createRoomModal) createRoomModal.classList.remove('hidden');
     });
 }
@@ -350,12 +362,13 @@ if (confirmCreateRoom) {
         try {
             const roomImgCompressed = await compressImage(roomImageFile.files[0]);
 
-            await addDoc(collection(db, "rooms"), {
+            const docRef = await addDoc(collection(db, "rooms"), {
                 name: roomName,
+                banner: "مرحباً بالجميع في الغرفة! استمتعوا بالدردشة الصوتية ✨",
                 image: roomImgCompressed,
                 hostUid: currentUser.uid,
                 host: userData ? userData.nickname : "مضيف الغرفة",
-                admins: [currentUser.uid], // المالك مشرف أساسي
+                admins: [currentUser.uid],
                 bannedUsers: [],
                 createdAt: serverTimestamp()
             });
@@ -363,7 +376,10 @@ if (confirmCreateRoom) {
             roomNameInput.value = '';
             roomImageFile.value = '';
             if (createRoomModal) createRoomModal.classList.add('hidden');
-            alert("🎉 تم إنشاء غرفتك بنجاح!");
+            
+            // دخول الغرفة فوراً بعد إنشائها
+            const newRoomSnap = await getDoc(docRef);
+            enterRoom(docRef.id, { id: docRef.id, ...newRoomSnap.data() });
         } catch (error) {
             console.error("Room creation error:", error);
             alert("❌ خطأ أثناء إنشاء الغرفة: " + error.message);
@@ -371,13 +387,59 @@ if (confirmCreateRoom) {
     });
 }
 
-// تعديل صورة واسم الغرفة (للمالك حصراً)
-if (editRoomBtn) {
-    editRoomBtn.addEventListener('click', () => {
-        if (currentRoomDocData && editRoomNameInput) {
-            editRoomNameInput.value = currentRoomDocData.name || '';
+// تشغيل قائمة الـ 3 نقط الاحترافية
+if (roomOptionsBtn && roomOptionsDropdown) {
+    roomOptionsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        roomOptionsDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', () => {
+        roomOptionsDropdown.classList.add('hidden');
+    });
+}
+
+// خيارات قائمة الـ 3 نقط
+if (optMinimize) {
+    optMinimize.addEventListener('click', () => {
+        if (roomViewScreen) roomViewScreen.classList.add('hidden');
+        if (mainAppContainer) mainAppContainer.classList.remove('hidden');
+        if (bottomNav) bottomNav.classList.remove('hidden');
+
+        if (minimizedRoomWidget) {
+            if (miniRoomImg) miniRoomImg.src = currentRoomImage;
+            if (miniRoomName) miniRoomName.textContent = currentRoomName;
+            minimizedRoomWidget.classList.remove('hidden');
         }
+    });
+}
+
+if (optLeave) {
+    optLeave.addEventListener('click', leaveRoom);
+}
+
+if (optSettings) {
+    optSettings.addEventListener('click', () => {
+        if (currentRoomDocData && editRoomNameInput && editRoomBannerInput) {
+            editRoomNameInput.value = currentRoomDocData.name || '';
+            editRoomBannerInput.value = currentRoomDocData.banner || '';
+            if (editRoomImgPreview) editRoomImgPreview.src = currentRoomDocData.image || 'https://via.placeholder.com/150';
+        }
+        tempRoomEditAvatar = null;
         if (editRoomModal) editRoomModal.classList.remove('hidden');
+    });
+}
+
+if (editRoomImageFile && editRoomImgPreview) {
+    editRoomImageFile.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const compressed = await compressImage(file);
+            if (compressed) {
+                tempRoomEditAvatar = compressed;
+                editRoomImgPreview.src = compressed;
+            }
+        }
     });
 }
 
@@ -391,26 +453,27 @@ if (confirmEditRoom) {
     confirmEditRoom.addEventListener('click', async () => {
         if (!currentRoomId || !currentRoomDocData) return;
         const newName = editRoomNameInput ? editRoomNameInput.value.trim() : "";
+        const newBanner = editRoomBannerInput ? editRoomBannerInput.value.trim() : "";
         if (!newName) return alert("⚠️ برجاء كتابة اسم الغرفة!");
 
         try {
-            let newImg = currentRoomDocData.image;
-            if (editRoomImageFile && editRoomImageFile.files && editRoomImageFile.files[0]) {
-                const compressed = await compressImage(editRoomImageFile.files[0]);
-                if (compressed) newImg = compressed;
-            }
+            let newImg = tempRoomEditAvatar ? tempRoomEditAvatar : currentRoomDocData.image;
 
             const roomRef = doc(db, "rooms", currentRoomId);
             await updateDoc(roomRef, {
                 name: newName,
+                banner: newBanner,
                 image: newImg
             });
 
             currentRoomDocData.name = newName;
+            currentRoomDocData.banner = newBanner;
             currentRoomDocData.image = newImg;
             if (currentRoomTitle) currentRoomTitle.textContent = newName;
+            if (roomHeaderAvatar) roomHeaderAvatar.src = newImg;
+            if (roomBannerText) roomBannerText.textContent = newBanner || "لا يوجد شعار حالياً";
 
-            alert("✅ تم تحديث بيانات الغرفة بنجاح!");
+            alert("✅ تم تحديث إعدادات الغرفة بنجاح!");
             if (editRoomModal) editRoomModal.classList.add('hidden');
         } catch (error) {
             alert("❌ خطأ أثناء التحديث: " + error.message);
@@ -431,9 +494,8 @@ function loadRooms() {
             const roomData = docSnap.data();
             const roomId = docSnap.id;
 
-            // التحقق إذا كان المستخدم مطروداً من الغرفة (Ban لمدة 24 ساعة)
             if (roomData.bannedUsers && currentUser && roomData.bannedUsers.some(b => b.uid === currentUser.uid)) {
-                return; // تخطي عرض الغرفة إذا كان مطروداً منها
+                return;
             }
 
             const roomCard = document.createElement('div');
@@ -445,14 +507,13 @@ function loadRooms() {
                 <p class="text-[10px] text-slate-400 truncate w-full mt-0.5">المضيف: ${escapeHtml(roomData.host || 'مالك الغرفة')}</p>
             `;
             
-            roomCard.addEventListener('click', () => enterRoom(roomId, roomData));
+            roomCard.addEventListener('click', () => enterRoom(roomId, { id: roomId, ...roomData }));
             roomsGrid.appendChild(roomCard);
         });
     });
 }
 
 async function enterRoom(roomId, roomData) {
-    // التحقق من الحظر
     if (roomData.bannedUsers && currentUser) {
         const banRecord = roomData.bannedUsers.find(b => b.uid === currentUser.uid);
         if (banRecord) {
@@ -475,14 +536,16 @@ async function enterRoom(roomId, roomData) {
     if (bottomNav) bottomNav.classList.add('hidden');
     if (roomViewScreen) roomViewScreen.classList.remove('hidden');
     if (currentRoomTitle) currentRoomTitle.textContent = roomData.name;
+    if (roomHeaderAvatar) roomHeaderAvatar.src = currentRoomImage;
     if (roomOwnerTag) roomOwnerTag.textContent = `👑 المالك: ${roomData.host || 'غير معروف'}`;
+    if (roomBannerText) roomBannerText.textContent = roomData.banner || "مرحباً بالجميع في الغرفة!";
 
-    // إظهار زر تعديل الغرفة فقط إذا كان المستخدم هو المالك الأساسي
-    if (editRoomBtn) {
+    // إظهار خيار "الإعدادات" في قائمة الـ 3 نقط حصراً لمالك الغرفة
+    if (optSettings) {
         if (currentUser && roomData.hostUid === currentUser.uid) {
-            editRoomBtn.classList.remove('hidden');
+            optSettings.classList.remove('hidden');
         } else {
-            editRoomBtn.classList.add('hidden');
+            optSettings.classList.add('hidden');
         }
     }
 
@@ -493,7 +556,6 @@ async function enterRoom(roomId, roomData) {
             agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
             await agoraClient.join(AGORA_APP_ID, roomId, null, null);
             
-            // تفعيل حركة نيون المتحدث عند بدء الصوت
             agoraClient.on("user-published", async (user, mediaType) => {
                 await agoraClient.subscribe(user, mediaType);
                 if (mediaType === "audio") {
@@ -512,7 +574,6 @@ async function enterRoom(roomId, roomData) {
     }
 }
 
-// تفعيل مؤشر التحدث على الكراسي
 function triggerSpeakingAnimationByUid(agoraUid, isSpeaking) {
     roomSeats.forEach((seatUser, idx) => {
         if (seatUser && seatUser.uid === agoraUid) {
@@ -524,20 +585,6 @@ function triggerSpeakingAnimationByUid(agoraUid, isSpeaking) {
                     seatDiv.classList.remove('speaking-animation');
                 }
             }
-        }
-    });
-}
-
-if (minimizeRoomBtn) {
-    minimizeRoomBtn.addEventListener('click', () => {
-        if (roomViewScreen) roomViewScreen.classList.add('hidden');
-        if (mainAppContainer) mainAppContainer.classList.remove('hidden');
-        if (bottomNav) bottomNav.classList.remove('hidden');
-
-        if (minimizedRoomWidget) {
-            if (miniRoomImg) miniRoomImg.src = currentRoomImage;
-            if (miniRoomName) miniRoomName.textContent = currentRoomName;
-            minimizedRoomWidget.classList.remove('hidden');
         }
     });
 }
@@ -569,7 +616,7 @@ if (minimizedRoomWidget) {
         }
     });
 
-    minimizedRoomWidget.addEventListener('pointerup', (e) => {
+    minimizedRoomWidget.addEventListener('pointerup', () => {
         if (!isDragging) {
             if (minimizedRoomWidget) minimizedRoomWidget.classList.add('hidden');
             if (mainAppContainer) mainAppContainer.classList.add('hidden');
@@ -588,13 +635,12 @@ async function leaveRoom() {
     currentRoomImage = "";
     myCurrentSeatIndex = null;
 
+    if (roomOptionsDropdown) roomOptionsDropdown.classList.add('hidden');
     if (minimizedRoomWidget) minimizedRoomWidget.classList.add('hidden');
     if (roomViewScreen) roomViewScreen.classList.add('hidden');
     if (mainAppContainer) mainAppContainer.classList.remove('hidden');
     if (bottomNav) bottomNav.classList.remove('hidden');
 }
-
-if (leaveRoomBtn) leaveRoomBtn.addEventListener('click', leaveRoom);
 
 if (requestSeatBtn) {
     requestSeatBtn.addEventListener('click', async () => {
@@ -633,7 +679,6 @@ function updateSeatUI(index, userObj, isOccupied) {
     const nameSpan = document.getElementById(`seat-name-${index}`);
     if (!seatDiv || !nameSpan) return;
 
-    // إزالة أحداث الضغط القديمة لمنع تداخل الفتح
     const newSeatDiv = seatDiv.cloneNode(true);
     seatDiv.parentNode.replaceChild(newSeatDiv, seatDiv);
 
@@ -643,7 +688,6 @@ function updateSeatUI(index, userObj, isOccupied) {
         nameSpan.textContent = userObj.nickname;
         nameSpan.className = "text-[10px] text-green-300 mt-1.5 truncate w-16 font-bold";
 
-        // الضغط على الكرسي يفتح بروفايل المستخدم
         newSeatDiv.addEventListener('click', () => {
             openUserProfileModal(userObj, index);
         });
@@ -655,7 +699,6 @@ function updateSeatUI(index, userObj, isOccupied) {
     }
 }
 
-// فتح نافذة البروفايل عند الضغط على أي شخص في المايك
 function openUserProfileModal(userObj, seatIdx) {
     selectedSeatUserForProfile = { ...userObj, seatIndex: seatIdx };
     if (modalProfileAvatar) modalProfileAvatar.src = userObj.avatar;
@@ -663,20 +706,16 @@ function openUserProfileModal(userObj, seatIdx) {
     if (modalProfileId) modalProfileId.textContent = `ID: ${userObj.userId}`;
     if (modalProfileBadge) modalProfileBadge.textContent = getUserBadgeMonthly();
 
-    // التحقق من صلاحيات المشرف أو المالك للتحكم في الأعضاء الآخرين
     if (currentUser && currentRoomDocData) {
         const isOwner = currentRoomDocData.hostUid === currentUser.uid;
         const isAdmin = currentRoomDocData.admins && currentRoomDocData.admins.includes(currentUser.uid);
         
-        // المالك أو المشرف يمكنهم التحكم، بشرط ألا يتحكموا في أنفسهم أو المالك الأساسي
         if ((isOwner || isAdmin) && userObj.uid !== currentRoomDocData.hostUid && userObj.uid !== currentUser.uid) {
             if (moderatorControls) moderatorControls.classList.remove('hidden');
             
-            // تعيين نص زر الإشراف
             const isTargetAdmin = currentRoomDocData.admins && currentRoomDocData.admins.includes(userObj.uid);
             if (modToggleAdmin) {
                 modToggleAdmin.textContent = isTargetAdmin ? "⭐ إزالة من المشرفين" : "👑 تعيين مشرف";
-                // المالك فقط من يحق له تعيين/إزالة المشرفين
                 if (!isOwner) modToggleAdmin.classList.add('hidden');
                 else modToggleAdmin.classList.remove('hidden');
             }
@@ -694,7 +733,6 @@ if (closeUserProfile) {
     });
 }
 
-// أزرار التحكم الخاصة بالمشرف والمالك (إنزال، طرد 24 ساعة، مشرف)
 if (modKickSeat) {
     modKickSeat.addEventListener('click', () => {
         if (!selectedSeatUserForProfile) return;
@@ -828,6 +866,8 @@ onAuthStateChanged(auth, async (user) => {
         } catch (e) {
             console.log("Error loading user profile", e);
         }
+
+        checkUserRoomStatus(user.uid);
         loadRooms();
     } else {
         if (welcomeScreen) welcomeScreen.classList.remove('hidden');
