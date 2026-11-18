@@ -321,7 +321,7 @@ if (confirmCreateRoom) {
                 name: roomName,
                 image: roomImgCompressed,
                 hostUid: currentUser.uid,
-                host: userData ? userData.nickname : "مضيف الغرفة", // استبدال الـ Gmail باسم المستخدم المنفصل
+                host: userData ? userData.nickname : "مضيف الغرفة",
                 createdAt: serverTimestamp()
             });
 
@@ -341,7 +341,7 @@ function loadRooms() {
     onSnapshot(collection(db, "rooms"), (snapshot) => {
         roomsGrid.innerHTML = "";
         if (snapshot.empty) {
-            roomsGrid.innerHTML = `<p class="col-span-2 text-center text-slate-500 text-xs py-4">لا توجد غرف متاحة حالياً. أنشئ غرفتك الآن! ✨</p>`;
+            roomsGrid.innerHTML = `<p class="col-span-2 text-center text-slate-500 text-xs py-8">لا توجد غرف متاحة حالياً. أنشئ غرفتك الآن! ✨</p>`;
             return;
         }
 
@@ -349,13 +349,12 @@ function loadRooms() {
             const roomData = docSnap.data();
             const roomId = docSnap.id;
             const roomCard = document.createElement('div');
-            roomCard.className = "glass p-3 rounded-2xl flex flex-col items-center text-center border border-purple-500/30 cursor-pointer hover:border-purple-400 transition transform hover:scale-105 shadow-lg";
+            roomCard.className = "bg-slate-900/80 p-3 rounded-2xl flex flex-col items-center text-center border border-purple-500/25 cursor-pointer hover:border-purple-400 transition shadow-md";
             
-            // عرض شعار وصورة الغرفة مع اسم المضيف بدون أي إشارة لـ Gmail
             roomCard.innerHTML = `
-                <img src="${escapeHtml(roomData.image || 'https://via.placeholder.com/150')}" class="w-full h-28 rounded-xl object-cover border border-purple-500/40 mb-2 shadow-md">
+                <img src="${escapeHtml(roomData.image || 'https://via.placeholder.com/150')}" class="w-full h-32 rounded-xl object-cover border border-purple-500/30 mb-2 shadow-sm">
                 <h3 class="text-xs font-bold text-purple-200 truncate w-full">${escapeHtml(roomData.name)} 🎤</h3>
-                <p class="text-[9px] text-slate-400 truncate w-full mt-0.5">المضيف: ${escapeHtml(roomData.host || 'مالك الغرفة')}</p>
+                <p class="text-[10px] text-slate-400 truncate w-full mt-0.5">المضيف: ${escapeHtml(roomData.host || 'مالك الغرفة')}</p>
             `;
             
             roomCard.addEventListener('click', () => enterRoom(roomId, roomData.name, roomData.image));
@@ -391,7 +390,6 @@ async function enterRoom(roomId, roomName, roomImg) {
     }
 }
 
-// تصغير الغرفة لتصبح مربعاً عائماً مع الاستمرار في الصوت
 if (minimizeRoomBtn) {
     minimizeRoomBtn.addEventListener('click', () => {
         if (roomViewScreen) roomViewScreen.classList.add('hidden');
@@ -406,13 +404,40 @@ if (minimizeRoomBtn) {
     });
 }
 
-// الضغط على المربع المصغر يعيد فتح شاشة الغرفة بالكامل
+let isDragging = false;
+let startX, startY, initialX, initialY;
+
 if (minimizedRoomWidget) {
-    minimizedRoomWidget.addEventListener('click', () => {
-        if (minimizedRoomWidget) minimizedRoomWidget.classList.add('hidden');
-        if (mainAppContainer) mainAppContainer.classList.add('hidden');
-        if (bottomNav) bottomNav.classList.add('hidden');
-        if (roomViewScreen) roomViewScreen.classList.remove('hidden');
+    minimizedRoomWidget.addEventListener('pointerdown', (e) => {
+        isDragging = false;
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = minimizedRoomWidget.getBoundingClientRect();
+        initialX = rect.left;
+        initialY = rect.top;
+        minimizedRoomWidget.setPointerCapture(e.pointerId);
+    });
+
+    minimizedRoomWidget.addEventListener('pointermove', (e) => {
+        if (!e.buttons) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+            isDragging = true;
+            minimizedRoomWidget.style.left = `${initialX + dx}px`;
+            minimizedRoomWidget.style.top = `${initialY + dy}px`;
+            minimizedRoomWidget.style.right = 'auto';
+            minimizedRoomWidget.style.bottom = 'auto';
+        }
+    });
+
+    minimizedRoomWidget.addEventListener('pointerup', (e) => {
+        if (!isDragging) {
+            if (minimizedRoomWidget) minimizedRoomWidget.classList.add('hidden');
+            if (mainAppContainer) mainAppContainer.classList.add('hidden');
+            if (bottomNav) bottomNav.classList.add('hidden');
+            if (roomViewScreen) roomViewScreen.classList.remove('hidden');
+        }
     });
 }
 
@@ -468,10 +493,10 @@ function updateSeatUI(index, name, isOccupied) {
     const userAvatarImg = (userData && userData.avatar) ? userData.avatar : "https://via.placeholder.com/150";
 
     if (isOccupied) {
-        seatDiv.className = "w-12 h-12 rounded-full glass border-2 border-green-500 flex items-center justify-center relative overflow-hidden";
+        seatDiv.className = "w-14 h-14 rounded-full bg-slate-900 border-2 border-green-500 flex items-center justify-center relative overflow-hidden shadow-md";
         seatDiv.innerHTML = `<img src="${userAvatarImg}" class="w-full h-full object-cover">`;
         nameSpan.textContent = name;
-        nameSpan.className = "text-[9px] text-green-300 mt-1 truncate w-14 font-bold";
+        nameSpan.className = "text-[10px] text-green-300 mt-1.5 truncate w-16 font-bold";
     }
 }
 
@@ -482,10 +507,10 @@ function resetSeatsUI() {
         const seatDiv = document.getElementById(`seat-${i}`);
         const nameSpan = document.getElementById(`seat-name-${i}`);
         if(seatDiv && nameSpan) {
-            seatDiv.className = "w-12 h-12 rounded-full glass border border-purple-500/30 flex items-center justify-center relative";
-            seatDiv.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-xs"></i>`;
+            seatDiv.className = "w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative";
+            seatDiv.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-sm"></i>`;
             nameSpan.textContent = i === 0 ? "المضيف" : "فاضي";
-            nameSpan.className = "text-[9px] text-slate-500 mt-1 truncate w-14";
+            nameSpan.className = "text-[10px] text-slate-500 mt-1.5 truncate w-16";
         }
     }
 }
@@ -502,10 +527,10 @@ if (toggleMicBtn) {
 
         if (isMicMuted) {
             toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone-slash"></i> المايك مكتوم`;
-            toggleMicBtn.className = "bg-red-600/30 hover:bg-red-600 text-red-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-red-500/40 cursor-pointer flex items-center gap-1";
+            toggleMicBtn.className = "bg-red-600/30 text-red-200 px-4 py-2.5 rounded-xl text-xs border border-red-500/40 cursor-pointer flex items-center gap-1.5";
         } else {
             toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone"></i> كتم المايك`;
-            toggleMicBtn.className = "bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-purple-500/40 cursor-pointer flex items-center gap-1";
+            toggleMicBtn.className = "bg-purple-600/30 text-purple-200 px-4 py-2.5 rounded-xl text-xs border border-purple-500/40 cursor-pointer flex items-center gap-1.5";
         }
     });
 }
@@ -517,7 +542,7 @@ if (chatForm) {
         const text = chatInput.value.trim();
         if (!text || !userData) return;
         const msgDiv = document.createElement('div');
-        msgDiv.className = "text-[11px] leading-relaxed";
+        msgDiv.className = "text-xs leading-relaxed";
         msgDiv.innerHTML = `<span class="text-purple-300 font-bold">${escapeHtml(userData.nickname)}:</span> <span class="text-white">${escapeHtml(text)}</span>`;
         if (chatMessagesList) {
             chatMessagesList.appendChild(msgDiv);
