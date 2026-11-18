@@ -116,9 +116,7 @@ const settingsLogoutSwitch = document.getElementById('settings-logout-switch');
 let isLoginMode = false;
 let currentUser = null;
 let currentRoomId = null;
-let roomSeats = Array(8).fill(null);
 let userData = null;
-let myCurrentSeatIndex = null;
 let tempSelectedAvatar = null;
 
 function getUserBadgeMonthly() {
@@ -152,7 +150,7 @@ function compressImage(file) {
     });
 }
 
-// معالجة نتيجة تسجيل الدخول بـ Google عبر التوجيه (Redirect)
+// معالجة نتيجة Google Redirect
 getRedirectResult(auth)
     .then(async (result) => {
         if (result && result.user) {
@@ -178,7 +176,7 @@ getRedirectResult(auth)
         console.error("Google Redirect Error:", error);
     });
 
-// أزرار الإعدادات
+// أزرار الإعدادات والنوافذ
 if (settingsAccountCenter) {
     settingsAccountCenter.addEventListener('click', () => {
         if (currentUser && userData) {
@@ -201,11 +199,11 @@ if (closeLanguage) {
 if (langArBtn && langEnBtn) {
     langArBtn.addEventListener('click', () => {
         if (currentLangLabel) currentLangLabel.textContent = "العربية 🇪🇬";
-        modalLanguage.classList.add('hidden');
+        if (modalLanguage) modalLanguage.classList.add('hidden');
     });
     langEnBtn.addEventListener('click', () => {
         if (currentLangLabel) currentLangLabel.textContent = "English 🇺🇸";
-        modalLanguage.classList.add('hidden');
+        if (modalLanguage) modalLanguage.classList.add('hidden');
     });
 }
 
@@ -257,8 +255,8 @@ if (settingsLogoutSwitch) {
 
 if (startBtn) {
     startBtn.addEventListener('click', () => {
-        welcomeScreen.classList.add('hidden');
-        authScreen.classList.remove('hidden');
+        if (welcomeScreen) welcomeScreen.classList.add('hidden');
+        if (authScreen) authScreen.classList.remove('hidden');
     });
 }
 
@@ -273,7 +271,6 @@ if (toggleAuthModeBtn) {
     });
 }
 
-// تفعيل تسجيل الدخول بـ Google عبر Redirect للتوافق التام مع الموبايل
 if (googleLoginBtn) {
     googleLoginBtn.addEventListener('click', async () => {
         const provider = new GoogleAuthProvider();
@@ -320,15 +317,15 @@ if (authForm) {
 
 if (navRoomsBtn && navProfileBtn) {
     navRoomsBtn.addEventListener('click', () => {
-        tabRooms.classList.remove('hidden');
-        tabProfile.classList.add('hidden');
+        if (tabRooms) tabRooms.classList.remove('hidden');
+        if (tabProfile) tabProfile.classList.add('hidden');
         navRoomsBtn.className = "flex flex-col items-center text-purple-400 cursor-pointer";
         navProfileBtn.className = "flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer";
     });
 
     navProfileBtn.addEventListener('click', () => {
-        tabProfile.classList.remove('hidden');
-        tabRooms.classList.add('hidden');
+        if (tabProfile) tabProfile.classList.remove('hidden');
+        if (tabRooms) tabRooms.classList.add('hidden');
         navProfileBtn.className = "flex flex-col items-center text-purple-400 cursor-pointer";
         navRoomsBtn.className = "flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer";
     });
@@ -341,7 +338,7 @@ if (editProfileBtn) {
             if (modalAvatarPreview) modalAvatarPreview.src = userData.avatar || "https://via.placeholder.com/150";
         }
         tempSelectedAvatar = null;
-        editProfileModal.classList.remove('hidden');
+        if (editProfileModal) editProfileModal.classList.remove('hidden');
     });
 }
 
@@ -357,7 +354,7 @@ if (avatarPickerTrigger && inputAvatarFile) {
             const compressed = await compressImage(file);
             if (compressed) {
                 tempSelectedAvatar = compressed;
-                modalAvatarPreview.src = compressed;
+                if (modalAvatarPreview) modalAvatarPreview.src = compressed;
             }
         }
     });
@@ -388,7 +385,7 @@ if (saveProfileBtn) {
             userData.avatar = avatarBase64;
 
             alert("✅ تم تحديث الملف الشخصي بنجاح!");
-            editProfileModal.classList.add('hidden');
+            if (editProfileModal) editProfileModal.classList.add('hidden');
         } catch (error) {
             alert("❌ خطأ أثناء الحفظ: " + error.message);
         }
@@ -405,14 +402,18 @@ async function checkUserRoomStatus(uid) {
 }
 
 if (createRoomBtn) {
-    createRoomBtn.addEventListener('click', () => createRoomModal.classList.remove('hidden'));
+    createRoomBtn.addEventListener('click', () => {
+        if (createRoomModal) createRoomModal.classList.remove('hidden');
+    });
 }
 if (cancelRoomBtn) {
-    cancelRoomBtn.addEventListener('click', () => createRoomModal.classList.add('hidden'));
+    cancelRoomBtn.addEventListener('click', () => {
+        if (createRoomModal) createRoomModal.classList.add('hidden');
+    });
 }
 if (confirmCreateRoom) {
     confirmCreateRoom.addEventListener('click', async () => {
-        const roomName = roomNameInput.value.trim();
+        const roomName = roomNameInput ? roomNameInput.value.trim() : "";
         if (!roomName) return alert("⚠️ برجاء كتابة اسم الغرفة!");
         if (!roomImageFile.files || roomImageFile.files.length === 0) return alert("⚠️ اختر صورة الغرفة!");
 
@@ -428,7 +429,7 @@ if (confirmCreateRoom) {
                 bannedUsers: [],
                 createdAt: serverTimestamp()
             });
-            createRoomModal.classList.add('hidden');
+            if (createRoomModal) createRoomModal.classList.add('hidden');
             const newRoomSnap = await getDoc(docRef);
             enterRoom(docRef.id, { id: docRef.id, ...newRoomSnap.data() });
         } catch (error) {
@@ -465,15 +466,19 @@ function loadRooms() {
 
 async function enterRoom(roomId, roomData) {
     currentRoomId = roomId;
-    welcomeScreen.classList.add('hidden');
-    authScreen.classList.add('hidden');
-    mainAppContainer.classList.add('hidden');
-    bottomNav.classList.add('hidden');
-    roomViewScreen.classList.remove('hidden');
+    if (welcomeScreen) welcomeScreen.classList.add('hidden');
+    if (authScreen) authScreen.classList.add('hidden');
+    if (mainAppContainer) mainAppContainer.classList.add('hidden');
+    if (bottomNav) bottomNav.classList.add('hidden');
+    if (roomViewScreen) roomViewScreen.classList.remove('hidden');
 
-    document.getElementById('current-room-title').textContent = roomData.name;
-    document.getElementById('room-header-avatar').src = roomData.image || 'https://via.placeholder.com/150';
-    document.getElementById('room-owner-tag').textContent = `👑 المالك: ${roomData.host || 'غير معروف'}`;
+    const titleEl = document.getElementById('current-room-title');
+    const headerAvatarEl = document.getElementById('room-header-avatar');
+    const ownerTagEl = document.getElementById('room-owner-tag');
+
+    if (titleEl) titleEl.textContent = roomData.name;
+    if (headerAvatarEl) headerAvatarEl.src = roomData.image || 'https://via.placeholder.com/150';
+    if (ownerTagEl) ownerTagEl.textContent = `👑 المالك: ${roomData.host || 'غير معروف'}`;
 
     try {
         if (!agoraClient) {
@@ -491,9 +496,9 @@ async function leaveRoom() {
     if (localAudioTrack) { localAudioTrack.close(); localAudioTrack = null; }
     if (agoraClient) { await agoraClient.leave(); agoraClient = null; }
     currentRoomId = null;
-    roomViewScreen.classList.add('hidden');
-    mainAppContainer.classList.remove('hidden');
-    bottomNav.classList.remove('hidden');
+    if (roomViewScreen) roomViewScreen.classList.add('hidden');
+    if (mainAppContainer) mainAppContainer.classList.remove('hidden');
+    if (bottomNav) bottomNav.classList.remove('hidden');
 }
 
 if (optLeave) optLeave.addEventListener('click', leaveRoom);
@@ -501,24 +506,24 @@ if (optLeave) optLeave.addEventListener('click', leaveRoom);
 onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     if (user) {
-        welcomeScreen.classList.add('hidden');
-        authScreen.classList.add('hidden');
-        roomViewScreen.classList.add('hidden');
-        mainAppContainer.classList.remove('hidden');
-        bottomNav.classList.remove('hidden');
+        if (welcomeScreen) welcomeScreen.classList.add('hidden');
+        if (authScreen) authScreen.classList.add('hidden');
+        if (roomViewScreen) roomViewScreen.classList.add('hidden');
+        if (mainAppContainer) mainAppContainer.classList.remove('hidden');
+        if (bottomNav) bottomNav.classList.remove('hidden');
 
         try {
             const userDocRef = doc(db, "users", user.uid);
             const userDocSnap = await getDoc(userDocRef);
             if (userDocSnap.exists()) {
                 userData = userDocSnap.data();
-                headerUserId.textContent = `ID: ${userData.userId}`;
-                profileDisplayId.textContent = `ID: ${userData.userId}`;
-                profileDisplayName.textContent = userData.nickname || "مستخدم";
-                profileImgPreview.src = userData.avatar || "https://via.placeholder.com/150";
-                userBadgeTag.textContent = getUserBadgeMonthly();
-                mainCharmText.textContent = `Lv. ${userData.charmLevel || 1}`;
-                mainWealthText.textContent = `Lv. ${userData.wealthLevel || 1}`;
+                if (headerUserId) headerUserId.textContent = `ID: ${userData.userId}`;
+                if (profileDisplayId) profileDisplayId.textContent = `ID: ${userData.userId}`;
+                if (profileDisplayName) profileDisplayName.textContent = userData.nickname || "مستخدم";
+                if (profileImgPreview) profileImgPreview.src = userData.avatar || "https://via.placeholder.com/150";
+                if (userBadgeTag) userBadgeTag.textContent = getUserBadgeMonthly();
+                if (mainCharmText) mainCharmText.textContent = `Lv. ${userData.charmLevel || 1}`;
+                if (mainWealthText) mainWealthText.textContent = `Lv. ${userData.wealthLevel || 1}`;
             } else {
                 const randomId = Math.floor(100000 + Math.random() * 900000);
                 const newUserData = {
@@ -533,20 +538,20 @@ onAuthStateChanged(auth, async (user) => {
                 };
                 await setDoc(userDocRef, newUserData);
                 userData = newUserData;
-                headerUserId.textContent = `ID: ${userData.userId}`;
-                profileDisplayId.textContent = `ID: ${userData.userId}`;
-                profileDisplayName.textContent = userData.nickname;
-                profileImgPreview.src = userData.avatar;
+                if (headerUserId) headerUserId.textContent = `ID: ${userData.userId}`;
+                if (profileDisplayId) profileDisplayId.textContent = `ID: ${userData.userId}`;
+                if (profileDisplayName) profileDisplayName.textContent = userData.nickname;
+                if (profileImgPreview) profileImgPreview.src = userData.avatar;
             }
         } catch (e) { console.log(e); }
 
         checkUserRoomStatus(user.uid);
         loadRooms();
     } else {
-        welcomeScreen.classList.add('hidden');
-        authScreen.classList.remove('hidden');
-        mainAppContainer.classList.add('hidden');
-        roomViewScreen.classList.add('hidden');
-        bottomNav.classList.add('hidden');
+        if (welcomeScreen) welcomeScreen.classList.add('hidden');
+        if (authScreen) authScreen.classList.remove('hidden');
+        if (mainAppContainer) mainAppContainer.classList.add('hidden');
+        if (roomViewScreen) roomViewScreen.classList.add('hidden');
+        if (bottomNav) bottomNav.classList.add('hidden');
     }
 });
