@@ -63,10 +63,10 @@
         </div>
     </div>
 
-    <!-- 3. شاشة التطبيق الرئيسية (تحتوي على التبويبات) -->
+    <!-- 3. شاشة التطبيق الرئيسية -->
     <div id="main-app-container" class="w-full max-w-md hidden flex flex-col">
 
-        <!-- تبويب الغرف (Lobby) - تعرض الغرف بصورها -->
+        <!-- تبويب الغرف (Lobby) - مربعات غرف كبرى ومنسقة -->
         <div id="tab-rooms" class="glass neon-border p-5 rounded-3xl mb-4">
             <div class="flex justify-between items-center mb-4">
                 <div>
@@ -77,12 +77,13 @@
                     <i class="fa-solid fa-plus ml-1"></i> إنشاء غرفة
                 </button>
             </div>
-            <div id="rooms-list" class="space-y-3 max-h-80 overflow-y-auto pr-1">
-                <p class="text-center text-slate-500 text-xs py-4">جاري تحميل الغرف المتاحة...</p>
+            <!-- شبكة الغرف المترتبة بكبر مربعات الصور -->
+            <div id="rooms-grid" class="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
+                <p class="col-span-2 text-center text-slate-500 text-xs py-4">جاري تحميل الغرف المتاحة...</p>
             </div>
         </div>
 
-        <!-- تبويب الملف الشخصي (لتغيير الاسم والصورة الشخصية في أي وقت) -->
+        <!-- تبويب الملف الشخصي -->
         <div id="tab-profile" class="glass neon-border p-5 rounded-3xl mb-4 hidden">
             <div class="flex items-center justify-between mb-6 border-b border-purple-500/20 pb-4">
                 <div class="flex items-center gap-3">
@@ -188,7 +189,7 @@
         </div>
     </div>
 
-    <!-- نافذة تعديل الملف الشخصي (لتغيير الاسم والصورة في أي وقت) -->
+    <!-- 5. نافذة تعديل الملف الشخصي (اختيار صورة من معرض الهاتف مباشرة) -->
     <div id="edit-profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="glass neon-border p-6 rounded-3xl w-full max-w-sm text-white">
             <div class="flex justify-between items-center mb-4 border-b border-purple-500/20 pb-2">
@@ -201,23 +202,26 @@
                     <input type="text" id="input-nickname" class="w-full p-2.5 rounded-xl glass border border-purple-500/30 text-white">
                 </div>
                 <div>
-                    <label class="block text-slate-400 mb-1">رابط صورة البروفايل (ثابتة ومتغيرة)</label>
-                    <input type="url" id="input-avatar" class="w-full p-2.5 rounded-xl glass border border-purple-500/30 text-white" placeholder="https://example.com/image.jpg">
+                    <label class="block text-slate-400 mb-1">اختر صورة البروفايل من المعرض 🖼️</label>
+                    <input type="file" id="input-avatar-file" accept="image/*" class="w-full p-2 rounded-xl glass border border-purple-500/30 text-white file:bg-purple-600 file:text-white file:border-0 file:rounded-lg file:py-1 file:px-3 text-[11px] cursor-pointer">
                 </div>
                 <button id="save-profile-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-2.5 rounded-xl font-bold cursor-pointer">حفظ التغييرات</button>
             </div>
         </div>
     </div>
 
-    <!-- نافذة إنشاء غرفة (مشترط كتابة اسم الغرفة ورابط الصورة أولاً) -->
+    <!-- 6. نافذة إنشاء غرفة (اسم وصورة من معرض الهاتف حصراً) -->
     <div id="create-room-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="glass neon-border p-6 rounded-3xl w-full max-w-sm text-center">
             <h3 class="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">إنشاء غرفتك الخاصة</h3>
-            <p class="text-[10px] text-slate-400 mb-3">يجب إدخال اسم الغرفة وصورة الغرفة لكي تتمكن من الإنشاء!</p>
+            <p class="text-[10px] text-slate-400 mb-3">يجب كتابة اسم الغرفة واختيار صورتها من المعرض لكي تتمكن من الإنشاء!</p>
             
             <input type="text" id="room-name-input" placeholder="اسم الغرفة (مثلاً: سهرة فنانين 🎤)" class="w-full px-4 py-3 rounded-xl glass text-sm bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white mb-3">
             
-            <input type="url" id="room-image-input" placeholder="رابط صورة الغرفة (إجباري) 🖼️" class="w-full px-4 py-3 rounded-xl glass text-sm bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white mb-4">
+            <div class="text-right mb-4">
+                <label class="block text-xs text-purple-300 mb-1">صورة الغرفة من المعرض (إجباري) 🖼️</label>
+                <input type="file" id="room-image-file" accept="image/*" class="w-full p-2 rounded-xl glass border border-purple-500/30 text-white file:bg-purple-600 file:text-white file:border-0 file:rounded-lg file:py-1 file:px-3 text-[11px] cursor-pointer">
+            </div>
 
             <div class="flex gap-2">
                 <button type="button" id="cancel-room-btn" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition cursor-pointer">إلغاء</button>
@@ -226,7 +230,7 @@
         </div>
     </div>
 
-    <!-- شريط التنقل السفلي الاحترافي (Bottom Nav Bar) -->
+    <!-- شريط التنقل السفلي -->
     <div id="bottom-nav" class="fixed bottom-0 left-0 right-0 glass border-t border-purple-500/20 py-2.5 px-6 flex justify-around items-center z-40 hidden max-w-md mx-auto rounded-t-2xl">
         <button id="nav-rooms-btn" class="flex flex-col items-center text-purple-400 cursor-pointer">
             <i class="fa-solid fa-house text-base"></i>
