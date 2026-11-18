@@ -75,15 +75,6 @@ const optMinimize = document.getElementById('opt-minimize');
 const optSettings = document.getElementById('opt-settings');
 const optLeave = document.getElementById('opt-leave');
 
-const minimizedRoomWidget = document.getElementById('minimized-room-widget');
-const miniRoomImg = document.getElementById('mini-room-img');
-const miniRoomName = document.getElementById('mini-room-name');
-
-const currentRoomTitle = document.getElementById('current-room-title');
-const roomHeaderAvatar = document.getElementById('room-header-avatar');
-const roomOwnerTag = document.getElementById('room-owner-tag');
-const roomBannerText = document.getElementById('room-banner-text');
-
 const toggleMicBtn = document.getElementById('toggle-mic-btn');
 const requestSeatBtn = document.getElementById('request-seat-btn');
 
@@ -99,11 +90,7 @@ const userBadgeTag = document.getElementById('user-badge-tag');
 const mainProfileImgContainer = document.getElementById('main-profile-img-container');
 
 const mainCharmText = document.getElementById('main-charm-text');
-const mainCharmBox = document.getElementById('main-charm-box');
-const mainCharmIcon = document.getElementById('main-charm-icon');
 const mainWealthText = document.getElementById('main-wealth-text');
-const mainWealthBox = document.getElementById('main-wealth-box');
-const mainWealthIcon = document.getElementById('main-wealth-icon');
 
 const editProfileBtn = document.getElementById('edit-profile-btn');
 const editProfileModal = document.getElementById('edit-profile-modal');
@@ -114,7 +101,7 @@ const inputAvatarFile = document.getElementById('input-avatar-file');
 const avatarPickerTrigger = document.getElementById('avatar-picker-trigger');
 const modalAvatarPreview = document.getElementById('modal-avatar-preview');
 
-// عناصر الإعدادات الجديدة
+// عناصر أزرار الإعدادات والنافذة المنبثقة
 const settingsAccountCenter = document.getElementById('settings-account-center');
 const modalAccountCenter = document.getElementById('modal-account-center');
 const closeAccountCenter = document.getElementById('close-account-center');
@@ -143,26 +130,11 @@ const modalProfileAvatar = document.getElementById('modal-profile-avatar');
 const modalProfileName = document.getElementById('modal-profile-name');
 const modalProfileId = document.getElementById('modal-profile-id');
 const modalProfileBadge = document.getElementById('modal-profile-badge');
-const modalUserRoleTag = document.getElementById('modal-user-role-tag');
-
-const charmLevelText = document.getElementById('charm-level-text');
-const charmLevelBox = document.getElementById('charm-level-box');
-const charmLevelIcon = document.getElementById('charm-level-icon');
-const wealthLevelText = document.getElementById('wealth-level-text');
-const wealthLevelBox = document.getElementById('wealth-level-box');
-const wealthLevelIcon = document.getElementById('wealth-level-icon');
-
-const moderatorControls = document.getElementById('moderator-controls');
-const modToggleAdmin = document.getElementById('mod-toggle-admin');
-const modKickSeat = document.getElementById('mod-kick-seat');
-const modBanUser = document.getElementById('mod-ban-user');
 
 let isLoginMode = false;
 let currentUser = null;
 let currentRoomId = null;
 let currentRoomDocData = null;
-let currentRoomName = "";
-let currentRoomImage = "";
 let roomSeats = Array(8).fill(null);
 let userData = null;
 let myCurrentSeatIndex = null;
@@ -171,18 +143,7 @@ let tempSelectedAvatar = null;
 function getUserBadgeMonthly() {
     const badges = ["🌟 نجم الشهر", "💎 ملك التفاعل", "👑 أسطورة السهرة", "🔥 ملك الألعاب"];
     const now = new Date().getTime();
-    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-    return badges[Math.floor(now / thirtyDaysMs) % badges.length];
-}
-
-function getLevelStylingAndIcon(level, type = 'charm') {
-    let iconClass = "fa-solid fa-heart text-pink-400";
-    let boxStyle = "background: rgba(88, 28, 135, 0.4); border-color: rgba(168, 85, 247, 0.4);";
-    if (type === 'wealth') {
-        iconClass = "fa-solid fa-gem text-amber-400";
-        boxStyle = "background: rgba(6, 78, 59, 0.4); border-color: rgba(16, 185, 129, 0.4);";
-    }
-    return { iconClass, boxStyle };
+    return badges[Math.floor(now / (30 * 24 * 60 * 60 * 1000)) % badges.length];
 }
 
 function compressImage(file) {
@@ -210,7 +171,7 @@ function compressImage(file) {
     });
 }
 
-// أزرار إعدادات الحساب والتطبيق الجديدة
+// 1. تفعيل مركز الحساب
 if (settingsAccountCenter) {
     settingsAccountCenter.addEventListener('click', () => {
         if (currentUser && userData) {
@@ -224,6 +185,7 @@ if (closeAccountCenter) {
     closeAccountCenter.addEventListener('click', () => modalAccountCenter.classList.add('hidden'));
 }
 
+// 2. تفعيل اللغة
 if (settingsLanguage) {
     settingsLanguage.addEventListener('click', () => modalLanguage.classList.remove('hidden'));
 }
@@ -243,7 +205,7 @@ if (langArBtn && langEnBtn) {
     });
 }
 
-// شروط حذف الحساب
+// 3. تفعيل حذف الحساب بالشروط (يطلب كلمة المرور وإعادة التوثيق)
 if (settingsDeleteAccount) {
     settingsDeleteAccount.addEventListener('click', () => {
         if (deleteConfirmPassword) deleteConfirmPassword.value = '';
@@ -253,7 +215,6 @@ if (settingsDeleteAccount) {
 if (closeDeleteModal) {
     closeDeleteModal.addEventListener('click', () => modalDeleteAccount.classList.add('hidden'));
 }
-
 if (confirmDeleteBtn) {
     confirmDeleteBtn.addEventListener('click', async () => {
         const pass = deleteConfirmPassword ? deleteConfirmPassword.value.trim() : "";
@@ -263,26 +224,21 @@ if (confirmDeleteBtn) {
             const user = auth.currentUser;
             if (!user) return;
 
-            // إعادة توثيق الحساب بالشروط الأمنية
             const credential = EmailAuthProvider.credential(user.email, pass);
             await reauthenticateWithCredential(user, credential);
-
-            // حذف مستند المستخدم من Firestore أولاً
             await deleteDoc(doc(db, "users", user.uid));
-
-            // حذف الحساب نهائياً من Firebase Auth
             await deleteUser(user);
 
             alert("🗑️ تم حذف الحساب نهائياً بنجاح وفقاً للشروط.");
             if (modalDeleteAccount) modalDeleteAccount.classList.add('hidden');
         } catch (error) {
             console.error("Delete account error:", error);
-            alert("❌ فشل حذف الحساب: تأكد من صحة كلمة المرور أو إعادة تسجيل الدخول.");
+            alert("❌ فشل حذف الحساب: تأكد من صحة كلمة المرور أو أن الحساب مسجل بـ Google.");
         }
     });
 }
 
-// تسجيل الخروج وإضافة حساب آخر بـ Gmail جديد
+// 4. تسجيل الخروج لإضافة حساب آخر بـ Gmail جديد
 if (settingsLogoutSwitch) {
     settingsLogoutSwitch.addEventListener('click', async () => {
         if (confirm("هل تريد تسجيل الخروج والانتقال لإضافة حساب Gmail آخر؟")) {
@@ -540,8 +496,6 @@ function loadRooms() {
 async function enterRoom(roomId, roomData) {
     currentRoomId = roomId;
     currentRoomDocData = roomData;
-    currentRoomName = roomData.name;
-    currentRoomImage = roomData.image || 'https://via.placeholder.com/150';
     myCurrentSeatIndex = null;
 
     welcomeScreen.classList.add('hidden');
@@ -550,16 +504,9 @@ async function enterRoom(roomId, roomData) {
     bottomNav.classList.add('hidden');
     roomViewScreen.classList.remove('hidden');
 
-    currentRoomTitle.textContent = roomData.name;
-    roomHeaderAvatar.src = currentRoomImage;
-    roomOwnerTag.textContent = `👑 المالك: ${roomData.host || 'غير معروف'}`;
-    roomBannerText.textContent = roomData.banner || "مرحباً بالجميع!";
-
-    if (optSettings) {
-        if (currentUser && roomData.hostUid === currentUser.uid) optSettings.classList.remove('hidden');
-        else optSettings.classList.add('hidden');
-    }
-    resetSeatsUI();
+    document.getElementById('current-room-title').textContent = roomData.name;
+    document.getElementById('room-header-avatar').src = roomData.image || 'https://via.placeholder.com/150';
+    document.getElementById('room-owner-tag').textContent = `👑 المالك: ${roomData.host || 'غير معروف'}`;
 
     try {
         if (!agoraClient) {
@@ -596,9 +543,7 @@ if (requestSeatBtn) {
             uid: currentUser.uid,
             nickname: userData ? userData.nickname : "مستخدم",
             avatar: userData ? userData.avatar : "https://via.placeholder.com/150",
-            userId: userData ? userData.userId : "110789",
-            charmLevel: userData?.charmLevel || 1,
-            wealthLevel: userData?.wealthLevel || 1
+            userId: userData ? userData.userId : "110789"
         };
         updateSeatUI(emptyIndex, roomSeats[emptyIndex], true);
 
