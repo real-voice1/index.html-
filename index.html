@@ -66,7 +66,7 @@
     <!-- 3. شاشة التطبيق الرئيسية (تحتوي على التبويبات) -->
     <div id="main-app-container" class="w-full max-w-md hidden flex flex-col">
 
-        <!-- تبويب الغرف (Lobby) -->
+        <!-- تبويب الغرف (Lobby) - تعرض الغرف بصورها -->
         <div id="tab-rooms" class="glass neon-border p-5 rounded-3xl mb-4">
             <div class="flex justify-between items-center mb-4">
                 <div>
@@ -82,7 +82,7 @@
             </div>
         </div>
 
-        <!-- تبويب الملف الشخصي (مطابق للصور المرجعية) -->
+        <!-- تبويب الملف الشخصي (لتغيير الاسم والصورة الشخصية في أي وقت) -->
         <div id="tab-profile" class="glass neon-border p-5 rounded-3xl mb-4 hidden">
             <div class="flex items-center justify-between mb-6 border-b border-purple-500/20 pb-4">
                 <div class="flex items-center gap-3">
@@ -95,11 +95,10 @@
                     </div>
                 </div>
                 <button id="edit-profile-btn" class="text-purple-300 hover:text-white text-xs bg-purple-900/40 px-3 py-1.5 rounded-xl border border-purple-500/30 cursor-pointer">
-                    <i class="fa-solid fa-pen ml-1"></i> تعديل
+                    <i class="fa-solid fa-pen ml-1"></i> تعديل البروفايل
                 </button>
             </div>
 
-            <!-- إحصائيات سريعة (متابعين، معجبين، أصدقاء) -->
             <div class="grid grid-cols-3 gap-2 mb-4 text-center">
                 <div class="glass p-2 rounded-xl border border-purple-500/20">
                     <span class="text-[9px] text-slate-400 block">متابعة</span>
@@ -110,12 +109,11 @@
                     <span class="text-xs font-bold text-pink-300">42</span>
                 </div>
                 <div class="glass p-2 rounded-xl border border-purple-500/20">
-                    <span class="text-[9px] text-slate-400 block">صدیق</span>
+                    <span class="text-[9px] text-slate-400 block">صديق</span>
                     <span class="text-xs font-bold text-amber-300">3</span>
                 </div>
             </div>
 
-            <!-- قائمة الخيارات المشابهة لـ TapTap و Yalla Ludo -->
             <div class="space-y-2 text-xs">
                 <div class="glass p-3 rounded-xl flex justify-between items-center border border-purple-500/20 cursor-pointer">
                     <span>محفظة العملات والجواهر 💰</span>
@@ -123,10 +121,6 @@
                 </div>
                 <div class="glass p-3 rounded-xl flex justify-between items-center border border-purple-500/20 cursor-pointer">
                     <span>متجر الفساتين والإطارات 👗</span>
-                    <i class="fa-solid fa-chevron-left text-slate-500 text-[10px]"></i>
-                </div>
-                <div class="glass p-3 rounded-xl flex justify-between items-center border border-purple-500/20 cursor-pointer" onclick="location.href='admin.html'">
-                    <span>لوحة الإدارة 🛡️</span>
                     <i class="fa-solid fa-chevron-left text-slate-500 text-[10px]"></i>
                 </div>
             </div>
@@ -139,7 +133,7 @@
         <div class="flex justify-between items-center mb-3 border-b border-purple-500/20 pb-2">
             <div>
                 <h2 id="current-room-title" class="text-sm font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">اسم الغرفة</h2>
-                <p class="text-[9px] text-slate-400">صوت حي مفعيل 🎤</p>
+                <p class="text-[9px] text-slate-400">صوت حي مفعل 🎤</p>
             </div>
             <button id="leave-room-btn" class="bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white px-2.5 py-1 rounded-lg text-xs transition border border-red-500/40 cursor-pointer">
                 مغادرة 🚪
@@ -194,12 +188,12 @@
         </div>
     </div>
 
-    <!-- نافذة تعديل الملف الشخصي (مطابقة للصورة الثانية) -->
+    <!-- نافذة تعديل الملف الشخصي (لتغيير الاسم والصورة في أي وقت) -->
     <div id="edit-profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="glass neon-border p-6 rounded-3xl w-full max-w-sm text-white">
             <div class="flex justify-between items-center mb-4 border-b border-purple-500/20 pb-2">
-                <h3 class="text-sm font-bold text-purple-300">المعلومات الشخصية</h3>
-                <button id="close-edit-profile" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                <h3 class="text-sm font-bold text-purple-300">تعديل الملف الشخصي</h3>
+                <button id="close-edit-profile" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="space-y-3 text-xs">
                 <div>
@@ -207,31 +201,24 @@
                     <input type="text" id="input-nickname" class="w-full p-2.5 rounded-xl glass border border-purple-500/30 text-white">
                 </div>
                 <div>
-                    <label class="block text-slate-400 mb-1">الجنس</label>
-                    <select id="input-gender" class="w-full p-2.5 rounded-xl glass border border-purple-500/30 text-white bg-slate-900">
-                        <option value="ذكر">ذكر</option>
-                        <option value="أنثى">أنثى</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">البلد / المنطقة</label>
-                    <input type="text" id="input-country" class="w-full p-2.5 rounded-xl glass border border-purple-500/30 text-white" value="Egypt 🇪🇬">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">التعريف (النبذة)</label>
-                    <textarea id="input-bio" rows="2" class="w-full p-2.5 rounded-xl glass border border-purple-500/30 text-white resize-none"></textarea>
+                    <label class="block text-slate-400 mb-1">رابط صورة البروفايل (ثابتة ومتغيرة)</label>
+                    <input type="url" id="input-avatar" class="w-full p-2.5 rounded-xl glass border border-purple-500/30 text-white" placeholder="https://example.com/image.jpg">
                 </div>
                 <button id="save-profile-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-2.5 rounded-xl font-bold cursor-pointer">حفظ التغييرات</button>
             </div>
         </div>
     </div>
 
-    <!-- نافذة إنشاء غرفة واحدة فقط للمستخدم -->
+    <!-- نافذة إنشاء غرفة (مشترط كتابة اسم الغرفة ورابط الصورة أولاً) -->
     <div id="create-room-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="glass neon-border p-6 rounded-3xl w-full max-w-sm text-center">
             <h3 class="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">إنشاء غرفتك الخاصة</h3>
-            <p class="text-[10px] text-slate-400 mb-3">مسموح لك بإنشاء غرفة واحدة فقط مرتبطة بحسابك!</p>
-            <input type="text" id="room-name-input" placeholder="اسم الغرفة (مثلاً: سهرة فنانين 🎤)" class="w-full px-4 py-3 rounded-xl glass text-sm bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white mb-4">
+            <p class="text-[10px] text-slate-400 mb-3">يجب إدخال اسم الغرفة وصورة الغرفة لكي تتمكن من الإنشاء!</p>
+            
+            <input type="text" id="room-name-input" placeholder="اسم الغرفة (مثلاً: سهرة فنانين 🎤)" class="w-full px-4 py-3 rounded-xl glass text-sm bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white mb-3">
+            
+            <input type="url" id="room-image-input" placeholder="رابط صورة الغرفة (إجباري) 🖼️" class="w-full px-4 py-3 rounded-xl glass text-sm bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white mb-4">
+
             <div class="flex gap-2">
                 <button type="button" id="cancel-room-btn" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition cursor-pointer">إلغاء</button>
                 <button type="button" id="confirm-create-room" class="w-1/2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-2.5 rounded-xl text-xs shadow-lg hover:opacity-90 transition cursor-pointer">إنشاء الغرفة</button>
