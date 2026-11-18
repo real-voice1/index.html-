@@ -58,6 +58,7 @@ const createRoomModal = document.getElementById('create-room-modal');
 const cancelRoomBtn = document.getElementById('cancel-room-btn');
 const confirmCreateRoom = document.getElementById('confirm-create-room');
 const roomNameInput = document.getElementById('room-name-input');
+const roomImageInput = document.getElementById('room-image-input'); // حقل صورة الغرفة
 const roomsList = document.getElementById('rooms-list');
 
 const leaveRoomBtn = document.getElementById('leave-room-btn');
@@ -72,21 +73,20 @@ const chatMessagesList = document.getElementById('chat-messages-list');
 const headerUserId = document.getElementById('header-user-id');
 const profileDisplayName = document.getElementById('profile-display-name');
 const profileDisplayId = document.getElementById('profile-display-id');
+const profileImgPreview = document.getElementById('profile-img-preview'); // صورة البروفايل
 const editProfileBtn = document.getElementById('edit-profile-btn');
 const editProfileModal = document.getElementById('edit-profile-modal');
 const closeEditProfile = document.getElementById('close-edit-profile');
 const saveProfileBtn = document.getElementById('save-profile-btn');
 const inputNickname = document.getElementById('input-nickname');
-const inputGender = document.getElementById('input-gender');
-const inputCountry = document.getElementById('input-country');
-const inputBio = document.getElementById('input-bio');
+const inputAvatar = document.getElementById('input-avatar'); // حقل تعديل صورة البروفايل
 
 let isLoginMode = false;
 let currentUser = null;
 let currentRoomId = null;
 let roomSeats = Array(8).fill(null);
 let userData = null;
-let myCurrentSeatIndex = null; // لتتبع كرسي المستخدم ومنع تكرار الحجز
+let myCurrentSeatIndex = null;
 
 if (startBtn) {
     startBtn.addEventListener('click', () => {
@@ -130,9 +130,7 @@ if (authForm) {
                     email: email,
                     userId: randomId,
                     nickname: email.split('@')[0],
-                    gender: "ذكر",
-                    country: "Egypt 🇪🇬",
-                    bio: "أهلاً بك في ملفي الشخصي",
+                    avatar: "https://via.placeholder.com/150",
                     createdAt: serverTimestamp()
                 });
                 alert("🚀 تم إنشاء الحساب وتوليد الـ ID بنجاح!");
@@ -160,13 +158,12 @@ if (navRoomsBtn && navProfileBtn) {
     });
 }
 
+// تعديل البروفايل (الاسم والصورة)
 if (editProfileBtn) {
     editProfileBtn.addEventListener('click', () => {
         if (userData) {
             if (inputNickname) inputNickname.value = userData.nickname || '';
-            if (inputGender) inputGender.value = userData.gender || 'ذكر';
-            if (inputCountry) inputCountry.value = userData.country || 'Egypt 🇪🇬';
-            if (inputBio) inputBio.value = userData.bio || '';
+            if (inputAvatar) inputAvatar.value = userData.avatar || '';
         }
         if (editProfileModal) editProfileModal.classList.remove('hidden');
     });
@@ -181,15 +178,22 @@ if (closeEditProfile) {
 if (saveProfileBtn) {
     saveProfileBtn.addEventListener('click', async () => {
         if (!currentUser) return;
+        const newNick = inputNickname.value.trim();
+        const newAvatar = inputAvatar.value.trim();
+        if (!newNick) return alert("⚠️ برجاء كتابة الاسم المستعار!");
+
         try {
             const userRef = doc(db, "users", currentUser.uid);
             await updateDoc(userRef, {
-                nickname: inputNickname.value.trim(),
-                gender: inputGender.value,
-                country: inputCountry.value.trim(),
-                bio: inputBio.value.trim()
+                nickname: newNick,
+                avatar: newAvatar || "https://via.placeholder.com/150"
             });
-            if (profileDisplayName) profileDisplayName.textContent = inputNickname.value.trim();
+            if (profileDisplayName) profileDisplayName.textContent = newNick;
+            if (profileImgPreview) profileImgPreview.src = newAvatar || "https://via.placeholder.com/150";
+            
+            userData.nickname = newNick;
+            userData.avatar = newAvatar;
+
             alert("✅ تم تحديث الملف الشخصي بنجاح!");
             if (editProfileModal) editProfileModal.classList.add('hidden');
         } catch (error) {
@@ -217,23 +221,30 @@ if (cancelRoomBtn) {
     cancelRoomBtn.addEventListener('click', () => {
         if (createRoomModal) createRoomModal.classList.add('hidden');
         if (roomNameInput) roomNameInput.value = '';
+        if (roomImageInput) roomImageInput.value = '';
     });
 }
 
+// اشتراط كتابة اسم الغرفة وصورتها معاً قبل الإنشاء
 if (confirmCreateRoom) {
     confirmCreateRoom.addEventListener('click', async () => {
-        if (!roomNameInput) return;
+        if (!roomNameInput || !roomImageInput) return;
         const roomName = roomNameInput.value.trim();
+        const roomImg = roomImageInput.value.trim();
+
         if (!roomName) return alert("⚠️ برجاء كتابة اسم الغرفة أولاً!");
+        if (!roomImg) return alert("⚠️ برجاء وضع رابط صورة الغرفة أولاً! لا يمكن الإنشاء بدون صورة.");
 
         try {
             await addDoc(collection(db, "rooms"), {
                 name: roomName,
+                image: roomImg,
                 hostUid: currentUser.uid,
                 host: userData ? userData.nickname : currentUser.email,
                 createdAt: serverTimestamp()
             });
             roomNameInput.value = '';
+            roomImageInput.value = '';
             if (createRoomModal) createRoomModal.classList.add('hidden');
             alert("🎉 تم إنشاء غرفتك بنجاح!");
         } catch (error) {
@@ -242,6 +253,7 @@ if (confirmCreateRoom) {
     });
 }
 
+// استعراض الغرف في الواجهة الرئيسية بصور المستخدمين الخاصة بالروم
 function loadRooms() {
     if (!roomsList) return;
     onSnapshot(collection(db, "rooms"), (snapshot) => {
@@ -255,14 +267,19 @@ function loadRooms() {
             const roomData = docSnap.data();
             const roomId = docSnap.id;
             const roomCard = document.createElement('div');
-            roomCard.className = "glass p-4 rounded-2xl flex justify-between items-center border border-purple-500/25";
+            roomCard.className = "glass p-3 rounded-2xl flex items-center justify-between border border-purple-500/25";
+            
+            // عرض صورة الغرفة التي رفعها المستخدم مع الاسم والمالك
             roomCard.innerHTML = `
-                <div>
-                    <h3 class="text-sm font-bold text-purple-200">${escapeHtml(roomData.name)} 🎤</h3>
-                    <p class="text-[10px] text-slate-400 mt-0.5">المالك: ${escapeHtml(roomData.host)}</p>
+                <div class="flex items-center gap-3">
+                    <img src="${escapeHtml(roomData.image || 'https://via.placeholder.com/150')}" class="w-12 h-12 rounded-xl object-cover border border-purple-500/40">
+                    <div>
+                        <h3 class="text-sm font-bold text-purple-200">${escapeHtml(roomData.name)} 🎤</h3>
+                        <p class="text-[10px] text-slate-400 mt-0.5">المالك: ${escapeHtml(roomData.host)}</p>
+                    </div>
                 </div>
                 <button class="join-room-btn bg-purple-600/30 hover:bg-purple-600 text-purple-200 text-xs px-3 py-1.5 rounded-xl transition border border-purple-500/40 cursor-pointer">
-                    دخول الغرفة
+                    دخول
                 </button>
             `;
             roomCard.querySelector('.join-room-btn').addEventListener('click', () => enterRoom(roomId, roomData.name));
@@ -418,6 +435,7 @@ onAuthStateChanged(auth, async (user) => {
                 if (headerUserId) headerUserId.textContent = `ID: ${userData.userId}`;
                 if (profileDisplayId) profileDisplayId.textContent = `ID: ${userData.userId}`;
                 if (profileDisplayName) profileDisplayName.textContent = userData.nickname;
+                if (profileImgPreview) profileImgPreview.src = userData.avatar || "https://via.placeholder.com/150";
             }
         } catch (e) {
             console.log("Error loading user profile", e);
