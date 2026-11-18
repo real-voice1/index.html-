@@ -1,243 +1,346 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>REAL VOICE - منصة الدردشة الصوتية</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .glass {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(168, 85, 247, 0.2);
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { 
+    getAuth, 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, 
+    onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    onSnapshot, 
+    serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDyx4MBxvRM0L5FrrjVOfVePlKRSxGpMg4",
+  authDomain: "real-voice-aec71.firebaseapp.com",
+  projectId: "real-voice-aec71",
+  storageBucket: "real-voice-aec71.firebasestorage.app",
+  messagingSenderId: "1051527775983",
+  appId: "1:1051527775983:web:ae3794c162184fd56b7d1a"
+};
+
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+
+const welcomeScreen = document.getElementById('welcome-screen');
+const authScreen = document.getElementById('auth-screen');
+const roomsScreen = document.getElementById('rooms-screen');
+const roomViewScreen = document.getElementById('room-view-screen');
+
+const startBtn = document.getElementById('start-btn');
+const authForm = document.getElementById('auth-form');
+const authTitle = document.getElementById('auth-title');
+const authSubmitBtn = document.getElementById('auth-submit-btn');
+const toggleAuthModeBtn = document.getElementById('toggle-auth-mode');
+const userDisplayEmail = document.getElementById('user-display-email');
+const createRoomBtn = document.getElementById('create-room-btn');
+
+const createRoomModal = document.getElementById('create-room-modal');
+const cancelRoomBtn = document.getElementById('cancel-room-btn');
+const confirmCreateRoom = document.getElementById('confirm-create-room');
+const roomNameInput = document.getElementById('room-name-input');
+const roomsList = document.getElementById('rooms-list');
+
+const leaveRoomBtn = document.getElementById('leave-room-btn');
+const currentRoomTitle = document.getElementById('current-room-title');
+const toggleMicBtn = document.getElementById('toggle-mic-btn');
+const requestSeatBtn = document.getElementById('request-seat-btn');
+
+const chatForm = document.getElementById('chat-form');
+const chatInput = document.getElementById('chat-input');
+const chatMessagesList = document.getElementById('chat-messages-list');
+
+const openRoomSettingsBtn = document.getElementById('open-room-settings-btn');
+const roomSettingsModal = document.getElementById('room-settings-modal');
+const closeSettingsModal = document.getElementById('close-settings-modal');
+const saveSettingsBtn = document.getElementById('save-settings-btn');
+const settingsRoomName = document.getElementById('settings-room-name');
+const roomImgFile = document.getElementById('room-img-file');
+const roomImgIcon = document.getElementById('room-img-icon');
+
+const userProfileModal = document.getElementById('user-profile-modal');
+const closeProfileModal = document.getElementById('close-profile-modal');
+const modalUsername = document.getElementById('modal-username');
+
+let isLoginMode = false;
+let currentUser = null;
+let currentRoomId = null;
+let roomSeats = Array(8).fill(null);
+
+// ربط زر الترحيب بشكل برمجى سليم 100%
+if (startBtn) {
+    startBtn.addEventListener('click', () => {
+        if (welcomeScreen) welcomeScreen.classList.add('hidden');
+        if (authScreen) authScreen.classList.remove('hidden');
+    });
+}
+
+// صوت تفاعلي عند الجلوس على المايك
+function playSeatSound() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15);
+        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.2);
+    } catch (e) {
+        console.log("Audio not supported");
+    }
+}
+
+if (toggleAuthModeBtn) {
+    toggleAuthModeBtn.addEventListener('click', () => {
+        isLoginMode = !isLoginMode;
+        authTitle.textContent = isLoginMode ? "تسجيل الدخول" : "إنشاء حساب جديد";
+        authSubmitBtn.textContent = isLoginMode ? "دخول" : "تسجيل الحساب";
+        toggleAuthModeBtn.textContent = isLoginMode ? "ليس لديك حساب؟ سجل حساب جديد" : "لديك حساب بالفعل؟ سجل دخولك من هنا";
+    });
+}
+
+if (authForm) {
+    authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        try {
+            if (isLoginMode) {
+                await signInWithEmailAndPassword(auth, email, password);
+                alert("✅ تم تسجيل الدخول بنجاح!");
+            } else {
+                await createUserWithEmailAndPassword(auth, email, password);
+                alert("🚀 تم إنشاء الحساب بنجاح!");
+            }
+        } catch (error) {
+            alert("❌ خطأ: " + error.message);
         }
-        .neon-border {
-            box-shadow: 0 0 20px rgba(168, 85, 247, 0.15);
+    });
+}
+
+if (createRoomBtn) {
+    createRoomBtn.addEventListener('click', () => createRoomModal.classList.remove('hidden'));
+}
+
+if (cancelRoomBtn) {
+    cancelRoomBtn.addEventListener('click', () => {
+        createRoomModal.classList.add('hidden');
+        roomNameInput.value = '';
+    });
+}
+
+if (confirmCreateRoom) {
+    confirmCreateRoom.addEventListener('click', async () => {
+        const roomName = roomNameInput.value.trim();
+        if (!roomName) return alert("⚠️ برجاء كتابة اسم الغرفة أولاً!");
+
+        try {
+            await addDoc(collection(db, "rooms"), {
+                name: roomName,
+                host: currentUser ? currentUser.email : "مستخدم مجهول",
+                createdAt: serverTimestamp()
+            });
+            roomNameInput.value = '';
+            createRoomModal.classList.add('hidden');
+            alert("🎉 تم إنشاء الغرفة بنجاح ونشرها في القاعة!");
+        } catch (error) {
+            alert("❌ خطأ: " + error.message);
         }
-    </style>
-</head>
-<body class="flex flex-col items-center justify-center min-h-screen p-4 bg-slate-950 text-white">
+    });
+}
 
-    <!-- 1. شاشة الترحيب -->
-    <div id="welcome-screen" class="glass neon-border p-8 rounded-3xl w-full max-w-md text-center">
-        <div class="w-20 h-20 bg-gradient-to-tr from-purple-600 to-pink-500 rounded-full mx-auto flex items-center justify-center mb-4 text-3xl shadow-lg shadow-purple-500/40">
-            <i class="fa-solid fa-microphone-lines text-white"></i>
-        </div>
-        <h1 class="text-2xl font-black mb-1 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">REAL VOICE</h1>
-        <p class="text-slate-400 text-xs mb-6">تطبيق الدردشة الصوتية والألعاب الاجتماعية</p>
-        
-        <button id="start-btn" onclick="goToAuth()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition text-sm cursor-pointer">
-            دخول التطبيق 🚀
-        </button>
-    </div>
+// الشات النصي
+if (chatForm) {
+    chatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = chatInput.value.trim();
+        if (!text || !currentUser) return;
 
-    <!-- 2. شاشة تسجيل الدخول -->
-    <div id="auth-screen" class="glass neon-border p-8 rounded-3xl w-full max-w-md hidden">
-        <div class="text-center mb-6">
-            <h2 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent" id="auth-title">إنشاء حساب جديد</h2>
-            <p class="text-xs text-slate-400 mt-1">انضم إلى مجتمع غرف الصوت والدردشة</p>
-        </div>
+        const senderName = currentUser.email.split('@')[0];
+        const msgDiv = document.createElement('div');
+        msgDiv.className = "text-[11px] leading-relaxed";
+        msgDiv.innerHTML = `<span class="text-purple-300 font-bold">${escapeHtml(senderName)}:</span> <span class="text-white">${escapeHtml(text)}</span>`;
+        chatMessagesList.appendChild(msgDiv);
+        chatMessagesList.scrollTop = chatMessagesList.scrollHeight;
+        chatInput.value = '';
+    });
+}
 
-        <form id="auth-form" class="space-y-4">
-            <div>
-                <label class="block text-xs text-purple-300 mb-1">البريد الإلكتروني</label>
-                <input type="email" id="email" required class="w-full px-4 py-3 rounded-xl glass text-sm bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white" placeholder="name@example.com">
-            </div>
-            <div>
-                <label class="block text-xs text-purple-300 mb-1">كلمة المرور</label>
-                <input type="password" id="password" required class="w-full px-4 py-3 rounded-xl glass text-sm bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white" placeholder="••••••••">
-            </div>
+// إعدادات الغرفة
+if (openRoomSettingsBtn) {
+    openRoomSettingsBtn.addEventListener('click', () => {
+        if (settingsRoomName && currentRoomTitle) {
+            settingsRoomName.value = currentRoomTitle.textContent;
+        }
+        roomSettingsModal.classList.remove('hidden');
+    });
+}
 
-            <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition text-sm cursor-pointer">
-                تسجيل الحساب
-            </button>
-        </form>
+if (closeSettingsModal) {
+    closeSettingsModal.addEventListener('click', () => roomSettingsModal.classList.add('hidden'));
+}
 
-        <div class="text-center mt-4">
-            <button type="button" id="toggle-auth-mode" class="text-xs text-purple-300 hover:underline cursor-pointer">
-                لديك حساب بالفعل؟ سجل دخولك من هنا
-            </button>
-        </div>
-    </div>
+if (saveSettingsBtn) {
+    saveSettingsBtn.addEventListener('click', () => {
+        const newName = settingsRoomName.value.trim();
+        if (newName && currentRoomTitle) {
+            currentRoomTitle.textContent = newName;
+        }
+        alert("✅ تم حفظ إعدادات الغرفة بنجاح!");
+        roomSettingsModal.classList.add('hidden');
+    });
+}
 
-    <!-- 3. شاشة قاعة الغرف (Lobby) -->
-    <div id="rooms-screen" class="glass neon-border p-6 rounded-3xl w-full max-w-md hidden">
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h2 class="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">استكشاف الغرف</h2>
-                <p id="user-display-email" class="text-[10px] text-slate-400">مرحباً بك</p>
-            </div>
-            <button id="create-room-btn" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg hover:opacity-90 transition cursor-pointer">
-                <i class="fa-solid fa-plus ml-1"></i> إنشاء غرفة
-            </button>
-        </div>
+if (roomImgFile) {
+    roomImgFile.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                roomImgIcon.outerHTML = `<img src="${event.target.result}" class="w-full h-full object-cover rounded-2xl" id="room-img-icon">`;
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+}
 
-        <div id="rooms-list" class="space-y-3 max-h-96 overflow-y-auto pr-1">
-            <p class="text-center text-slate-500 text-xs py-4">جاري تحميل الغرف...</p>
-        </div>
-    </div>
+function loadRooms() {
+    if (!roomsList) return;
+    onSnapshot(collection(db, "rooms"), (snapshot) => {
+        roomsList.innerHTML = "";
+        if (snapshot.empty) {
+            roomsList.innerHTML = `<p class="text-center text-slate-500 text-xs py-4">لا توجد غرف متاحة حالياً. أنشئ غرفة الآن! ✨</p>`;
+            return;
+        }
 
-    <!-- 4. شاشة الغرفة الداخلية ومسرح الـ 8 كراسي والشات النصي -->
-    <div id="room-view-screen" class="glass neon-border p-5 rounded-3xl w-full max-w-md hidden flex flex-col h-[550px]">
-        <div class="flex justify-between items-center mb-4 border-b border-purple-500/20 pb-2">
-            <div class="flex items-center gap-2">
-                <button id="open-room-settings-btn" class="text-slate-400 hover:text-white text-sm cursor-pointer" title="إعدادات الغرفة">
-                    <i class="fa-solid fa-gear"></i>
-                </button>
+        snapshot.forEach((docSnap) => {
+            const roomData = docSnap.data();
+            const roomId = docSnap.id;
+            const roomCard = document.createElement('div');
+            roomCard.className = "glass p-4 rounded-2xl flex justify-between items-center border border-purple-500/25";
+            roomCard.innerHTML = `
                 <div>
-                    <h2 id="current-room-title" class="text-sm font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">اسم الغرفة</h2>
-                    <p class="text-[9px] text-slate-400">ID: 505303 | 11/18 🎤</p>
+                    <h3 class="text-sm font-bold text-purple-200">${escapeHtml(roomData.name)} 🎤</h3>
+                    <p class="text-[10px] text-slate-400 mt-0.5">المضيف: ${escapeHtml(roomData.host)}</p>
                 </div>
-            </div>
-            <button id="leave-room-btn" class="bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white px-2.5 py-1 rounded-lg text-xs transition border border-red-500/40 cursor-pointer">
-                مغادرة 🚪
-            </button>
-        </div>
-
-        <!-- مسرح المايكات (8 كراسي) -->
-        <div class="grid grid-cols-4 gap-3 mb-3 text-center">
-            <div class="flex flex-col items-center">
-                <div id="seat-0" class="w-12 h-12 rounded-full glass border-2 border-purple-500 flex items-center justify-center relative cursor-pointer shadow-lg shadow-purple-500/20 hover:scale-105 transition">
-                    <i class="fa-solid fa-crown text-amber-400 text-xs absolute -top-1 -right-1"></i>
-                    <i class="fa-solid fa-user text-purple-300 text-base seat-icon"></i>
-                </div>
-                <span id="seat-name-0" class="text-[9px] text-slate-300 mt-1 truncate w-14">المضيف</span>
-            </div>
-            <script>
-                for(let i=1; i<=7; i++) {
-                    document.write(`
-                        <div class="flex flex-col items-center">
-                            <div id="seat-${i}" class="w-12 h-12 rounded-full glass border border-purple-500/30 flex items-center justify-center relative cursor-pointer hover:scale-105 transition">
-                                <i class="fa-solid fa-microphone-slash text-slate-500 text-xs seat-icon"></i>
-                            </div>
-                            <span id="seat-name-${i}" class="text-[9px] text-slate-500 mt-1 truncate w-14">فاضي</span>
-                        </div>
-                    `);
-                }
-            </script>
-        </div>
-
-        <!-- قسم الشات النصي داخل الغرفة -->
-        <div class="flex-1 glass rounded-2xl p-3 mb-3 flex flex-col border border-purple-500/20 overflow-hidden">
-            <div class="text-[10px] text-purple-300 font-bold mb-1 border-b border-purple-500/10 pb-1">دردشة الغرفة 💬</div>
-            <div id="chat-messages-list" class="flex-1 overflow-y-auto space-y-1 text-xs pr-1">
-                <div class="text-slate-400 text-[10px]">مرحباً بك في الغرفة! استمتع بالدردشة الصوتية والنصية ✨</div>
-            </div>
-            <form id="chat-form" class="flex gap-2 mt-2 pt-1 border-t border-purple-500/10">
-                <input type="text" id="chat-input" placeholder="اكتب رسالة..." class="flex-1 px-3 py-1.5 rounded-xl glass text-xs bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white">
-                <button type="submit" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-xl text-xs transition cursor-pointer">
-                    <i class="fa-solid fa-paper-plane"></i>
+                <button class="join-room-btn bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-purple-500/40 cursor-pointer">
+                    دخول الغرفة
                 </button>
-            </form>
-        </div>
+            `;
+            roomCard.querySelector('.join-room-btn').addEventListener('click', () => enterRoom(roomId, roomData.name));
+            roomsList.appendChild(roomCard);
+        });
+    });
+}
 
-        <!-- أزرار التحكم السفلية -->
-        <div class="flex gap-2 justify-center pt-1 border-t border-purple-500/20">
-            <button id="toggle-mic-btn" class="bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-purple-500/40 cursor-pointer flex items-center gap-1">
-                <i class="fa-solid fa-microphone"></i> كتم المايك
-            </button>
-            <button id="request-seat-btn" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1.5 rounded-xl text-xs font-bold shadow-lg hover:opacity-90 transition cursor-pointer">
-                الجلوس على كرسي 🪑
-            </button>
-        </div>
-    </div>
+function enterRoom(roomId, roomName) {
+    currentRoomId = roomId;
+    roomsScreen.classList.add('hidden');
+    roomViewScreen.classList.remove('hidden');
+    currentRoomTitle.textContent = roomName;
+    resetSeatsUI();
+    if (chatMessagesList) {
+        chatMessagesList.innerHTML = `<div class="text-slate-400 text-[10px]">مرحباً بك في الغرفة! استمتع بالدردشة الصوتية والنصية ✨</div>`;
+    }
+}
 
-    <!-- 5. نافذة إعدادات الغرفة -->
-    <div id="room-settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-        <div class="glass neon-border p-6 rounded-3xl w-full max-w-md text-white relative max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4 border-b border-purple-500/20 pb-3">
-                <h3 class="text-base font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">الإعدادات</h3>
-                <button id="close-settings-modal" class="text-slate-400 hover:text-white text-lg cursor-pointer">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
+if (leaveRoomBtn) {
+    leaveRoomBtn.addEventListener('click', () => {
+        currentRoomId = null;
+        roomViewScreen.classList.add('hidden');
+        roomsScreen.classList.remove('hidden');
+    });
+}
 
-            <div class="flex flex-col items-center mb-6">
-                <div class="w-20 h-20 rounded-2xl glass border border-purple-500/40 relative flex items-center justify-center overflow-hidden group">
-                    <i class="fa-solid fa-image text-purple-300 text-2xl" id="room-img-icon"></i>
-                    <label class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer">
-                        <i class="fa-solid fa-camera text-white text-sm"></i>
-                        <input type="file" id="room-img-file" accept="image/*" class="hidden">
-                    </label>
-                </div>
-            </div>
+if (requestSeatBtn) {
+    requestSeatBtn.addEventListener('click', () => {
+        if (!currentUser || !currentRoomId) return alert("⚠️ سجل الدخول وادخل غرفة أولاً!");
+        let emptyIndex = roomSeats.findIndex((seat, idx) => idx > 0 && seat === null);
+        if (emptyIndex === -1 && roomSeats[0] === null) emptyIndex = 0;
+        if (emptyIndex === -1) return alert("❌ عذراً، جميع الكراسي محجوزة!");
 
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-[11px] text-purple-300 mb-1">الإعدادات الأساسية</label>
-                    <input type="text" id="settings-room-name" placeholder="اسم الغرفة" class="w-full px-4 py-2.5 rounded-xl glass text-xs bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white mb-2">
-                    <textarea id="settings-room-announcement" placeholder="إعلان" rows="3" class="w-full px-4 py-2.5 rounded-xl glass text-xs bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white resize-none"></textarea>
-                </div>
-                <button id="save-settings-btn" class="w-full bg-gradient-to-r from-emerald-600 to-green-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition text-xs cursor-pointer mt-4">
-                    إرسال
-                </button>
-            </div>
-        </div>
-    </div>
+        const shortName = currentUser.email.split('@')[0];
+        roomSeats[emptyIndex] = shortName;
+        playSeatSound();
+        updateSeatUI(emptyIndex, shortName, true);
+    });
+}
 
-    <!-- 6. نافذة بروفايل المستخدم الفخمة -->
-    <div id="user-profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end justify-center hidden z-50">
-        <div class="glass neon-border p-6 rounded-t-3xl w-full max-w-md text-white relative">
-            <button id="close-profile-modal" class="absolute top-4 left-4 text-slate-400 hover:text-white text-lg cursor-pointer">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            
-            <div class="flex flex-col items-center text-center mb-6">
-                <div class="w-20 h-20 rounded-full border-2 border-amber-400 p-1 mb-2 relative">
-                    <div class="w-full h-full rounded-full bg-purple-900 flex items-center justify-center text-2xl font-bold text-amber-300">
-                        <i class="fa-solid fa-user"></i>
-                    </div>
-                    <span class="absolute -bottom-2 bg-gradient-to-r from-emerald-600 to-green-500 text-[10px] px-2 py-0.5 rounded-full font-bold">المالك</span>
-                </div>
-                
-                <h3 id="modal-username" class="text-base font-bold text-purple-200 mt-2">اسم المستخدم</h3>
-                <p class="text-xs text-slate-400 mt-0.5">ID: 110789</p>
-                
-                <div class="flex gap-2 mt-2">
-                    <span class="text-[10px] bg-purple-900/50 border border-purple-500/30 px-2 py-0.5 rounded-md text-purple-300">MA 🇲🇦</span>
-                </div>
-            </div>
+function updateSeatUI(index, userName, isOccupied) {
+    const seatDiv = document.getElementById(`seat-${index}`);
+    const nameSpan = document.getElementById(`seat-name-${index}`);
+    if (!seatDiv || !nameSpan) return;
 
-            <div class="grid grid-cols-3 gap-2 mb-6 text-center">
-                <div class="glass p-2 rounded-xl border border-purple-500/20">
-                    <span class="text-[10px] text-slate-400 block">الجاذبية</span>
-                    <span class="text-xs font-bold text-purple-300">Lv.2 🥈</span>
-                </div>
-                <div class="glass p-2 rounded-xl border border-purple-500/20">
-                    <span class="text-[10px] text-slate-400 block">الثروة</span>
-                    <span class="text-xs font-bold text-emerald-300">Lv.10 🧪</span>
-                </div>
-                <div class="glass p-2 rounded-xl border border-purple-500/20">
-                    <span class="text-[10px] text-slate-400 block">امتيازات</span>
-                    <span class="text-xs font-bold text-amber-300">VIP3 👑</span>
-                </div>
-            </div>
+    const newSeatDiv = seatDiv.cloneNode(true);
+    seatDiv.parentNode.replaceChild(newSeatDiv, seatDiv);
+    const updatedSeatDiv = document.getElementById(`seat-${index}`);
 
-            <div class="space-y-2">
-                <button class="w-full bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white py-2.5 rounded-xl text-xs transition border border-purple-500/40 cursor-pointer">
-                    كتم الميكروفون 🎤
-                </button>
-                <button class="w-full bg-red-600/30 hover:bg-red-600 text-red-200 hover:text-white py-2.5 rounded-xl text-xs transition border border-red-500/40 cursor-pointer">
-                    إنزال من المقعد 🚪
-                </button>
-            </div>
-        </div>
-    </div>
+    if (isOccupied) {
+        updatedSeatDiv.className = "w-12 h-12 rounded-full glass border-2 border-green-500 flex items-center justify-center relative cursor-pointer shadow-lg shadow-green-500/20 hover:scale-105 transition";
+        updatedSeatDiv.innerHTML = `<i class="fa-solid fa-user text-green-300 text-base seat-icon"></i>`;
+        if (index === 0) updatedSeatDiv.innerHTML += `<i class="fa-solid fa-crown text-amber-400 text-[10px] absolute -top-1 -right-1"></i>`;
+        nameSpan.textContent = userName;
+        nameSpan.className = "text-[9px] text-green-300 mt-1 truncate w-14 font-bold";
 
-    <!-- نافذة إنشاء غرفة -->
-    <div id="create-room-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-        <div class="glass neon-border p-6 rounded-3xl w-full max-w-sm text-center">
-            <h3 class="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">إنشاء غرفة صوتية جديدة</h3>
-            <input type="text" id="room-name-input" placeholder="اسم الغرفة (مثلاً: سهرة فنانين 🎤)" class="w-full px-4 py-3 rounded-xl glass text-sm bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white mb-4">
-            <div class="flex gap-2">
-                <button type="button" id="cancel-room-btn" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition cursor-pointer">إلغاء</button>
-                <button type="button" id="confirm-create-room" class="w-1/2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-2.5 rounded-xl text-xs shadow-lg hover:opacity-90 transition cursor-pointer">إنشاء</button>
-            </div>
-        </div>
-    </div>
+        updatedSeatDiv.addEventListener('click', () => {
+            modalUsername.textContent = userName;
+            userProfileModal.classList.remove('hidden');
+        });
+    } else {
+        updatedSeatDiv.className = "w-12 h-12 rounded-full glass border border-purple-500/30 flex items-center justify-center relative cursor-pointer hover:scale-105 transition";
+        updatedSeatDiv.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-xs seat-icon"></i>`;
+        if (index === 0) updatedSeatDiv.innerHTML += `<i class="fa-solid fa-crown text-amber-400 text-[10px] absolute -top-1 -right-1"></i>`;
+        nameSpan.textContent = index === 0 ? "المضيف" : "فاضي";
+        nameSpan.className = "text-[9px] text-slate-500 mt-1 truncate w-14";
+    }
+}
 
-    <script type="module" src="script.js"></script>
-</body>
-</html>
+if (closeProfileModal) {
+    closeProfileModal.addEventListener('click', () => userProfileModal.classList.add('hidden'));
+}
+
+function resetSeatsUI() {
+    roomSeats = Array(8).fill(null);
+    for (let i = 0; i < 8; i++) updateSeatUI(i, null, false);
+}
+
+let isMicMuted = false;
+if (toggleMicBtn) {
+    toggleMicBtn.addEventListener('click', () => {
+        isMicMuted = !isMicMuted;
+        toggleMicBtn.innerHTML = isMicMuted ? `<i class="fa-solid fa-microphone-slash"></i> المايك مكتوم` : `<i class="fa-solid fa-microphone"></i> المايك مفتوح`;
+        toggleMicBtn.className = isMicMuted ? "bg-red-600/30 text-red-200 px-3 py-1.5 rounded-xl text-xs transition border border-red-500/40 cursor-pointer flex items-center gap-1" : "bg-green-600/30 text-green-200 px-3 py-1.5 rounded-xl text-xs transition border border-green-500/40 cursor-pointer flex items-center gap-1";
+    });
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    if (user) {
+        welcomeScreen.classList.add('hidden');
+        authScreen.classList.add('hidden');
+        roomViewScreen.classList.add('hidden');
+        roomsScreen.classList.remove('hidden');
+        userDisplayEmail.textContent = `حسابك: ${user.email}`;
+        loadRooms();
+    } else {
+        welcomeScreen.classList.remove('hidden');
+        authScreen.classList.add('hidden');
+        roomsScreen.classList.add('hidden');
+        roomViewScreen.classList.add('hidden');
+    }
+});
