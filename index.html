@@ -6,6 +6,8 @@
     <title>REAL VOICE - منصة الدردشة الصوتية</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- مكتبة Agora للاتصال الصوتي الحي -->
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
     <style>
         .glass {
             background: rgba(15, 23, 42, 0.85);
@@ -79,58 +81,72 @@
         </div>
     </div>
 
-    <!-- 4. شاشة الغرفة الداخلية ومسرح الـ 8 كراسي -->
-    <div id="room-view-screen" class="glass neon-border p-6 rounded-3xl w-full max-w-md hidden">
-        <div class="flex justify-between items-center mb-6 border-b border-purple-500/20 pb-3">
+    <!-- 4. شاشة الغرفة الداخلية ومسرح الـ 8 كراسي والشات -->
+    <div id="room-view-screen" class="glass neon-border p-5 rounded-3xl w-full max-w-md hidden flex flex-col h-[550px]">
+        <div class="flex justify-between items-center mb-4 border-b border-purple-500/20 pb-2">
             <div class="flex items-center gap-2">
                 <button id="open-room-settings-btn" class="text-slate-400 hover:text-white text-sm cursor-pointer" title="إعدادات الغرفة">
                     <i class="fa-solid fa-gear"></i>
                 </button>
                 <div>
-                    <h2 id="current-room-title" class="text-base font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">اسم الغرفة</h2>
-                    <p class="text-[10px] text-slate-400">ID: 505303 | 11/18 🎤</p>
+                    <h2 id="current-room-title" class="text-sm font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">اسم الغرفة</h2>
+                    <p class="text-[9px] text-slate-400">ID: 505303 | 11/18 🎤</p>
                 </div>
             </div>
-            <button id="leave-room-btn" class="bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-red-500/40 cursor-pointer">
+            <button id="leave-room-btn" class="bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white px-2.5 py-1 rounded-lg text-xs transition border border-red-500/40 cursor-pointer">
                 مغادرة 🚪
             </button>
         </div>
 
         <!-- مسرح المايكات (8 كراسي) -->
-        <div class="grid grid-cols-4 gap-4 mb-6 text-center">
+        <div class="grid grid-cols-4 gap-3 mb-3 text-center">
             <div class="flex flex-col items-center">
-                <div id="seat-0" class="w-14 h-14 rounded-full glass border-2 border-purple-500 flex items-center justify-center relative cursor-pointer shadow-lg shadow-purple-500/20 hover:scale-105 transition">
+                <div id="seat-0" class="w-12 h-12 rounded-full glass border-2 border-purple-500 flex items-center justify-center relative cursor-pointer shadow-lg shadow-purple-500/20 hover:scale-105 transition">
                     <i class="fa-solid fa-crown text-amber-400 text-xs absolute -top-1 -right-1"></i>
-                    <i class="fa-solid fa-user text-purple-300 text-lg seat-icon"></i>
+                    <i class="fa-solid fa-user text-purple-300 text-base seat-icon"></i>
                 </div>
-                <span id="seat-name-0" class="text-[10px] text-slate-300 mt-1 truncate w-16">المضيف</span>
+                <span id="seat-name-0" class="text-[9px] text-slate-300 mt-1 truncate w-14">المضيف</span>
             </div>
             <script>
                 for(let i=1; i<=7; i++) {
                     document.write(`
                         <div class="flex flex-col items-center">
-                            <div id="seat-${i}" class="w-14 h-14 rounded-full glass border border-purple-500/30 flex items-center justify-center relative cursor-pointer hover:scale-105 transition">
-                                <i class="fa-solid fa-microphone-slash text-slate-500 text-sm seat-icon"></i>
+                            <div id="seat-${i}" class="w-12 h-12 rounded-full glass border border-purple-500/30 flex items-center justify-center relative cursor-pointer hover:scale-105 transition">
+                                <i class="fa-solid fa-microphone-slash text-slate-500 text-xs seat-icon"></i>
                             </div>
-                            <span id="seat-name-${i}" class="text-[10px] text-slate-500 mt-1 truncate w-16">فاضي</span>
+                            <span id="seat-name-${i}" class="text-[9px] text-slate-500 mt-1 truncate w-14">فاضي</span>
                         </div>
                     `);
                 }
             </script>
         </div>
 
+        <!-- قسم الشات النصي داخل الغرفة -->
+        <div class="flex-1 glass rounded-2xl p-3 mb-3 flex flex-col border border-purple-500/20 overflow-hidden">
+            <div class="text-[10px] text-purple-300 font-bold mb-1 border-b border-purple-500/10 pb-1">دردشة الغرفة 💬</div>
+            <div id="chat-messages-list" class="flex-1 overflow-y-auto space-y-1 text-xs pr-1">
+                <div class="text-slate-400 text-[10px]">مرحباً بك في الغرفة! استمتع بالدردشة الصوتية الحية ✨</div>
+            </div>
+            <form id="chat-form" class="flex gap-2 mt-2 pt-1 border-t border-purple-500/10">
+                <input type="text" id="chat-input" placeholder="اكتب رسالة..." class="flex-1 px-3 py-1.5 rounded-xl glass text-xs bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white">
+                <button type="submit" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-xl text-xs transition cursor-pointer">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+
         <!-- أزرار التحكم السفلية -->
-        <div class="flex gap-2 justify-center pt-2 border-t border-purple-500/20">
-            <button id="toggle-mic-btn" class="bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white px-3 py-2 rounded-xl text-xs transition border border-purple-500/40 cursor-pointer flex items-center gap-1">
+        <div class="flex gap-2 justify-center pt-1 border-t border-purple-500/20">
+            <button id="toggle-mic-btn" class="bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-purple-500/40 cursor-pointer flex items-center gap-1">
                 <i class="fa-solid fa-microphone"></i> كتم المايك
             </button>
-            <button id="request-seat-btn" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg hover:opacity-90 transition cursor-pointer">
+            <button id="request-seat-btn" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1.5 rounded-xl text-xs font-bold shadow-lg hover:opacity-90 transition cursor-pointer">
                 الجلوس على كرسي 🪑
             </button>
         </div>
     </div>
 
-    <!-- 5. نافذة إعدادات الغرفة (مطابقة للصورة بدقة) -->
+    <!-- 5. نافذة إعدادات الغرفة -->
     <div id="room-settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="glass neon-border p-6 rounded-3xl w-full max-w-md text-white relative max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4 border-b border-purple-500/20 pb-3">
@@ -140,7 +156,6 @@
                 </button>
             </div>
 
-            <!-- صورة الغرفة مع زر الكاميرا -->
             <div class="flex flex-col items-center mb-6">
                 <div class="w-20 h-20 rounded-2xl glass border border-purple-500/40 relative flex items-center justify-center overflow-hidden group">
                     <i class="fa-solid fa-image text-purple-300 text-2xl" id="room-img-icon"></i>
@@ -157,29 +172,6 @@
                     <input type="text" id="settings-room-name" placeholder="اسم الغرفة" class="w-full px-4 py-2.5 rounded-xl glass text-xs bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white mb-2">
                     <textarea id="settings-room-announcement" placeholder="إعلان" rows="3" class="w-full px-4 py-2.5 rounded-xl glass text-xs bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white resize-none"></textarea>
                 </div>
-
-                <div>
-                    <input type="password" id="settings-room-password" placeholder="****" class="w-full px-4 py-2.5 rounded-xl glass text-xs bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white">
-                </div>
-
-                <div>
-                    <label class="block text-[11px] text-purple-300 mb-2">إعدادات الوظائف</label>
-                    <div class="space-y-2">
-                        <div class="glass p-3 rounded-xl flex justify-between items-center border border-purple-500/20 cursor-pointer hover:border-purple-500/50 transition">
-                            <span class="text-xs text-slate-300">عدد مقاعد الميكروفون</span>
-                            <i class="fa-solid fa-chevron-left text-xs text-slate-400"></i>
-                        </div>
-                        <div class="glass p-3 rounded-xl flex justify-between items-center border border-purple-500/20 cursor-pointer hover:border-purple-500/50 transition">
-                            <span class="text-xs text-slate-300">المسؤولون</span>
-                            <i class="fa-solid fa-chevron-left text-xs text-slate-400"></i>
-                        </div>
-                        <div class="glass p-3 rounded-xl flex justify-between items-center border border-purple-500/20 cursor-pointer hover:border-purple-500/50 transition">
-                            <span class="text-xs text-slate-300">القائمة السوداء</span>
-                            <i class="fa-solid fa-chevron-left text-xs text-slate-400"></i>
-                        </div>
-                    </div>
-                </div>
-
                 <button id="save-settings-btn" class="w-full bg-gradient-to-r from-emerald-600 to-green-600 text-white font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition text-xs cursor-pointer mt-4">
                     إرسال
                 </button>
@@ -187,7 +179,7 @@
         </div>
     </div>
 
-    <!-- 6. نافذة بروفايل المستخدم الفخمة داخل الغرفة -->
+    <!-- 6. نافذة بروفايل المستخدم الفخمة -->
     <div id="user-profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end justify-center hidden z-50">
         <div class="glass neon-border p-6 rounded-t-3xl w-full max-w-md text-white relative">
             <button id="close-profile-modal" class="absolute top-4 left-4 text-slate-400 hover:text-white text-lg cursor-pointer">
@@ -199,11 +191,11 @@
                     <div class="w-full h-full rounded-full bg-purple-900 flex items-center justify-center text-2xl font-bold text-amber-300">
                         <i class="fa-solid fa-user"></i>
                     </div>
-                    <span class="absolute -bottom-2 bg-gradient-to-r from-emerald-600 to-green-500 text-[10px] px-2 py-0.5 rounded-full font-bold">المالك[span_1](start_span)[span_1](end_span)</span>
+                    <span class="absolute -bottom-2 bg-gradient-to-r from-emerald-600 to-green-500 text-[10px] px-2 py-0.5 rounded-full font-bold">المالك</span>
                 </div>
                 
                 <h3 id="modal-username" class="text-base font-bold text-purple-200 mt-2">اسم المستخدم</h3>
-                <p class="text-xs text-slate-400 mt-0.5">ID: 110789[span_2](start_span)[span_2](end_span)</p>
+                <p class="text-xs text-slate-400 mt-0.5">ID: 110789</p>
                 
                 <div class="flex gap-2 mt-2">
                     <span class="text-[10px] bg-purple-900/50 border border-purple-500/30 px-2 py-0.5 rounded-md text-purple-300">MA 🇲🇦</span>
@@ -213,15 +205,15 @@
             <div class="grid grid-cols-3 gap-2 mb-6 text-center">
                 <div class="glass p-2 rounded-xl border border-purple-500/20">
                     <span class="text-[10px] text-slate-400 block">الجاذبية</span>
-                    <span class="text-xs font-bold text-purple-300">Lv.2 🥈[span_3](start_span)[span_3](end_span)</span>
+                    <span class="text-xs font-bold text-purple-300">Lv.2 🥈</span>
                 </div>
                 <div class="glass p-2 rounded-xl border border-purple-500/20">
                     <span class="text-[10px] text-slate-400 block">الثروة</span>
-                    <span class="text-xs font-bold text-emerald-300">Lv.10 🧪[span_4](start_span)[span_4](end_span)</span>
+                    <span class="text-xs font-bold text-emerald-300">Lv.10 🧪</span>
                 </div>
                 <div class="glass p-2 rounded-xl border border-purple-500/20">
                     <span class="text-[10px] text-slate-400 block">امتيازات</span>
-                    <span class="text-xs font-bold text-amber-300">VIP3 👑[span_5](start_span)[span_5](end_span)</span>
+                    <span class="text-xs font-bold text-amber-300">VIP3 👑</span>
                 </div>
             </div>
 
