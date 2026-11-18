@@ -6,7 +6,10 @@ import {
     GoogleAuthProvider,
     signInWithPopup,
     signOut,
-    onAuthStateChanged 
+    onAuthStateChanged,
+    deleteUser,
+    EmailAuthProvider,
+    reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
     getFirestore, 
@@ -122,6 +125,28 @@ const modalAvatarPreview = document.getElementById('modal-avatar-preview');
 const changeRoomImgTrigger = document.getElementById('change-room-img-trigger');
 const roomNewImageFile = document.getElementById('room-new-image-file');
 
+// إعدادات الحساب والنوافذ الإضافية
+const settingsAccountCenter = document.getElementById('settings-account-center');
+const modalAccountCenter = document.getElementById('modal-account-center');
+const closeAccountCenter = document.getElementById('close-account-center');
+const accCenterEmail = document.getElementById('acc-center-email');
+const accCenterUid = document.getElementById('acc-center-uid');
+
+const settingsLanguage = document.getElementById('settings-language');
+const modalLanguage = document.getElementById('modal-language');
+const closeLanguage = document.getElementById('close-language');
+const langArBtn = document.getElementById('lang-ar-btn');
+const langEnBtn = document.getElementById('lang-en-btn');
+const currentLangLabel = document.getElementById('current-lang-label');
+
+const settingsDeleteAccount = document.getElementById('settings-delete-account');
+const modalDeleteAccount = document.getElementById('modal-delete-account');
+const closeDeleteModal = document.getElementById('close-delete-modal');
+const deleteConfirmPassword = document.getElementById('delete-confirm-password');
+const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+
+const settingsLogoutSwitch = document.getElementById('settings-logout-switch');
+
 let isLoginMode = false;
 let currentUser = null;
 let currentRoomId = null;
@@ -233,6 +258,111 @@ if (googleLoginBtn) {
     });
 }
 
+// تعديل الملف الشخصي
+if (editProfileBtn && editProfileModal) {
+    editProfileBtn.addEventListener('click', () => {
+        if (userData) {
+            inputNickname.value = userData.nickname || "";
+            modalAvatarPreview.src = userData.avatar || "https://via.placeholder.com/150";
+            tempSelectedAvatar = userData.avatar;
+        }
+        editProfileModal.classList.remove('hidden');
+    });
+}
+
+if (closeEditProfile) {
+    closeEditProfile.addEventListener('click', () => editProfileModal.classList.add('hidden'));
+}
+
+if (avatarPickerTrigger && inputAvatarFile) {
+    avatarPickerTrigger.addEventListener('click', () => inputAvatarFile.click());
+    inputAvatarFile.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const compressed = await compressImage(file);
+            if (compressed) {
+                tempSelectedAvatar = compressed;
+                modalAvatarPreview.src = compressed;
+            }
+        }
+    });
+}
+
+if (saveProfileBtn) {
+    saveProfileBtn.addEventListener('click', async () => {
+        if (!currentUser) return;
+        const newNickname = inputNickname.value.trim();
+        if (!newNickname) return alert("⚠️ يرجى كتابة الاسم المستعار!");
+        try {
+            const userRef = doc(db, "users", currentUser.uid);
+            const updates = { nickname: newNickname };
+            if (tempSelectedAvatar) updates.avatar = tempSelectedAvatar;
+
+            await updateDoc(userRef, updates);
+            userData.nickname = newNickname;
+            if (updates.avatar) userData.avatar = updates.avatar;
+
+            profileDisplayName.textContent = newNickname;
+            if (updates.avatar) profileImgPreview.src = updates.avatar;
+
+            editProfileModal.classList.add('hidden');
+            alert("✅ تم حفظ التغييرات بنجاح!");
+        } catch (err) {
+            alert("❌ خطأ أثناء الحفظ: " + err.message);
+        }
+    });
+}
+
+// إعدادات الحساب الإضافية (مركز الحساب، اللغة، الحذف، الخروج)
+if (settingsAccountCenter && modalAccountCenter) {
+    settingsAccountCenter.addEventListener('click', () => {
+        if (currentUser && userData) {
+            accCenterEmail.textContent = currentUser.email || "غير متوفر";
+            accCenterUid.textContent = userData.userId || "110789";
+            modalAccountCenter.classList.remove('hidden');
+        }
+    });
+    closeAccountCenter.addEventListener('click', () => modalAccountCenter.classList.add('hidden'));
+}
+
+if (settingsLanguage && modalLanguage) {
+    settingsLanguage.addEventListener('click', () => modalLanguage.classList.remove('hidden'));
+    closeLanguage.addEventListener('click', () => modalLanguage.classList.add('hidden'));
+    langArBtn.addEventListener('click', () => {
+        currentLangLabel.textContent = "العربية 🇪🇬";
+        modalLanguage.classList.add('hidden');
+    });
+    langEnBtn.addEventListener('click', () => {
+        currentLangLabel.textContent = "English 🇺🇸";
+        modalLanguage.classList.add('hidden');
+    });
+}
+
+if (settingsDeleteAccount && modalDeleteAccount) {
+    settingsDeleteAccount.addEventListener('click', () => modalDeleteAccount.classList.remove('hidden'));
+    closeDeleteModal.addEventListener('click', () => modalDeleteAccount.classList.add('hidden'));
+    confirmDeleteBtn.addEventListener('click', async () => {
+        const pass = deleteConfirmPassword.value;
+        if (!pass) return alert("⚠️ يرجى أدخال كلمة المرور للتأكيد.");
+        try {
+            const credential = EmailAuthProvider.credential(currentUser.email, pass);
+            await reauthenticateWithCredential(currentUser, credential);
+            await deleteUser(currentUser);
+            alert("🗑️ تم حذف الحساب بنجاح.");
+        } catch (err) {
+            alert("❌ كلمة المرور غير صحيحة أو حدث خطأ: " + err.message);
+        }
+    });
+}
+
+if (settingsLogoutSwitch) {
+    settingsLogoutSwitch.addEventListener('click', async () => {
+        if (confirm("هل تريد تسجيل الخروج؟")) {
+            await signOut(auth);
+        }
+    });
+}
+
 // إنشاء الغرف
 if (createRoomBtn) {
     createRoomBtn.addEventListener('click', () => createRoomModal.classList.remove('hidden'));
@@ -333,7 +463,7 @@ if (floatingMicToggleBtn) {
     });
 }
 
-// رسم المقاعد (الكراسي)
+// رسم المقاعد الثابتة (8 مايكات)
 function renderSeats() {
     for (let i = 0; i < 8; i++) {
         const seatBox = document.getElementById(`seat-${i}`);
@@ -358,7 +488,7 @@ function renderSeats() {
             nameSpan.className = "text-[10px] text-green-300 truncate w-16 font-bold";
         } else {
             newSeatBox.className = "w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer hover:border-purple-400 transition";
-            newSeatBox.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-sm"></i>`;
+            newSeatBox.innerHTML = i === 0 ? `<i class="fa-solid fa-crown text-amber-400 text-xs absolute -top-1 -right-1"></i><i class="fa-solid fa-user text-purple-300 text-lg seat-icon"></i>` : `<i class="fa-solid fa-microphone-slash text-slate-500 text-sm seat-icon"></i>`;
             nameSpan.textContent = "فاضي";
             nameSpan.className = "text-[10px] text-slate-500 truncate w-16";
         }
@@ -429,7 +559,6 @@ if (optSitSeat) {
     });
 }
 
-// قفل وفتح المقعد
 if (optLockSeat) {
     optLockSeat.addEventListener('click', () => {
         if (selectedSeatIndex === null) return;
@@ -459,7 +588,6 @@ if (optToggleMicSeat) {
     });
 }
 
-// عرض بروفايل المستخدم أو بروفايلك الخاص (كمدير الغرفة)
 function openUserProfileModal(userObj, seatIdx) {
     selectedTargetUser = { ...userObj, seatIdx };
     modalProfileAvatar.src = userObj.avatar;
@@ -493,7 +621,6 @@ if (closeUserProfile) {
     });
 }
 
-// مهام الإدارة (الطرد 24 ساعة، طرد سنة، إنزال من المايك)
 if (actionKickMic) {
     actionKickMic.addEventListener('click', () => {
         if (!selectedTargetUser) return;
@@ -546,7 +673,6 @@ if (actionBanYear) {
     });
 }
 
-// تغيير صورة الغرفة
 if (changeRoomImgTrigger && roomNewImageFile) {
     changeRoomImgTrigger.addEventListener('click', () => {
         if (currentRoomDocData && currentUser && currentRoomDocData.hostUid === currentUser.uid) {
@@ -686,7 +812,6 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// فتح بروفايلك الخاص كمدير للغرفة عند الضغط على صورتك في تبويب الملف الشخصي
 if (profileImgPreview) {
     profileImgPreview.addEventListener('click', () => {
         if (userData && currentUser) {
