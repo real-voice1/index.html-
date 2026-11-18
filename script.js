@@ -58,8 +58,8 @@ const createRoomModal = document.getElementById('create-room-modal');
 const cancelRoomBtn = document.getElementById('cancel-room-btn');
 const confirmCreateRoom = document.getElementById('confirm-create-room');
 const roomNameInput = document.getElementById('room-name-input');
-const roomImageInput = document.getElementById('room-image-input'); // حقل صورة الغرفة
-const roomsList = document.getElementById('rooms-list');
+const roomImageFile = document.getElementById('room-image-file'); // رفع صورة الغرفة من المعرض
+const roomsGrid = document.getElementById('rooms-grid'); // شبكة مربعات الغرف الكبرى
 
 const leaveRoomBtn = document.getElementById('leave-room-btn');
 const currentRoomTitle = document.getElementById('current-room-title');
@@ -73,13 +73,13 @@ const chatMessagesList = document.getElementById('chat-messages-list');
 const headerUserId = document.getElementById('header-user-id');
 const profileDisplayName = document.getElementById('profile-display-name');
 const profileDisplayId = document.getElementById('profile-display-id');
-const profileImgPreview = document.getElementById('profile-img-preview'); // صورة البروفايل
+const profileImgPreview = document.getElementById('profile-img-preview');
 const editProfileBtn = document.getElementById('edit-profile-btn');
 const editProfileModal = document.getElementById('edit-profile-modal');
 const closeEditProfile = document.getElementById('close-edit-profile');
 const saveProfileBtn = document.getElementById('save-profile-btn');
 const inputNickname = document.getElementById('input-nickname');
-const inputAvatar = document.getElementById('input-avatar'); // حقل تعديل صورة البروفايل
+const inputAvatarFile = document.getElementById('input-avatar-file'); // ملف صورة البروفايل من المعرض
 
 let isLoginMode = false;
 let currentUser = null;
@@ -87,6 +87,16 @@ let currentRoomId = null;
 let roomSeats = Array(8).fill(null);
 let userData = null;
 let myCurrentSeatIndex = null;
+
+// دالة مساعدة لتحويل صورة المعرض إلى Base64 لكي تخزن وتظهر فوراً
+function convertFileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+}
 
 if (startBtn) {
     startBtn.addEventListener('click', () => {
@@ -158,12 +168,11 @@ if (navRoomsBtn && navProfileBtn) {
     });
 }
 
-// تعديل البروفايل (الاسم والصورة)
+// تعديل البروفايل واختيار صورة من معرض الهاتف
 if (editProfileBtn) {
     editProfileBtn.addEventListener('click', () => {
         if (userData) {
             if (inputNickname) inputNickname.value = userData.nickname || '';
-            if (inputAvatar) inputAvatar.value = userData.avatar || '';
         }
         if (editProfileModal) editProfileModal.classList.remove('hidden');
     });
@@ -179,22 +188,27 @@ if (saveProfileBtn) {
     saveProfileBtn.addEventListener('click', async () => {
         if (!currentUser) return;
         const newNick = inputNickname.value.trim();
-        const newAvatar = inputAvatar.value.trim();
         if (!newNick) return alert("⚠️ برجاء كتابة الاسم المستعار!");
 
         try {
+            let avatarBase64 = userData.avatar || "https://via.placeholder.com/150";
+            if (inputAvatarFile.files && inputAvatarFile.files[0]) {
+                avatarBase64 = await convertFileToBase64(inputAvatarFile.files[0]);
+            }
+
             const userRef = doc(db, "users", currentUser.uid);
             await updateDoc(userRef, {
                 nickname: newNick,
-                avatar: newAvatar || "https://via.placeholder.com/150"
+                avatar: avatarBase64
             });
+
             if (profileDisplayName) profileDisplayName.textContent = newNick;
-            if (profileImgPreview) profileImgPreview.src = newAvatar || "https://via.placeholder.com/150";
+            if (profileImgPreview) profileImgPreview.src = avatarBase64;
             
             userData.nickname = newNick;
-            userData.avatar = newAvatar;
+            userData.avatar = avatarBase64;
 
-            alert("✅ تم تحديث الملف الشخصي بنجاح!");
+            alert("✅ تم تحديث الملف الشخصي والصورة بنجاح!");
             if (editProfileModal) editProfileModal.classList.add('hidden');
         } catch (error) {
             alert("❌ خطأ أثناء الحفظ: " + error.message);
@@ -221,30 +235,34 @@ if (cancelRoomBtn) {
     cancelRoomBtn.addEventListener('click', () => {
         if (createRoomModal) createRoomModal.classList.add('hidden');
         if (roomNameInput) roomNameInput.value = '';
-        if (roomImageInput) roomImageInput.value = '';
+        if (roomImageFile) roomImageFile.value = '';
     });
 }
 
-// اشتراط كتابة اسم الغرفة وصورتها معاً قبل الإنشاء
+// إنشاء الغرفة واشتراط اختيار صورة الغرفة من معرض الهاتف
 if (confirmCreateRoom) {
     confirmCreateRoom.addEventListener('click', async () => {
-        if (!roomNameInput || !roomImageInput) return;
+        if (!roomNameInput || !roomImageFile) return;
         const roomName = roomNameInput.value.trim();
-        const roomImg = roomImageInput.value.trim();
 
         if (!roomName) return alert("⚠️ برجاء كتابة اسم الغرفة أولاً!");
-        if (!roomImg) return alert("⚠️ برجاء وضع رابط صورة الغرفة أولاً! لا يمكن الإنشاء بدون صورة.");
+        if (!roomImageFile.files || roomImageFile.files.length === 0) {
+            return alert("⚠️ برجاء اختيار صورة للغرفة من معرض الهاتف أولاً!");
+        }
 
         try {
+            const roomImgBase64 = await convertFileToBase64(roomImageFile.files[0]);
+
             await addDoc(collection(db, "rooms"), {
                 name: roomName,
-                image: roomImg,
+                image: roomImgBase64,
                 hostUid: currentUser.uid,
                 host: userData ? userData.nickname : currentUser.email,
                 createdAt: serverTimestamp()
             });
+
             roomNameInput.value = '';
-            roomImageInput.value = '';
+            roomImageFile.value = '';
             if (createRoomModal) createRoomModal.classList.add('hidden');
             alert("🎉 تم إنشاء غرفتك بنجاح!");
         } catch (error) {
@@ -253,13 +271,13 @@ if (confirmCreateRoom) {
     });
 }
 
-// استعراض الغرف في الواجهة الرئيسية بصور المستخدمين الخاصة بالروم
+// استعراض الغرف في مربعات كبرى ومنسقة (Grid) بدون كلمة "دخول"
 function loadRooms() {
-    if (!roomsList) return;
+    if (!roomsGrid) return;
     onSnapshot(collection(db, "rooms"), (snapshot) => {
-        roomsList.innerHTML = "";
+        roomsGrid.innerHTML = "";
         if (snapshot.empty) {
-            roomsList.innerHTML = `<p class="text-center text-slate-500 text-xs py-4">لا توجد غرف متاحة حالياً. أنشئ غرفتك الآن! ✨</p>`;
+            roomsGrid.innerHTML = `<p class="col-span-2 text-center text-slate-500 text-xs py-4">لا توجد غرف متاحة حالياً. أنشئ غرفتك الآن! ✨</p>`;
             return;
         }
 
@@ -267,23 +285,18 @@ function loadRooms() {
             const roomData = docSnap.data();
             const roomId = docSnap.id;
             const roomCard = document.createElement('div');
-            roomCard.className = "glass p-3 rounded-2xl flex items-center justify-between border border-purple-500/25";
+            roomCard.className = "glass p-3 rounded-2xl flex flex-col items-center text-center border border-purple-500/30 cursor-pointer hover:border-purple-400 transition transform hover:scale-105 shadow-lg";
             
-            // عرض صورة الغرفة التي رفعها المستخدم مع الاسم والمالك
+            // تصميم المربعات الكبرى لصور الغرف
             roomCard.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <img src="${escapeHtml(roomData.image || 'https://via.placeholder.com/150')}" class="w-12 h-12 rounded-xl object-cover border border-purple-500/40">
-                    <div>
-                        <h3 class="text-sm font-bold text-purple-200">${escapeHtml(roomData.name)} 🎤</h3>
-                        <p class="text-[10px] text-slate-400 mt-0.5">المالك: ${escapeHtml(roomData.host)}</p>
-                    </div>
-                </div>
-                <button class="join-room-btn bg-purple-600/30 hover:bg-purple-600 text-purple-200 text-xs px-3 py-1.5 rounded-xl transition border border-purple-500/40 cursor-pointer">
-                    دخول
-                </button>
+                <img src="${escapeHtml(roomData.image || 'https://via.placeholder.com/150')}" class="w-full h-28 rounded-xl object-cover border border-purple-500/40 mb-2 shadow-md">
+                <h3 class="text-xs font-bold text-purple-200 truncate w-full">${escapeHtml(roomData.name)} 🎤</h3>
+                <p class="text-[9px] text-slate-400 truncate w-full mt-0.5">المضيف: ${escapeHtml(roomData.host)}</p>
             `;
-            roomCard.querySelector('.join-room-btn').addEventListener('click', () => enterRoom(roomId, roomData.name));
-            roomsList.appendChild(roomCard);
+            
+            // الضغط على المربع بالكامل يدخل الغرفة
+            roomCard.addEventListener('click', () => enterRoom(roomId, roomData.name));
+            roomsGrid.appendChild(roomCard);
         });
     });
 }
