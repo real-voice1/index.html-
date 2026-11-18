@@ -21,8 +21,6 @@ import {
     setDoc, 
     updateDoc,
     onSnapshot, 
-    query, 
-    where, 
     serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -44,6 +42,7 @@ let agoraClient = null;
 let localAudioTrack = null;
 let isMicMuted = false;
 
+// عناصر الواجهة الأساسية
 const welcomeScreen = document.getElementById('welcome-screen');
 const authScreen = document.getElementById('auth-screen');
 const mainAppContainer = document.getElementById('main-app-container');
@@ -85,7 +84,7 @@ const onlineCountNum = document.getElementById('online-count-num');
 const floatingMicToggleBtn = document.getElementById('floating-mic-toggle-btn');
 const floatingMicIcon = document.getElementById('floating-mic-icon');
 
-// نافذة خيارات المقعد والمايك
+// نوافذ المقاعد والبروفايل
 const seatOptionsModal = document.getElementById('seat-options-modal');
 const seatSheetContent = document.getElementById('seat-sheet-content');
 const closeSeatModal = document.getElementById('close-seat-modal');
@@ -93,7 +92,6 @@ const optSitSeat = document.getElementById('opt-sit-seat');
 const optToggleMicSeat = document.getElementById('opt-toggle-mic-seat');
 const optLockSeat = document.getElementById('opt-lock-seat');
 
-// بروفايل المستخدم وصلاحيات المالك
 const roomUserProfileModal = document.getElementById('room-user-profile-modal');
 const profileSheetContent = document.getElementById('profile-sheet-content');
 const closeUserProfile = document.getElementById('close-user-profile');
@@ -126,7 +124,7 @@ const modalAvatarPreview = document.getElementById('modal-avatar-preview');
 const changeRoomImgTrigger = document.getElementById('change-room-img-trigger');
 const roomNewImageFile = document.getElementById('room-new-image-file');
 
-// إعدادات الحساب والنوافذ الإضافية
+// الإعدادات
 const settingsAccountCenter = document.getElementById('settings-account-center');
 const modalAccountCenter = document.getElementById('modal-account-center');
 const closeAccountCenter = document.getElementById('close-account-center');
@@ -191,7 +189,7 @@ function compressImage(file) {
     });
 }
 
-// معالجة العودة من تسجيل جوجل بالتحويل
+// معالجة نتيجة إعادة توجيه جوجل
 getRedirectResult(auth).then(async (result) => {
     if (result && result.user) {
         const user = result.user;
@@ -209,7 +207,7 @@ getRedirectResult(auth).then(async (result) => {
     }
 }).catch((error) => console.error("Redirect Error:", error));
 
-// التنقل بين التبويبات (غرفة / خاصتي)
+// التنقل بين التبويبات
 if (navRoomsBtn && navProfileBtn) {
     navRoomsBtn.addEventListener('click', () => {
         tabRooms.classList.remove('hidden');
@@ -226,7 +224,6 @@ if (navRoomsBtn && navProfileBtn) {
     });
 }
 
-// شاشة الترحيب وتسجيل الدخول
 if (startBtn) {
     startBtn.addEventListener('click', () => {
         welcomeScreen.classList.add('hidden');
@@ -277,7 +274,6 @@ if (googleLoginBtn) {
     });
 }
 
-// تعديل الملف الشخصي
 if (editProfileBtn && editProfileModal) {
     editProfileBtn.addEventListener('click', () => {
         if (userData) {
@@ -332,7 +328,7 @@ if (saveProfileBtn) {
     });
 }
 
-// إعدادات الحساب الإضافية
+// مركز الحساب والإعدادات
 if (settingsAccountCenter && modalAccountCenter) {
     settingsAccountCenter.addEventListener('click', () => {
         if (currentUser && userData) {
@@ -382,7 +378,7 @@ if (settingsLogoutSwitch) {
     });
 }
 
-// إنشاء الغرف
+// إدارة الغرف
 if (createRoomBtn) {
     createRoomBtn.addEventListener('click', () => createRoomModal.classList.remove('hidden'));
 }
@@ -417,7 +413,7 @@ if (confirmCreateRoom) {
     });
 }
 
-// تحميل الغرف المتاحة مع عداد المتواجدين الفوري
+// تحميل الغرف مع عداد المتواجدين اللحظي
 function loadRooms() {
     if (!roomsGrid) return;
     onSnapshot(collection(db, "rooms"), (snapshot) => {
@@ -447,7 +443,6 @@ function loadRooms() {
     });
 }
 
-// القائمة المنسدلة داخل الغرفة
 if (roomOptionsBtn && roomOptionsDropdown) {
     roomOptionsBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -725,7 +720,7 @@ if (changeRoomImgTrigger && roomNewImageFile) {
     });
 }
 
-// الدخول للغرفة وتحديث قائمة المتواجدين في Firestore تلقائياً
+// الدخول للغرفة وتحديث المتواجدين تلقائياً
 async function enterRoom(roomId, roomData) {
     currentRoomId = roomId;
     currentRoomDocData = roomData;
@@ -783,7 +778,7 @@ async function enterRoom(roomId, roomData) {
     } catch (e) { console.error("Agora Error:", e); }
 }
 
-// الخروج من الغرفة وحذف المستخدم من قائمة المتواجدين لحظياً
+// الخروج من الغرفة وحذف المستخدم لحظياً من المتواجدين
 async function leaveRoom() {
     if (currentRoomId && currentUser) {
         try {
