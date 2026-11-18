@@ -37,6 +37,8 @@ console.log("✅ تم ربط تطبيق REAL VOICE بقاعدة البيانات
 const welcomeScreen = document.getElementById('welcome-screen');
 const authScreen = document.getElementById('auth-screen');
 const roomsScreen = document.getElementById('rooms-screen');
+const roomViewScreen = document.getElementById('room-view-screen'); // شاشة الغرفة الداخلية الجديدة
+
 const startBtn = document.getElementById('start-btn');
 const authForm = document.getElementById('auth-form');
 const authTitle = document.getElementById('auth-title');
@@ -51,6 +53,11 @@ const cancelRoomBtn = document.getElementById('cancel-room-btn');
 const confirmCreateRoom = document.getElementById('confirm-create-room');
 const roomNameInput = document.getElementById('room-name-input');
 const roomsList = document.getElementById('rooms-list');
+
+// عناصر داخل الغرفة
+const leaveRoomBtn = document.getElementById('leave-room-btn');
+const currentRoomTitle = document.getElementById('current-room-title');
+const toggleMicBtn = document.getElementById('toggle-mic-btn');
 
 let isLoginMode = false;
 let currentUser = null;
@@ -100,7 +107,7 @@ if (authForm) {
     });
 }
 
-// إظهار نافذة إنشاء الغرفة (Modal) الحقيقية
+// إظهار نافذة إنشاء الغرفة
 if (createRoomBtn) {
     createRoomBtn.addEventListener('click', () => {
         if (createRoomModal) {
@@ -109,7 +116,7 @@ if (createRoomBtn) {
     });
 }
 
-// إخفاء نافذة إنشاء الغرفة عند إلغاء
+// إخفاء نافذة إنشاء الغرفة عند الإلغاء
 if (cancelRoomBtn) {
     cancelRoomBtn.addEventListener('click', () => {
         if (createRoomModal) {
@@ -159,21 +166,59 @@ function loadRooms() {
         }
 
         snapshot.forEach((docSnap) => {
-            const room = docSnap.data();
+            const roomData = docSnap.data();
             const roomCard = document.createElement('div');
             roomCard.className = "glass p-4 rounded-2xl flex justify-between items-center border border-purple-500/20";
             
             roomCard.innerHTML = `
                 <div>
-                    <h3 class="text-sm font-bold text-purple-200">${escapeHtml(room.name)} 🎤</h3>
-                    <p class="text-[10px] text-slate-400 mt-0.5">المضيف: ${escapeHtml(room.host)}</p>
+                    <h3 class="text-sm font-bold text-purple-200">${escapeHtml(roomData.name)} 🎤</h3>
+                    <p class="text-[10px] text-slate-400 mt-0.5">المضيف: ${escapeHtml(roomData.host)}</p>
                 </div>
-                <button onclick="alert('جاري الدخول إلى الغرفة: ${escapeHtml(room.name)}');" class="bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-purple-500/40 cursor-pointer">
+                <button class="join-room-btn bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white px-3 py-1.5 rounded-xl text-xs transition border border-purple-500/40 cursor-pointer">
                     دخول الغرفة
                 </button>
             `;
+
+            // حدث الضغط على زر "دخول الغرفة" للانتقال لشاشة الكراسي
+            const joinBtn = roomCard.querySelector('.join-room-btn');
+            joinBtn.addEventListener('click', () => {
+                enterRoom(roomData.name);
+            });
+
             roomsList.appendChild(roomCard);
         });
+    });
+}
+
+// دالة الانتقال إلى غرفة الدردشة الداخلية
+function enterRoom(roomName) {
+    if (roomsScreen) roomsScreen.classList.add('hidden');
+    if (roomViewScreen) roomViewScreen.classList.remove('hidden');
+    if (currentRoomTitle) currentRoomTitle.textContent = roomName;
+    console.log("🚪 تم الدخول إلى الغرفة:", roomName);
+}
+
+// زر مغادرة الغرفة والعودة لقاعة الغرف
+if (leaveRoomBtn) {
+    leaveRoomBtn.addEventListener('click', () => {
+        if (roomViewScreen) roomViewScreen.classList.add('hidden');
+        if (roomsScreen) roomsScreen.classList.remove('hidden');
+    });
+}
+
+// زر فتح/قفل المايك الشخصي داخل الغرفة
+let isMicMuted = true;
+if (toggleMicBtn) {
+    toggleMicBtn.addEventListener('click', () => {
+        isMicMuted = !isMicMuted;
+        if (isMicMuted) {
+            toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone-slash"></i> كتم المايك`;
+            toggleMicBtn.className = "bg-red-600/30 hover:bg-red-600 text-red-200 hover:text-white px-4 py-2 rounded-xl text-xs transition border border-red-500/40 cursor-pointer flex items-center gap-1.5";
+        } else {
+            toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone"></i> المايك مفتوح`;
+            toggleMicBtn.className = "bg-green-600/30 hover:bg-green-600 text-green-200 hover:text-white px-4 py-2 rounded-xl text-xs transition border border-green-500/40 cursor-pointer flex items-center gap-1.5";
+        }
     });
 }
 
@@ -190,15 +235,17 @@ onAuthStateChanged(auth, (user) => {
         console.log("👤 المستخدم مسجل حالياً:", user.email);
         if (welcomeScreen) welcomeScreen.classList.add('hidden');
         if (authScreen) authScreen.classList.add('hidden');
+        if (roomViewScreen) roomViewScreen.classList.add('hidden');
         if (roomsScreen) roomsScreen.classList.remove('hidden');
         if (userDisplayEmail) {
             userDisplayEmail.textContent = `حسابك: ${user.email}`;
         }
-        loadRooms(); // استدعاء جلب الغرف أول ما المستخدم يسجل دخول
+        loadRooms(); // استدعاء جلب الغرف
     } else {
         console.log("👤 لا يوجد مستخدم مسجل حالياً.");
         if (welcomeScreen) welcomeScreen.classList.remove('hidden');
         if (authScreen) authScreen.classList.add('hidden');
         if (roomsScreen) roomsScreen.classList.add('hidden');
+        if (roomViewScreen) roomViewScreen.classList.add('hidden');
     }
 });
