@@ -31,7 +31,6 @@ const authScreen = document.getElementById('auth-screen');
 const roomsScreen = document.getElementById('rooms-screen');
 const roomViewScreen = document.getElementById('room-view-screen');
 
-const startBtn = document.getElementById('start-btn');
 const authForm = document.getElementById('auth-form');
 const authTitle = document.getElementById('auth-title');
 const authSubmitBtn = document.getElementById('auth-submit-btn');
@@ -50,12 +49,10 @@ const currentRoomTitle = document.getElementById('current-room-title');
 const toggleMicBtn = document.getElementById('toggle-mic-btn');
 const requestSeatBtn = document.getElementById('request-seat-btn');
 
-// عناصر الشات النصي
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
 const chatMessagesList = document.getElementById('chat-messages-list');
 
-// عناصر إعدادات الغرفة والبروفايل
 const openRoomSettingsBtn = document.getElementById('open-room-settings-btn');
 const roomSettingsModal = document.getElementById('room-settings-modal');
 const closeSettingsModal = document.getElementById('close-settings-modal');
@@ -73,7 +70,13 @@ let currentUser = null;
 let currentRoomId = null;
 let roomSeats = Array(8).fill(null);
 
-// دالة تشغيل صوت التفاعل عند الجلوس على المايك
+// دالة الانتقال من شاشة الترحيب لصفحة التسجيل
+window.goToAuth = function() {
+    if (welcomeScreen) welcomeScreen.classList.add('hidden');
+    if (authScreen) authScreen.classList.remove('hidden');
+};
+
+// صوت تفاعلي عند الجلوس على المايك
 function playSeatSound() {
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -91,13 +94,6 @@ function playSeatSound() {
     } catch (e) {
         console.log("Audio not supported");
     }
-}
-
-if (startBtn) {
-    startBtn.addEventListener('click', () => {
-        welcomeScreen.classList.add('hidden');
-        authScreen.classList.remove('hidden');
-    });
 }
 
 if (toggleAuthModeBtn) {
@@ -160,7 +156,7 @@ if (confirmCreateRoom) {
     });
 }
 
-// الشات النصي داخل الغرفة
+// الشات النصي
 if (chatForm) {
     chatForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -272,10 +268,7 @@ if (requestSeatBtn) {
 
         const shortName = currentUser.email.split('@')[0];
         roomSeats[emptyIndex] = shortName;
-        
-        // تشغيل صوت التفاعل عند الجلوس على المايك
         playSeatSound();
-        
         updateSeatUI(emptyIndex, shortName, true);
     });
 }
