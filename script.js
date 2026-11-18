@@ -100,18 +100,22 @@ if (authForm) {
     });
 }
 
-// إظهار نافذة إنشاء الغرفة
+// إظهار نافذة إنشاء الغرفة (Modal) الحقيقية
 if (createRoomBtn) {
     createRoomBtn.addEventListener('click', () => {
-        createRoomModal.classList.remove('hidden');
+        if (createRoomModal) {
+            createRoomModal.classList.remove('hidden');
+        }
     });
 }
 
-// إخفاء نافذة إنشاء الغرفة
+// إخفاء نافذة إنشاء الغرفة عند إلغاء
 if (cancelRoomBtn) {
     cancelRoomBtn.addEventListener('click', () => {
-        createRoomModal.classList.add('hidden');
-        roomNameInput.value = '';
+        if (createRoomModal) {
+            createRoomModal.classList.add('hidden');
+            roomNameInput.value = '';
+        }
     });
 }
 
@@ -132,7 +136,9 @@ if (confirmCreateRoom) {
             });
 
             roomNameInput.value = '';
-            createRoomModal.classList.add('hidden');
+            if (createRoomModal) {
+                createRoomModal.classList.add('hidden');
+            }
             alert("🎉 تم إنشاء الغرفة بنجاح ونشرها في القاعة!");
         } catch (error) {
             alert("❌ خطأ أثناء إنشاء الغرفة: " + error.message);
@@ -142,6 +148,7 @@ if (confirmCreateRoom) {
 
 // جلب وعرض الغرف من Firestore بشكل لحظي (Real-time)
 function loadRooms() {
+    if (!roomsList) return;
     const q = query(collection(db, "rooms"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
         roomsList.innerHTML = ""; // تفريغ القائمة القديمة
@@ -170,7 +177,7 @@ function loadRooms() {
     });
 }
 
-// دالة أمان بسيطة لمنع حقن النصوص
+// دالة أمان لمنع حقن النصوص
 function escapeHtml(text) {
     if (!text) return '';
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -181,17 +188,17 @@ onAuthStateChanged(auth, (user) => {
     currentUser = user;
     if (user) {
         console.log("👤 المستخدم مسجل حالياً:", user.email);
-        welcomeScreen.classList.add('hidden');
-        authScreen.classList.add('hidden');
-        roomsScreen.classList.remove('hidden');
+        if (welcomeScreen) welcomeScreen.classList.add('hidden');
+        if (authScreen) authScreen.classList.add('hidden');
+        if (roomsScreen) roomsScreen.classList.remove('hidden');
         if (userDisplayEmail) {
             userDisplayEmail.textContent = `حسابك: ${user.email}`;
         }
         loadRooms(); // استدعاء جلب الغرف أول ما المستخدم يسجل دخول
     } else {
         console.log("👤 لا يوجد مستخدم مسجل حالياً.");
-        welcomeScreen.classList.remove('hidden');
-        authScreen.classList.add('hidden');
-        roomsScreen.classList.add('hidden');
+        if (welcomeScreen) welcomeScreen.classList.remove('hidden');
+        if (authScreen) authScreen.classList.add('hidden');
+        if (roomsScreen) roomsScreen.classList.add('hidden');
     }
 });
