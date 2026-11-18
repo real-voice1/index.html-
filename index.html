@@ -32,11 +32,6 @@
         .bottom-sheet.show {
             transform: translateY(0);
         }
-        #floating-mini-player {
-            touch-action: none;
-            cursor: grab;
-            z-index: 9999;
-        }
     </style>
 </head>
 <body class="flex flex-col items-center justify-start min-h-screen p-3 bg-slate-950 text-white pb-24">
@@ -125,7 +120,6 @@
                         <p id="profile-display-id" class="text-xs text-slate-400 mt-1">ID: 110789</p>
                     </div>
                 </div>
-                <button id="edit-profile-btn" class="text-purple-300 text-xs bg-purple-900/40 px-3.5 py-2 rounded-xl border border-purple-500/30 cursor-pointer">تعديل</button>
             </div>
             <div class="space-y-3 text-xs px-1 pb-6">
                 <div id="settings-logout-switch" class="bg-gradient-to-r from-purple-900/30 to-pink-900/30 p-4 rounded-2xl flex justify-between items-center border border-purple-500/40 cursor-pointer">
@@ -136,14 +130,11 @@
         </div>
     </div>
 
-    <!-- 4. شاشة الغرفة الداخلية مع الدردشة النصية -->
+    <!-- 4. شاشة الغرفة الداخلية مع الدردشة النصية اللحظية -->
     <div id="room-view-screen" class="w-full max-w-lg hidden flex flex-col h-[88vh] relative">
         <div class="flex justify-between items-center mb-2 border-b border-purple-500/20 pb-2 px-1">
             <div class="flex items-center gap-3">
-                <div class="relative group cursor-pointer" id="change-room-img-trigger">
-                    <img id="room-header-avatar" src="https://via.placeholder.com/150" class="w-10 h-10 rounded-xl object-cover border border-purple-400">
-                </div>
-                <input type="file" id="room-new-image-file" accept="image/*" class="hidden">
+                <img id="room-header-avatar" src="https://via.placeholder.com/150" class="w-10 h-10 rounded-xl object-cover border border-purple-400">
                 <div>
                     <h2 id="current-room-title" class="text-sm font-bold text-purple-200">اسم الغرفة</h2>
                     <p id="room-owner-tag" class="text-[9px] text-amber-400">👑 المالك: جاري التحميل...</p>
@@ -154,10 +145,7 @@
 
         <!-- شبكة الميكات (8 مايكات تفاعلية فورية) -->
         <div class="grid grid-cols-4 gap-3 mb-2 text-center px-1">
-            <div class="flex flex-col items-center">
-                <div id="seat-0" class="w-12 h-12 rounded-full bg-slate-900 border-2 border-purple-500 flex items-center justify-center relative cursor-pointer shadow-lg"></div>
-                <span id="seat-name-0" class="text-[9px] text-slate-300 truncate w-16 mt-0.5">مايك 1</span>
-            </div>
+            <div class="flex flex-col items-center"><div id="seat-0" class="w-12 h-12 rounded-full bg-slate-900 border-2 border-purple-500 flex items-center justify-center relative cursor-pointer shadow-lg"></div><span id="seat-name-0" class="text-[9px] text-slate-300 truncate w-16 mt-0.5">مايك 1</span></div>
             <div class="flex flex-col items-center"><div id="seat-1" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-1" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 2</span></div>
             <div class="flex flex-col items-center"><div id="seat-2" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-2" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 3</span></div>
             <div class="flex flex-col items-center"><div id="seat-3" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-3" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 4</span></div>
@@ -167,7 +155,7 @@
             <div class="flex flex-col items-center"><div id="seat-7" class="w-12 h-12 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer"></div><span id="seat-name-7" class="text-[9px] text-slate-500 truncate w-16 mt-0.5">مايك 8</span></div>
         </div>
 
-        <!-- صندوق الدردشة النصية اللحظية (Chat) -->
+        <!-- صندوق الدردشة النصية (Chat) -->
         <div class="flex-1 bg-slate-900/60 border border-purple-500/20 rounded-2xl p-2.5 flex flex-col mb-2 overflow-hidden">
             <div class="text-[10px] text-purple-400 font-bold border-b border-purple-500/20 pb-1 mb-1">💬 الدردشة النصية الفورية</div>
             <div id="chat-messages-container" class="flex-1 overflow-y-auto space-y-1.5 text-xs pr-1">
@@ -179,7 +167,7 @@
             </form>
         </div>
 
-        <!-- زر المايك السائم -->
+        <!-- زر المايك السريع العائم -->
         <div class="absolute bottom-16 left-4 z-30">
             <button id="floating-mic-toggle-btn" class="w-11 h-11 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-2xl border-2 border-purple-400 cursor-pointer">
                 <i class="fa-solid fa-microphone text-sm" id="floating-mic-icon"></i>
