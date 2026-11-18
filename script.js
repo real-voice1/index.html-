@@ -69,7 +69,6 @@ const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
 const chatMessagesList = document.getElementById('chat-messages-list');
 
-// عناصر الملف الشخصي
 const headerUserId = document.getElementById('header-user-id');
 const profileDisplayName = document.getElementById('profile-display-name');
 const profileDisplayId = document.getElementById('profile-display-id');
@@ -90,25 +89,31 @@ let userData = null;
 
 if (startBtn) {
     startBtn.addEventListener('click', () => {
-        welcomeScreen.classList.add('hidden');
-        authScreen.classList.remove('hidden');
+        if (welcomeScreen) welcomeScreen.classList.add('hidden');
+        if (authScreen) authScreen.classList.remove('hidden');
     });
 }
 
 if (toggleAuthModeBtn) {
     toggleAuthModeBtn.addEventListener('click', () => {
         isLoginMode = !isLoginMode;
-        authTitle.textContent = isLoginMode ? "تسجيل الدخول بالحساب" : "إنشاء حساب جديد";
-        authSubmitBtn.textContent = isLoginMode ? "دخول" : "تسجيل الحساب";
-        toggleAuthModeBtn.textContent = isLoginMode ? "ليس لديك حساب؟ انشئ حساب جديد" : "لديك حساب بالفعل؟ سجل دخولك من هنا";
+        if (authTitle) authTitle.textContent = isLoginMode ? "تسجيل الدخول بالحساب" : "إنشاء حساب جديد";
+        if (authSubmitBtn) authSubmitBtn.textContent = isLoginMode ? "دخول" : "تسجيل الحساب";
+        if (toggleAuthModeBtn) {
+            toggleAuthModeBtn.textContent = isLoginMode ? "ليس لديك حساب؟ انشئ حساب جديد" : "لديك حساب بالفعل؟ سجل دخولك من هنا";
+        }
     });
 }
 
 if (authForm) {
     authForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+        const emailField = document.getElementById('email');
+        const passwordField = document.getElementById('password');
+        if (!emailField || !passwordField) return;
+
+        const email = emailField.value;
+        const password = passwordField.value;
 
         try {
             if (isLoginMode) {
@@ -139,15 +144,15 @@ if (authForm) {
 
 if (navRoomsBtn && navProfileBtn) {
     navRoomsBtn.addEventListener('click', () => {
-        tabRooms.classList.remove('hidden');
-        tabProfile.classList.add('hidden');
+        if (tabRooms) tabRooms.classList.remove('hidden');
+        if (tabProfile) tabProfile.classList.add('hidden');
         navRoomsBtn.className = "flex flex-col items-center text-purple-400 cursor-pointer";
         navProfileBtn.className = "flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer";
     });
 
     navProfileBtn.addEventListener('click', () => {
-        tabProfile.classList.remove('hidden');
-        tabRooms.classList.add('hidden');
+        if (tabProfile) tabProfile.classList.remove('hidden');
+        if (tabRooms) tabRooms.classList.add('hidden');
         navProfileBtn.className = "flex flex-col items-center text-purple-400 cursor-pointer";
         navRoomsBtn.className = "flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer";
     });
@@ -156,17 +161,19 @@ if (navRoomsBtn && navProfileBtn) {
 if (editProfileBtn) {
     editProfileBtn.addEventListener('click', () => {
         if (userData) {
-            inputNickname.value = userData.nickname || '';
-            inputGender.value = userData.gender || 'ذكر';
-            inputCountry.value = userData.country || 'Egypt 🇪🇬';
-            inputBio.value = userData.bio || '';
+            if (inputNickname) inputNickname.value = userData.nickname || '';
+            if (inputGender) inputGender.value = userData.gender || 'ذكر';
+            if (inputCountry) inputCountry.value = userData.country || 'Egypt 🇪🇬';
+            if (inputBio) inputBio.value = userData.bio || '';
         }
-        editProfileModal.classList.remove('hidden');
+        if (editProfileModal) editProfileModal.classList.remove('hidden');
     });
 }
 
 if (closeEditProfile) {
-    closeEditProfile.addEventListener('click', () => editProfileModal.classList.add('hidden'));
+    closeEditProfile.addEventListener('click', () => {
+        if (editProfileModal) editProfileModal.classList.add('hidden');
+    });
 }
 
 if (saveProfileBtn) {
@@ -180,9 +187,9 @@ if (saveProfileBtn) {
                 country: inputCountry.value.trim(),
                 bio: inputBio.value.trim()
             });
-            profileDisplayName.textContent = inputNickname.value.trim();
+            if (profileDisplayName) profileDisplayName.textContent = inputNickname.value.trim();
             alert("✅ تم تحديث الملف الشخصي بنجاح!");
-            editProfileModal.classList.add('hidden');
+            if (editProfileModal) editProfileModal.classList.add('hidden');
         } catch (error) {
             alert("❌ خطأ أثناء الحفظ: " + error.message);
         }
@@ -200,19 +207,20 @@ if (createRoomBtn) {
         if (!querySnapshot.empty) {
             return alert("⚠️ عذراً، مسموح لك بإنشاء غرفة واحدة فقط وقد قمت بإنشائها مسبقاً!");
         }
-        createRoomModal.classList.remove('hidden');
+        if (createRoomModal) createRoomModal.classList.remove('hidden');
     });
 }
 
 if (cancelRoomBtn) {
     cancelRoomBtn.addEventListener('click', () => {
-        createRoomModal.classList.add('hidden');
-        roomNameInput.value = '';
+        if (createRoomModal) createRoomModal.classList.add('hidden');
+        if (roomNameInput) roomNameInput.value = '';
     });
 }
 
 if (confirmCreateRoom) {
     confirmCreateRoom.addEventListener('click', async () => {
+        if (!roomNameInput) return;
         const roomName = roomNameInput.value.trim();
         if (!roomName) return alert("⚠️ برجاء كتابة اسم الغرفة أولاً!");
 
@@ -224,7 +232,7 @@ if (confirmCreateRoom) {
                 createdAt: serverTimestamp()
             });
             roomNameInput.value = '';
-            createRoomModal.classList.add('hidden');
+            if (createRoomModal) createRoomModal.classList.add('hidden');
             alert("🎉 تم إنشاء غرفتك بنجاح!");
         } catch (error) {
             alert("❌ خطأ: " + error.message);
@@ -263,10 +271,10 @@ function loadRooms() {
 
 async function enterRoom(roomId, roomName) {
     currentRoomId = roomId;
-    mainAppContainer.classList.add('hidden');
-    bottomNav.classList.add('hidden');
-    roomViewScreen.classList.remove('hidden');
-    currentRoomTitle.textContent = roomName;
+    if (mainAppContainer) mainAppContainer.classList.add('hidden');
+    if (bottomNav) bottomNav.classList.add('hidden');
+    if (roomViewScreen) roomViewScreen.classList.remove('hidden');
+    if (currentRoomTitle) currentRoomTitle.textContent = roomName;
     resetSeatsUI();
 
     try {
@@ -285,9 +293,9 @@ async function leaveRoom() {
     if (localAudioTrack) { localAudioTrack.close(); localAudioTrack = null; }
     if (agoraClient) { await agoraClient.leave(); agoraClient = null; }
     currentRoomId = null;
-    roomViewScreen.classList.add('hidden');
-    mainAppContainer.classList.remove('hidden');
-    bottomNav.classList.remove('hidden');
+    if (roomViewScreen) roomViewScreen.classList.add('hidden');
+    if (mainAppContainer) mainAppContainer.classList.remove('hidden');
+    if (bottomNav) bottomNav.classList.remove('hidden');
 }
 
 if (leaveRoomBtn) leaveRoomBtn.addEventListener('click', leaveRoom);
@@ -352,13 +360,16 @@ if (toggleMicBtn) {
 if (chatForm) {
     chatForm.addEventListener('submit', (e) => {
         e.preventDefault();
+        if (!chatInput) return;
         const text = chatInput.value.trim();
         if (!text || !userData) return;
         const msgDiv = document.createElement('div');
         msgDiv.className = "text-[11px] leading-relaxed";
         msgDiv.innerHTML = `<span class="text-purple-300 font-bold">${escapeHtml(userData.nickname)}:</span> <span class="text-white">${escapeHtml(text)}</span>`;
-        chatMessagesList.appendChild(msgDiv);
-        chatMessagesList.scrollTop = chatMessagesList.scrollHeight;
+        if (chatMessagesList) {
+            chatMessagesList.appendChild(msgDiv);
+            chatMessagesList.scrollTop = chatMessagesList.scrollHeight;
+        }
         chatInput.value = '';
     });
 }
@@ -371,26 +382,30 @@ function escapeHtml(text) {
 onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     if (user) {
-        welcomeScreen.classList.add('hidden');
-        authScreen.classList.add('hidden');
-        roomViewScreen.classList.add('hidden');
-        mainAppContainer.classList.remove('hidden');
-        bottomNav.classList.remove('hidden');
+        if (welcomeScreen) welcomeScreen.classList.add('hidden');
+        if (authScreen) authScreen.classList.add('hidden');
+        if (roomViewScreen) roomViewScreen.classList.add('hidden');
+        if (mainAppContainer) mainAppContainer.classList.remove('hidden');
+        if (bottomNav) bottomNav.classList.remove('hidden');
 
-        const userDocRef = doc(db, "users", user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-            userData = userDocSnap.data();
-            headerUserId.textContent = `ID: ${userData.userId}`;
-            profileDisplayId.textContent = `ID: ${userData.userId}`;
-            profileDisplayName.textContent = userData.nickname;
+        try {
+            const userDocRef = doc(db, "users", user.uid);
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists()) {
+                userData = userDocSnap.data();
+                if (headerUserId) headerUserId.textContent = `ID: ${userData.userId}`;
+                if (profileDisplayId) profileDisplayId.textContent = `ID: ${userData.userId}`;
+                if (profileDisplayName) profileDisplayName.textContent = userData.nickname;
+            }
+        } catch (e) {
+            console.log("Error loading user profile");
         }
         loadRooms();
     } else {
-        welcomeScreen.classList.remove('hidden');
-        authScreen.classList.add('hidden');
-        mainAppContainer.classList.add('hidden');
-        roomViewScreen.classList.add('hidden');
-        bottomNav.classList.add('hidden');
+        if (welcomeScreen) welcomeScreen.classList.remove('hidden');
+        if (authScreen) authScreen.classList.add('hidden');
+        if (mainAppContainer) mainAppContainer.classList.add('hidden');
+        if (roomViewScreen) roomViewScreen.classList.add('hidden');
+        if (bottomNav) bottomNav.classList.add('hidden');
     }
 });
