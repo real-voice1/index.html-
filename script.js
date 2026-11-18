@@ -74,6 +74,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const roomNameInput = document.getElementById('room-name-input');
     const roomImageFile = document.getElementById('room-image-file'); 
 
+    // أزرار قائمة الثلاث نقاط داخل الغرفة
+    const roomOptionsBtn = document.getElementById('room-options-btn');
+    const roomOptionsDropdown = document.getElementById('room-options-dropdown');
+    const optChangeName = document.getElementById('opt-change-name');
+    const optChangeImg = document.getElementById('opt-change-img');
+    const roomNewImageFile = document.getElementById('room-new-image-file');
+
     const optLeave = document.getElementById('opt-leave');
     const floatingMicToggleBtn = document.getElementById('floating-mic-toggle-btn');
     const floatingMicIcon = document.getElementById('floating-mic-icon');
@@ -182,6 +189,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 roomNameInput.value = "";
                 enterRoom(roomRef.id);
             } catch (err) { alert("❌ خطأ: " + err.message); }
+        });
+    }
+
+    // تفعيل قائمة الثلاث نقاط في الغرفة
+    if (roomOptionsBtn && roomOptionsDropdown) {
+        roomOptionsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            roomOptionsDropdown.classList.toggle('hidden');
+        });
+        document.addEventListener('click', () => roomOptionsDropdown.classList.add('hidden'));
+    }
+
+    // تغيير اسم الغرفة (للمالك فقط)
+    if (optChangeName) {
+        optChangeName.addEventListener('click', async () => {
+            if (!currentRoomDocData || currentRoomDocData.hostUid !== currentUser.uid) {
+                return alert("⚠️ عذراً، تغيير اسم الغرفة مخصص لمالك الغرفة فقط!");
+            }
+            const newName = prompt("اكتب اسم الغرفة الجديد:", currentRoomDocData.name);
+            if (newName && newName.trim() !== "") {
+                try {
+                    await updateDoc(doc(db, "rooms", currentRoomId), { name: newName.trim() });
+                    alert("✅ تم تحديث اسم الغرفة بنجاح!");
+                } catch (e) { alert("❌ خطأ: " + e.message); }
+            }
+        });
+    }
+
+    // تغيير صورة الغرفة (للمالك فقط)
+    if (optChangeImg && roomNewImageFile) {
+        optChangeImg.addEventListener('click', () => {
+            if (!currentRoomDocData || currentRoomDocData.hostUid !== currentUser.uid) {
+                return alert("⚠️ عذراً، تغيير صورة الغرفة مخصص لمالك الغرفة فقط!");
+            }
+            roomNewImageFile.click();
+        });
+
+        roomNewImageFile.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file && currentRoomId) {
+                const compressed = await compressImage(file);
+                if (compressed) {
+                    try {
+                        await updateDoc(doc(db, "rooms", currentRoomId), { image: compressed });
+                        alert("✅ تم تحديث صورة الغرفة بنجاح!");
+                    } catch (err) { alert("❌ خطأ: " + err.message); }
+                }
+            }
         });
     }
 
@@ -414,9 +469,7 @@ async function enterRoom(roomId) {
     document.getElementById('main-app-container').classList.add('hidden');
     document.getElementById('room-view-screen').classList.remove('hidden');
 
-    document.getElementById('current-room-title').textContent = currentRoomDocData.name || "غرفة صوتية";
-    document.getElementById('room-header-avatar').src = currentRoomDocData.image || "https://via.placeholder.com/150";
-    document.getElementById('room-owner-tag').textContent = `👑 المالك: ${currentRoomDocData.host || 'غير معروف'}`;
+    updateRoomHeaderUI();
 
     if (roomUnsubscribe) roomUnsubscribe();
     roomUnsubscribe = onSnapshot(roomRef, (docUpdate) => {
@@ -433,6 +486,7 @@ async function enterRoom(roomId) {
             return;
         }
 
+        updateRoomHeaderUI();
         renderLiveSeats();
         renderLiveChat();
     });
@@ -447,6 +501,13 @@ async function enterRoom(roomId) {
             });
         }
     } catch (e) { console.error(e); }
+}
+
+function updateRoomHeaderUI() {
+    if (!currentRoomDocData) return;
+    document.getElementById('current-room-title').textContent = currentRoomDocData.name || "غرفة صوتية";
+    document.getElementById('room-header-avatar').src = currentRoomDocData.image || "https://via.placeholder.com/150";
+    document.getElementById('room-owner-tag').textContent = `👑 المالك: ${currentRoomDocData.host || 'غير معروف'}`;
 }
 
 function renderLiveSeats() {
