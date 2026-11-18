@@ -6,8 +6,6 @@
     <title>REAL VOICE - منصة الدردشة الصوتية</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- مكتبة Agora للاتصال الصوتي الحي -->
-    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
     <style>
         .glass {
             background: rgba(15, 23, 42, 0.85);
@@ -81,7 +79,7 @@
         </div>
     </div>
 
-    <!-- 4. شاشة الغرفة الداخلية ومسرح الـ 8 كراسي والشات -->
+    <!-- 4. شاشة الغرفة الداخلية ومسرح الـ 8 كراسي والشات النصي -->
     <div id="room-view-screen" class="glass neon-border p-5 rounded-3xl w-full max-w-md hidden flex flex-col h-[550px]">
         <div class="flex justify-between items-center mb-4 border-b border-purple-500/20 pb-2">
             <div class="flex items-center gap-2">
@@ -125,7 +123,7 @@
         <div class="flex-1 glass rounded-2xl p-3 mb-3 flex flex-col border border-purple-500/20 overflow-hidden">
             <div class="text-[10px] text-purple-300 font-bold mb-1 border-b border-purple-500/10 pb-1">دردشة الغرفة 💬</div>
             <div id="chat-messages-list" class="flex-1 overflow-y-auto space-y-1 text-xs pr-1">
-                <div class="text-slate-400 text-[10px]">مرحباً بك في الغرفة! استمتع بالدردشة الصوتية الحية ✨</div>
+                <div class="text-slate-400 text-[10px]">مرحباً بك في الغرفة! استمتع بالدردشة الصوتية والنصية ✨</div>
             </div>
             <form id="chat-form" class="flex gap-2 mt-2 pt-1 border-t border-purple-500/10">
                 <input type="text" id="chat-input" placeholder="اكتب رسالة..." class="flex-1 px-3 py-1.5 rounded-xl glass text-xs bg-transparent border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white">
@@ -179,7 +177,7 @@
         </div>
     </div>
 
-    <!-- 6. نافذة بروفايل المستخدم الفخمة -->
+    <!-- 6. نافذة بروفايل المستخدم الفخمة داخل الغرفة -->
     <div id="user-profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end justify-center hidden z-50">
         <div class="glass neon-border p-6 rounded-t-3xl w-full max-w-md text-white relative">
             <button id="close-profile-modal" class="absolute top-4 left-4 text-slate-400 hover:text-white text-lg cursor-pointer">
