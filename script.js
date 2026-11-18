@@ -104,7 +104,6 @@ if (toggleAuthModeBtn) {
     });
 }
 
-// تسجيل الدخول أو إنشاء الحساب مع توليد ID فريد تلقائي
 if (authForm) {
     authForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -118,10 +117,8 @@ if (authForm) {
             } else {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
-                // توليد ID فريد عشوائي مكون من 6 أرقام
                 const randomId = Math.floor(100000 + Math.random() * 900000);
                 
-                // حفظ بيانات المستخدم الأساسية في Firestore
                 await setDoc(doc(db, "users", user.uid), {
                     uid: user.uid,
                     email: email,
@@ -140,93 +137,101 @@ if (authForm) {
     });
 }
 
-// التنقل بين التبويبات في الشريط السفلي (غرفة / خاصتي)
-navRoomsBtn.addEventListener('click', () => {
-    tabRooms.classList.remove('hidden');
-    tabProfile.classList.add('hidden');
-    navRoomsBtn.className = "flex flex-col items-center text-purple-400 cursor-pointer";
-    navProfileBtn.className = "flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer";
-});
-
-navProfileBtn.addEventListener('click', () => {
-    tabProfile.classList.remove('hidden');
-    tabRooms.classList.add('hidden');
-    navProfileBtn.className = "flex flex-col items-center text-purple-400 cursor-pointer";
-    navRoomsBtn.className = "flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer";
-});
-
-// فتح نافذة تعديل الملف الشخصي
-editProfileBtn.addEventListener('click', () => {
-    if (userData) {
-        inputNickname.value = userData.nickname || '';
-        inputGender.value = userData.gender || 'ذكر';
-        inputCountry.value = userData.country || 'Egypt 🇪🇬';
-        inputBio.value = userData.bio || '';
-    }
-    editProfileModal.classList.remove('hidden');
-});
-
-closeEditProfile.addEventListener('click', () => editProfileModal.classList.add('hidden'));
-
-// حفظ تعديلات الملف الشخصي في قاعدة البيانات
-saveProfileBtn.addEventListener('click', async () => {
-    if (!currentUser) return;
-    try {
-        const userRef = doc(db, "users", currentUser.uid);
-        await updateDoc(userRef, {
-            nickname: inputNickname.value.trim(),
-            gender: inputGender.value,
-            country: inputCountry.value.trim(),
-            bio: inputBio.value.trim()
-        });
-        profileDisplayName.textContent = inputNickname.value.trim();
-        alert("✅ تم تحديث الملف الشخصي بنجاح!");
-        editProfileModal.classList.add('hidden');
-    } catch (error) {
-        alert("❌ خطأ أثناء الحفظ: " + error.message);
-    }
-});
-
-// نظام قيد إنشاء غرفة واحدة فقط لكل مستخدم
-createRoomBtn.addEventListener('click', async () => {
-    if (!currentUser) return;
-    // التحقق هل يمتلك المستخدم غرفة مسبقاً في الداتابيس؟
-    const q = query(collection(db, "rooms"), where("hostUid", "==", currentUser.uid));
-    const querySnapshot = await new Promise((resolve) => {
-        onSnapshot(q, (snap) => resolve(snap), { once: true });
+if (navRoomsBtn && navProfileBtn) {
+    navRoomsBtn.addEventListener('click', () => {
+        tabRooms.classList.remove('hidden');
+        tabProfile.classList.add('hidden');
+        navRoomsBtn.className = "flex flex-col items-center text-purple-400 cursor-pointer";
+        navProfileBtn.className = "flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer";
     });
 
-    if (!querySnapshot.empty) {
-        return alert("⚠️ عذراً، مسموح لك بإنشاء غرفة واحدة فقط وقد قمت بإنشائها مسبقاً!");
-    }
-    createRoomModal.classList.remove('hidden');
-});
+    navProfileBtn.addEventListener('click', () => {
+        tabProfile.classList.remove('hidden');
+        tabRooms.classList.add('hidden');
+        navProfileBtn.className = "flex flex-col items-center text-purple-400 cursor-pointer";
+        navRoomsBtn.className = "flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer";
+    });
+}
 
-cancelRoomBtn.addEventListener('click', () => {
-    createRoomModal.classList.add('hidden');
-    roomNameInput.value = '';
-});
+if (editProfileBtn) {
+    editProfileBtn.addEventListener('click', () => {
+        if (userData) {
+            inputNickname.value = userData.nickname || '';
+            inputGender.value = userData.gender || 'ذكر';
+            inputCountry.value = userData.country || 'Egypt 🇪🇬';
+            inputBio.value = userData.bio || '';
+        }
+        editProfileModal.classList.remove('hidden');
+    });
+}
 
-confirmCreateRoom.addEventListener('click', async () => {
-    const roomName = roomNameInput.value.trim();
-    if (!roomName) return alert("⚠️ برجاء كتابة اسم الغرفة أولاً!");
+if (closeEditProfile) {
+    closeEditProfile.addEventListener('click', () => editProfileModal.classList.add('hidden'));
+}
 
-    try {
-        await addDoc(collection(db, "rooms"), {
-            name: roomName,
-            hostUid: currentUser.uid,
-            host: userData ? userData.nickname : currentUser.email,
-            createdAt: serverTimestamp()
+if (saveProfileBtn) {
+    saveProfileBtn.addEventListener('click', async () => {
+        if (!currentUser) return;
+        try {
+            const userRef = doc(db, "users", currentUser.uid);
+            await updateDoc(userRef, {
+                nickname: inputNickname.value.trim(),
+                gender: inputGender.value,
+                country: inputCountry.value.trim(),
+                bio: inputBio.value.trim()
+            });
+            profileDisplayName.textContent = inputNickname.value.trim();
+            alert("✅ تم تحديث الملف الشخصي بنجاح!");
+            editProfileModal.classList.add('hidden');
+        } catch (error) {
+            alert("❌ خطأ أثناء الحفظ: " + error.message);
+        }
+    });
+}
+
+if (createRoomBtn) {
+    createRoomBtn.addEventListener('click', async () => {
+        if (!currentUser) return;
+        const q = query(collection(db, "rooms"), where("hostUid", "==", currentUser.uid));
+        const querySnapshot = await new Promise((resolve) => {
+            onSnapshot(q, (snap) => resolve(snap), { once: true });
         });
-        roomNameInput.value = '';
-        createRoomModal.classList.add('hidden');
-        alert("🎉 تم إنشاء غرفتك بنجاح!");
-    } catch (error) {
-        alert("❌ خطأ: " + error.message);
-    }
-});
 
-// تحميل الغرف واستعراضها
+        if (!querySnapshot.empty) {
+            return alert("⚠️ عذراً، مسموح لك بإنشاء غرفة واحدة فقط وقد قمت بإنشائها مسبقاً!");
+        }
+        createRoomModal.classList.remove('hidden');
+    });
+}
+
+if (cancelRoomBtn) {
+    cancelRoomBtn.addEventListener('click', () => {
+        createRoomModal.classList.add('hidden');
+        roomNameInput.value = '';
+    });
+}
+
+if (confirmCreateRoom) {
+    confirmCreateRoom.addEventListener('click', async () => {
+        const roomName = roomNameInput.value.trim();
+        if (!roomName) return alert("⚠️ برجاء كتابة اسم الغرفة أولاً!");
+
+        try {
+            await addDoc(collection(db, "rooms"), {
+                name: roomName,
+                hostUid: currentUser.uid,
+                host: userData ? userData.nickname : currentUser.email,
+                createdAt: serverTimestamp()
+            });
+            roomNameInput.value = '';
+            createRoomModal.classList.add('hidden');
+            alert("🎉 تم إنشاء غرفتك بنجاح!");
+        } catch (error) {
+            alert("❌ خطأ: " + error.message);
+        }
+    });
+}
+
 function loadRooms() {
     if (!roomsList) return;
     onSnapshot(collection(db, "rooms"), (snapshot) => {
@@ -256,7 +261,6 @@ function loadRooms() {
     });
 }
 
-// دخول الغرفة والصوت الحي عبر Agora
 async function enterRoom(roomId, roomName) {
     currentRoomId = roomId;
     mainAppContainer.classList.add('hidden');
@@ -288,7 +292,6 @@ async function leaveRoom() {
 
 if (leaveRoomBtn) leaveRoomBtn.addEventListener('click', leaveRoom);
 
-// الجلوس على المايك وبث الصوت
 if (requestSeatBtn) {
     requestSeatBtn.addEventListener('click', async () => {
         if (!currentUser || !currentRoomId) return alert("⚠️ ادخل غرفة أولاً!");
@@ -346,7 +349,6 @@ if (toggleMicBtn) {
     });
 }
 
-// شات الغرفة النصي
 if (chatForm) {
     chatForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -366,7 +368,6 @@ function escapeHtml(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// مراقبة حالة تسجيل الدخول وجلب بيانات المستخدم والـ ID الخاص به
 onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     if (user) {
@@ -376,7 +377,6 @@ onAuthStateChanged(auth, async (user) => {
         mainAppContainer.classList.remove('hidden');
         bottomNav.classList.remove('hidden');
 
-        // جلب بروفايل المستخدم من قاعدة البيانات
         const userDocRef = doc(db, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
