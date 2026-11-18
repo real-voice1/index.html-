@@ -74,9 +74,9 @@
         </div>
     </div>
 
-    <!-- 4. شاشة الغرفة الداخلية والمايكات والشات -->
+    <!-- 4. شاشة الغرفة الداخلية مع زر 3 نقاط للتحكم -->
     <div id="room-view-screen" class="w-full max-w-lg hidden flex flex-col h-[88vh] relative">
-        <div class="flex justify-between items-center mb-2 border-b border-purple-500/20 pb-2 px-1">
+        <div class="flex justify-between items-center mb-2 border-b border-purple-500/20 pb-2 px-1 relative">
             <div class="flex items-center gap-3">
                 <img id="room-header-avatar" src="https://via.placeholder.com/150" class="w-10 h-10 rounded-xl object-cover border border-purple-400">
                 <div>
@@ -84,8 +84,21 @@
                     <p id="room-owner-tag" class="text-[9px] text-amber-400">👑 المالك</p>
                 </div>
             </div>
-            <button id="opt-leave" class="bg-red-950/60 text-red-300 px-3 py-1.5 rounded-xl text-xs border border-red-500/30 cursor-pointer">خروج</button>
+
+            <div class="flex items-center gap-2">
+                <!-- زر الثلاث نقاط للتحكم في الغرفة -->
+                <div class="relative">
+                    <button id="room-options-btn" class="bg-slate-900 text-purple-300 w-9 h-9 rounded-xl flex items-center justify-center border border-purple-500/30 cursor-pointer"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                    <div id="room-options-dropdown" class="absolute left-0 mt-2 w-44 bg-slate-900 border border-purple-500/40 rounded-2xl shadow-2xl hidden z-50 overflow-hidden py-1 text-xs">
+                        <button id="opt-change-name" class="w-full text-right px-4 py-2.5 hover:bg-purple-600/20 text-purple-200 flex items-center gap-2 cursor-pointer"><i class="fa-solid fa-pen w-4"></i> تغيير اسم الغرفة</button>
+                        <button id="opt-change-img" class="w-full text-right px-4 py-2.5 hover:bg-purple-600/20 text-purple-200 flex items-center gap-2 cursor-pointer border-t border-purple-500/10"><i class="fa-solid fa-image w-4"></i> تغيير صورة الغرفة</button>
+                    </div>
+                </div>
+                <button id="opt-leave" class="bg-red-950/60 text-red-300 px-3 py-1.5 rounded-xl text-xs border border-red-500/30 cursor-pointer">خروج</button>
+            </div>
         </div>
+
+        <input type="file" id="room-new-image-file" accept="image/*" class="hidden">
 
         <!-- 8 مايكات -->
         <div class="grid grid-cols-4 gap-3 mb-2 text-center px-1">
