@@ -86,7 +86,7 @@ let currentUser = null;
 let currentRoomId = null;
 let roomSeats = Array(8).fill(null);
 let userData = null;
-let myCurrentSeatIndex = null; // تتبع الكرسي الخاص بالمستخدم الحالي
+let myCurrentSeatIndex = null; // لتتبع كرسي المستخدم ومنع تكرار الحجز
 
 if (startBtn) {
     startBtn.addEventListener('click', () => {
@@ -273,7 +273,7 @@ function loadRooms() {
 
 async function enterRoom(roomId, roomName) {
     currentRoomId = roomId;
-    myCurrentSeatIndex = null; // إعادة تعيين الكرسي عند الدخول
+    myCurrentSeatIndex = null;
     if (mainAppContainer) mainAppContainer.classList.add('hidden');
     if (bottomNav) bottomNav.classList.add('hidden');
     if (roomViewScreen) roomViewScreen.classList.remove('hidden');
@@ -304,12 +304,10 @@ async function leaveRoom() {
 
 if (leaveRoomBtn) leaveRoomBtn.addEventListener('click', leaveRoom);
 
-// 🪑 التحقق من عدم تكرار حجز الكراسي للمستخدم نفسه
 if (requestSeatBtn) {
     requestSeatBtn.addEventListener('click', async () => {
         if (!currentUser || !currentRoomId) return alert("⚠️ ادخل غرفة أولاً!");
         
-        // التحقق هل المستخدم جالس على كرسي بالفعل؟
         if (myCurrentSeatIndex !== null) {
             return alert("⚠️ أنت جالس على مقعد بالفعل ولا يمكنك الجلوس مرة أخرى!");
         }
@@ -318,7 +316,7 @@ if (requestSeatBtn) {
         if (emptyIndex === -1 && roomSeats[0] === null) emptyIndex = 0;
         if (emptyIndex === -1) return alert("❌ عذراً، جميع الكراسي محجوزة!");
 
-        myCurrentSeatIndex = emptyIndex; // حفظ رقم كرسي المستخدم الحالي
+        myCurrentSeatIndex = emptyIndex;
         const shortName = userData ? userData.nickname : "مستخدم";
         roomSeats[emptyIndex] = shortName;
         updateSeatUI(emptyIndex, shortName, true);
