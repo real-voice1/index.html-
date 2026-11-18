@@ -238,15 +238,32 @@ if (confirmDeleteBtn) {
     });
 }
 
-// 4. تسجيل الخروج لإضافة حساب آخر بـ Gmail جديد
+// 4. تسجيل الخروج وإضافة حساب آخر بـ Gmail جديد (تم التعديل للتحكم الكامل بالشاشات)
 if (settingsLogoutSwitch) {
     settingsLogoutSwitch.addEventListener('click', async () => {
         if (confirm("هل تريد تسجيل الخروج والانتقال لإضافة حساب Gmail آخر؟")) {
             try {
                 await signOut(auth);
-                alert("👋 تم تسجيل الخروج بنجاح. يمكنك الآن تسجيل الدخول بحساب Gmail جديد!");
+                
+                // إخفاء الغرف والتطبيق الرئيسي وشريط التنقل فوراً
+                if (roomViewScreen) roomViewScreen.classList.add('hidden');
+                if (mainAppContainer) mainAppContainer.classList.add('hidden');
+                if (bottomNav) bottomNav.classList.add('hidden');
+                if (welcomeScreen) welcomeScreen.classList.add('hidden');
+                
+                // إظهار واجهة تسجيل الدخول مباشرة لإدخال حساب جديد
+                if (authScreen) authScreen.classList.remove('hidden');
+                
+                // تفريغ حقول الإدخال لتسهيل كتابة إيميل جديد
+                const emailInput = document.getElementById('email');
+                const passwordInput = document.getElementById('password');
+                if (emailInput) emailInput.value = '';
+                if (passwordInput) passwordInput.value = '';
+
+                alert("👋 تم تسجيل الخروج بنجاح. يمكنك الآن إدخال أو تسجيل حساب Gmail آخر!");
             } catch (error) {
                 console.error("Logout error:", error);
+                alert("❌ حدث خطأ أثناء تسجيل الخروج: " + error.message);
             }
         }
     });
@@ -646,8 +663,8 @@ onAuthStateChanged(auth, async (user) => {
         checkUserRoomStatus(user.uid);
         loadRooms();
     } else {
-        welcomeScreen.classList.remove('hidden');
-        authScreen.classList.add('hidden');
+        welcomeScreen.classList.add('hidden');
+        authScreen.classList.remove('hidden');
         mainAppContainer.classList.add('hidden');
         roomViewScreen.classList.add('hidden');
         bottomNav.classList.add('hidden');
