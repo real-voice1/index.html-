@@ -61,6 +61,11 @@ const roomImageFile = document.getElementById('room-image-file');
 const roomsGrid = document.getElementById('rooms-grid'); 
 
 const leaveRoomBtn = document.getElementById('leave-room-btn');
+const minimizeRoomBtn = document.getElementById('minimize-room-btn');
+const minimizedRoomWidget = document.getElementById('minimized-room-widget');
+const miniRoomImg = document.getElementById('mini-room-img');
+const miniRoomName = document.getElementById('mini-room-name');
+
 const currentRoomTitle = document.getElementById('current-room-title');
 const toggleMicBtn = document.getElementById('toggle-mic-btn');
 const requestSeatBtn = document.getElementById('request-seat-btn');
@@ -85,10 +90,12 @@ const modalAvatarPreview = document.getElementById('modal-avatar-preview');
 let isLoginMode = false;
 let currentUser = null;
 let currentRoomId = null;
+let currentRoomName = "";
+let currentRoomImage = "";
 let roomSeats = Array(8).fill(null);
 let userData = null;
 let myCurrentSeatIndex = null;
-let tempSelectedAvatar = null; // تخزين مؤقت للصورة المختارة قبل الحفظ
+let tempSelectedAvatar = null;
 
 function compressImage(file) {
     return new Promise((resolve) => {
@@ -203,7 +210,6 @@ if (navRoomsBtn && navProfileBtn) {
     });
 }
 
-// فتح نافذة التعديل وتعبئة البيانات الحالية
 if (editProfileBtn) {
     editProfileBtn.addEventListener('click', () => {
         if (userData) {
@@ -221,7 +227,6 @@ if (closeEditProfile) {
     });
 }
 
-// الضغط على الإطار الدائري يفتح معرض الصور مباشرة في الموبايل
 if (avatarPickerTrigger && inputAvatarFile) {
     avatarPickerTrigger.addEventListener('click', () => {
         inputAvatarFile.click();
@@ -239,7 +244,6 @@ if (avatarPickerTrigger && inputAvatarFile) {
     });
 }
 
-// زر حفظ تعديلات البروفايل (الاسم المنفصل عن الصورة وتحديثها بضغطة واحدة)
 if (saveProfileBtn) {
     saveProfileBtn.addEventListener('click', async () => {
         if (!currentUser) return;
@@ -317,7 +321,7 @@ if (confirmCreateRoom) {
                 name: roomName,
                 image: roomImgCompressed,
                 hostUid: currentUser.uid,
-                host: userData ? userData.nickname : currentUser.email,
+                host: userData ? userData.nickname : "مضيف الغرفة", // استبدال الـ Gmail باسم المستخدم المنفصل
                 createdAt: serverTimestamp()
             });
 
@@ -347,21 +351,26 @@ function loadRooms() {
             const roomCard = document.createElement('div');
             roomCard.className = "glass p-3 rounded-2xl flex flex-col items-center text-center border border-purple-500/30 cursor-pointer hover:border-purple-400 transition transform hover:scale-105 shadow-lg";
             
+            // عرض شعار وصورة الغرفة مع اسم المضيف بدون أي إشارة لـ Gmail
             roomCard.innerHTML = `
                 <img src="${escapeHtml(roomData.image || 'https://via.placeholder.com/150')}" class="w-full h-28 rounded-xl object-cover border border-purple-500/40 mb-2 shadow-md">
                 <h3 class="text-xs font-bold text-purple-200 truncate w-full">${escapeHtml(roomData.name)} 🎤</h3>
-                <p class="text-[9px] text-slate-400 truncate w-full mt-0.5">المضيف: ${escapeHtml(roomData.host)}</p>
+                <p class="text-[9px] text-slate-400 truncate w-full mt-0.5">المضيف: ${escapeHtml(roomData.host || 'مالك الغرفة')}</p>
             `;
             
-            roomCard.addEventListener('click', () => enterRoom(roomId, roomData.name));
+            roomCard.addEventListener('click', () => enterRoom(roomId, roomData.name, roomData.image));
             roomsGrid.appendChild(roomCard);
         });
     });
 }
 
-async function enterRoom(roomId, roomName) {
+async function enterRoom(roomId, roomName, roomImg) {
     currentRoomId = roomId;
+    currentRoomName = roomName;
+    currentRoomImage = roomImg || 'https://via.placeholder.com/150';
     myCurrentSeatIndex = null;
+
+    if (minimizedRoomWidget) minimizedRoomWidget.classList.add('hidden');
     if (mainAppContainer) mainAppContainer.classList.add('hidden');
     if (bottomNav) bottomNav.classList.add('hidden');
     if (roomViewScreen) roomViewScreen.classList.remove('hidden');
@@ -369,22 +378,53 @@ async function enterRoom(roomId, roomName) {
     resetSeatsUI();
 
     try {
-        agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-        await agoraClient.join(AGORA_APP_ID, roomId, null, null);
-        agoraClient.on("user-published", async (user, mediaType) => {
-            await agoraClient.subscribe(user, mediaType);
-            if (mediaType === "audio") user.audioTrack.play();
-        });
+        if (!agoraClient) {
+            agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+            await agoraClient.join(AGORA_APP_ID, roomId, null, null);
+            agoraClient.on("user-published", async (user, mediaType) => {
+                await agoraClient.subscribe(user, mediaType);
+                if (mediaType === "audio") user.audioTrack.play();
+            });
+        }
     } catch (error) {
         console.error("خطأ الصوت الحي:", error);
     }
+}
+
+// تصغير الغرفة لتصبح مربعاً عائماً مع الاستمرار في الصوت
+if (minimizeRoomBtn) {
+    minimizeRoomBtn.addEventListener('click', () => {
+        if (roomViewScreen) roomViewScreen.classList.add('hidden');
+        if (mainAppContainer) mainAppContainer.classList.remove('hidden');
+        if (bottomNav) bottomNav.classList.remove('hidden');
+
+        if (minimizedRoomWidget) {
+            if (miniRoomImg) miniRoomImg.src = currentRoomImage;
+            if (miniRoomName) miniRoomName.textContent = currentRoomName;
+            minimizedRoomWidget.classList.remove('hidden');
+        }
+    });
+}
+
+// الضغط على المربع المصغر يعيد فتح شاشة الغرفة بالكامل
+if (minimizedRoomWidget) {
+    minimizedRoomWidget.addEventListener('click', () => {
+        if (minimizedRoomWidget) minimizedRoomWidget.classList.add('hidden');
+        if (mainAppContainer) mainAppContainer.classList.add('hidden');
+        if (bottomNav) bottomNav.classList.add('hidden');
+        if (roomViewScreen) roomViewScreen.classList.remove('hidden');
+    });
 }
 
 async function leaveRoom() {
     if (localAudioTrack) { localAudioTrack.close(); localAudioTrack = null; }
     if (agoraClient) { await agoraClient.leave(); agoraClient = null; }
     currentRoomId = null;
+    currentRoomName = "";
+    currentRoomImage = "";
     myCurrentSeatIndex = null;
+
+    if (minimizedRoomWidget) minimizedRoomWidget.classList.add('hidden');
     if (roomViewScreen) roomViewScreen.classList.add('hidden');
     if (mainAppContainer) mainAppContainer.classList.remove('hidden');
     if (bottomNav) bottomNav.classList.remove('hidden');
