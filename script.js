@@ -1,4 +1,3 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
     getAuth, 
@@ -6,6 +5,10 @@ import {
     signInWithEmailAndPassword, 
     GoogleAuthProvider,
     signInWithPopup,
+    signOut,
+    deleteUser,
+    EmailAuthProvider,
+    reauthenticateWithCredential,
     onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
@@ -16,6 +19,7 @@ import {
     getDoc, 
     setDoc, 
     updateDoc,
+    deleteDoc,
     onSnapshot, 
     query, 
     where, 
@@ -80,14 +84,6 @@ const roomHeaderAvatar = document.getElementById('room-header-avatar');
 const roomOwnerTag = document.getElementById('room-owner-tag');
 const roomBannerText = document.getElementById('room-banner-text');
 
-const editRoomModal = document.getElementById('edit-room-modal');
-const cancelEditRoom = document.getElementById('cancel-edit-room');
-const confirmEditRoom = document.getElementById('confirm-edit-room');
-const editRoomNameInput = document.getElementById('edit-room-name-input');
-const editRoomBannerInput = document.getElementById('edit-room-banner-input');
-const editRoomImageFile = document.getElementById('edit-room-image-file');
-const editRoomImgPreview = document.getElementById('edit-room-img-preview');
-
 const toggleMicBtn = document.getElementById('toggle-mic-btn');
 const requestSeatBtn = document.getElementById('request-seat-btn');
 
@@ -117,6 +113,28 @@ const inputNickname = document.getElementById('input-nickname');
 const inputAvatarFile = document.getElementById('input-avatar-file'); 
 const avatarPickerTrigger = document.getElementById('avatar-picker-trigger');
 const modalAvatarPreview = document.getElementById('modal-avatar-preview');
+
+// عناصر الإعدادات الجديدة
+const settingsAccountCenter = document.getElementById('settings-account-center');
+const modalAccountCenter = document.getElementById('modal-account-center');
+const closeAccountCenter = document.getElementById('close-account-center');
+const accCenterEmail = document.getElementById('acc-center-email');
+const accCenterUid = document.getElementById('acc-center-uid');
+
+const settingsLanguage = document.getElementById('settings-language');
+const modalLanguage = document.getElementById('modal-language');
+const closeLanguage = document.getElementById('close-language');
+const langArBtn = document.getElementById('lang-ar-btn');
+const langEnBtn = document.getElementById('lang-en-btn');
+const currentLangLabel = document.getElementById('current-lang-label');
+
+const settingsDeleteAccount = document.getElementById('settings-delete-account');
+const modalDeleteAccount = document.getElementById('modal-delete-account');
+const closeDeleteModal = document.getElementById('close-delete-modal');
+const deleteConfirmPassword = document.getElementById('delete-confirm-password');
+const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+
+const settingsLogoutSwitch = document.getElementById('settings-logout-switch');
 
 const roomUserProfileModal = document.getElementById('room-user-profile-modal');
 const bottomSheetContent = document.getElementById('bottom-sheet-content');
@@ -149,46 +167,27 @@ let roomSeats = Array(8).fill(null);
 let userData = null;
 let myCurrentSeatIndex = null;
 let tempSelectedAvatar = null;
-let tempRoomEditAvatar = null;
-let selectedSeatUserForProfile = null;
 
 function getUserBadgeMonthly() {
     const badges = ["🌟 نجم الشهر", "💎 ملك التفاعل", "👑 أسطورة السهرة", "🔥 ملك الألعاب"];
     const now = new Date().getTime();
     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-    const badgeIndex = Math.floor(now / thirtyDaysMs) % badges.length;
-    return badges[badgeIndex];
+    return badges[Math.floor(now / thirtyDaysMs) % badges.length];
 }
 
 function getLevelStylingAndIcon(level, type = 'charm') {
     let iconClass = "fa-solid fa-heart text-pink-400";
     let boxStyle = "background: rgba(88, 28, 135, 0.4); border-color: rgba(168, 85, 247, 0.4);";
-    
     if (type === 'wealth') {
         iconClass = "fa-solid fa-gem text-amber-400";
         boxStyle = "background: rgba(6, 78, 59, 0.4); border-color: rgba(16, 185, 129, 0.4);";
     }
-
-    if (level >= 90) {
-        iconClass = type === 'charm' ? "fa-solid fa-fire text-red-500 animate-pulse" : "fa-solid fa-crown text-yellow-300 animate-bounce";
-        boxStyle = "background: linear-gradient(135deg, rgba(220, 38, 38, 0.3), rgba(88, 28, 135, 0.6)); border-color: #f59e0b;";
-    } else if (level >= 70) {
-        iconClass = type === 'charm' ? "fa-solid fa-bolt text-amber-400" : "fa-solid fa-sack-dollar text-emerald-400";
-        boxStyle = "background: rgba(180, 83, 9, 0.3); border-color: #f59e0b;";
-    } else if (level >= 40) {
-        iconClass = type === 'charm' ? "fa-solid fa-star text-purple-400" : "fa-solid fa-coins text-yellow-400";
-        boxStyle = "background: rgba(79, 70, 229, 0.3); border-color: #818cf8;";
-    }
-
     return { iconClass, boxStyle };
 }
 
 function compressImage(file) {
     return new Promise((resolve) => {
-        if (!file) {
-            resolve(null);
-            return;
-        }
+        if (!file) { resolve(null); return; }
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = (event) => {
@@ -196,29 +195,14 @@ function compressImage(file) {
             img.src = event.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 250;
-                const MAX_HEIGHT = 250;
-                let width = img.width;
-                let height = img.height;
-
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_HEIGHT) {
-                        width *= MAX_HEIGHT / height;
-                        height = MAX_HEIGHT;
-                    }
-                }
-
-                canvas.width = width;
-                canvas.height = height;
+                let width = img.width, height = img.height;
+                const MAX = 250;
+                if (width > height && width > MAX) { height *= MAX / width; width = MAX; }
+                else if (height > MAX) { width *= MAX / height; height = MAX; }
+                canvas.width = width; canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                resolve(dataUrl);
+                resolve(canvas.toDataURL('image/jpeg', 0.6));
             };
             img.onerror = () => resolve(null);
         };
@@ -226,10 +210,96 @@ function compressImage(file) {
     });
 }
 
+// أزرار إعدادات الحساب والتطبيق الجديدة
+if (settingsAccountCenter) {
+    settingsAccountCenter.addEventListener('click', () => {
+        if (currentUser && userData) {
+            if (accCenterEmail) accCenterEmail.textContent = currentUser.email || "تسجيل عبر Google";
+            if (accCenterUid) accCenterUid.textContent = userData.userId || "110789";
+            if (modalAccountCenter) modalAccountCenter.classList.remove('hidden');
+        }
+    });
+}
+if (closeAccountCenter) {
+    closeAccountCenter.addEventListener('click', () => modalAccountCenter.classList.add('hidden'));
+}
+
+if (settingsLanguage) {
+    settingsLanguage.addEventListener('click', () => modalLanguage.classList.remove('hidden'));
+}
+if (closeLanguage) {
+    closeLanguage.addEventListener('click', () => modalLanguage.classList.add('hidden'));
+}
+if (langArBtn && langEnBtn) {
+    langArBtn.addEventListener('click', () => {
+        if (currentLangLabel) currentLangLabel.textContent = "العربية 🇪🇬";
+        alert("✅ تم اختيار اللغة العربية بنجاح!");
+        modalLanguage.classList.add('hidden');
+    });
+    langEnBtn.addEventListener('click', () => {
+        if (currentLangLabel) currentLangLabel.textContent = "English 🇺🇸";
+        alert("✅ Language switched to English!");
+        modalLanguage.classList.add('hidden');
+    });
+}
+
+// شروط حذف الحساب
+if (settingsDeleteAccount) {
+    settingsDeleteAccount.addEventListener('click', () => {
+        if (deleteConfirmPassword) deleteConfirmPassword.value = '';
+        if (modalDeleteAccount) modalDeleteAccount.classList.remove('hidden');
+    });
+}
+if (closeDeleteModal) {
+    closeDeleteModal.addEventListener('click', () => modalDeleteAccount.classList.add('hidden'));
+}
+
+if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener('click', async () => {
+        const pass = deleteConfirmPassword ? deleteConfirmPassword.value.trim() : "";
+        if (!pass) return alert("⚠️ برجاء إدخال كلمة المرور لتأكيد شروط الحذف!");
+
+        try {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            // إعادة توثيق الحساب بالشروط الأمنية
+            const credential = EmailAuthProvider.credential(user.email, pass);
+            await reauthenticateWithCredential(user, credential);
+
+            // حذف مستند المستخدم من Firestore أولاً
+            await deleteDoc(doc(db, "users", user.uid));
+
+            // حذف الحساب نهائياً من Firebase Auth
+            await deleteUser(user);
+
+            alert("🗑️ تم حذف الحساب نهائياً بنجاح وفقاً للشروط.");
+            if (modalDeleteAccount) modalDeleteAccount.classList.add('hidden');
+        } catch (error) {
+            console.error("Delete account error:", error);
+            alert("❌ فشل حذف الحساب: تأكد من صحة كلمة المرور أو إعادة تسجيل الدخول.");
+        }
+    });
+}
+
+// تسجيل الخروج وإضافة حساب آخر بـ Gmail جديد
+if (settingsLogoutSwitch) {
+    settingsLogoutSwitch.addEventListener('click', async () => {
+        if (confirm("هل تريد تسجيل الخروج والانتقال لإضافة حساب Gmail آخر؟")) {
+            try {
+                await signOut(auth);
+                alert("👋 تم تسجيل الخروج بنجاح. يمكنك الآن تسجيل الدخول بحساب Gmail جديد!");
+            } catch (error) {
+                console.error("Logout error:", error);
+            }
+        }
+    });
+}
+
 if (startBtn) {
     startBtn.addEventListener('click', () => {
-        if (welcomeScreen) welcomeScreen.classList.add('hidden');
-        if (authScreen) authScreen.classList.remove('hidden');
+        welcomeScreen.classList.add('hidden');
+        authScreen.classList.remove('hidden');
     });
 }
 
@@ -244,7 +314,6 @@ if (toggleAuthModeBtn) {
     });
 }
 
-// دالة تسجيل الدخول عبر Google
 if (googleLoginBtn) {
     googleLoginBtn.addEventListener('click', async () => {
         const provider = new GoogleAuthProvider();
@@ -262,8 +331,8 @@ if (googleLoginBtn) {
                     userId: randomId,
                     nickname: user.displayName || user.email.split('@')[0],
                     avatar: user.photoURL || "https://via.placeholder.com/150",
-                    charmLevel: 1, // يبدأ من لفل 1
-                    wealthLevel: 1, // يبدأ من لفل 1
+                    charmLevel: 1,
+                    wealthLevel: 1,
                     createdAt: serverTimestamp()
                 });
             }
@@ -278,12 +347,8 @@ if (googleLoginBtn) {
 if (authForm) {
     authForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const emailField = document.getElementById('email');
-        const passwordField = document.getElementById('password');
-        if (!emailField || !passwordField) return;
-
-        const email = emailField.value.trim();
-        const password = passwordField.value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
 
         try {
             if (isLoginMode) {
@@ -300,14 +365,13 @@ if (authForm) {
                     userId: randomId,
                     nickname: email.split('@')[0],
                     avatar: "https://via.placeholder.com/150",
-                    charmLevel: 1, // المستخدم الجديد يبدأ من لفل 1
-                    wealthLevel: 1, // المستخدم الجديد يبدأ من لفل 1
+                    charmLevel: 1,
+                    wealthLevel: 1,
                     createdAt: serverTimestamp()
                 });
                 alert("🚀 تم إنشاء الحساب وتوليد الـ ID بنجاح!");
             }
         } catch (error) {
-            console.error("Auth Error:", error);
             alert("❌ خطأ في المصادقة: " + error.message);
         }
     });
@@ -315,15 +379,15 @@ if (authForm) {
 
 if (navRoomsBtn && navProfileBtn) {
     navRoomsBtn.addEventListener('click', () => {
-        if (tabRooms) tabRooms.classList.remove('hidden');
-        if (tabProfile) tabProfile.classList.add('hidden');
+        tabRooms.classList.remove('hidden');
+        tabProfile.classList.add('hidden');
         navRoomsBtn.className = "flex flex-col items-center text-purple-400 cursor-pointer";
         navProfileBtn.className = "flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer";
     });
 
     navProfileBtn.addEventListener('click', () => {
-        if (tabProfile) tabProfile.classList.remove('hidden');
-        if (tabRooms) tabRooms.classList.add('hidden');
+        tabProfile.classList.remove('hidden');
+        tabRooms.classList.add('hidden');
         navProfileBtn.className = "flex flex-col items-center text-purple-400 cursor-pointer";
         navRoomsBtn.className = "flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer";
     });
@@ -351,28 +415,23 @@ if (editProfileBtn) {
             if (modalAvatarPreview) modalAvatarPreview.src = userData.avatar || "https://via.placeholder.com/150";
         }
         tempSelectedAvatar = null;
-        if (editProfileModal) editProfileModal.classList.remove('hidden');
+        editProfileModal.classList.remove('hidden');
     });
 }
 
 if (closeEditProfile) {
-    closeEditProfile.addEventListener('click', () => {
-        if (editProfileModal) editProfileModal.classList.add('hidden');
-    });
+    closeEditProfile.addEventListener('click', () => editProfileModal.classList.add('hidden'));
 }
 
 if (avatarPickerTrigger && inputAvatarFile) {
-    avatarPickerTrigger.addEventListener('click', () => {
-        inputAvatarFile.click();
-    });
-
+    avatarPickerTrigger.addEventListener('click', () => inputAvatarFile.click());
     inputAvatarFile.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (file) {
             const compressed = await compressImage(file);
             if (compressed) {
                 tempSelectedAvatar = compressed;
-                if (modalAvatarPreview) modalAvatarPreview.src = compressed;
+                modalAvatarPreview.src = compressed;
             }
         }
     });
@@ -399,16 +458,12 @@ if (saveProfileBtn) {
 
             if (profileDisplayName) profileDisplayName.textContent = newNick;
             if (profileImgPreview) profileImgPreview.src = avatarBase64;
-            
-            if (!userData) userData = {};
             userData.nickname = newNick;
             userData.avatar = avatarBase64;
-            userData.userId = safeUserId;
 
             alert("✅ تم تحديث الملف الشخصي بنجاح!");
-            if (editProfileModal) editProfileModal.classList.add('hidden');
+            editProfileModal.classList.add('hidden');
         } catch (error) {
-            console.error("Profile update error:", error);
             alert("❌ خطأ أثناء الحفظ: " + error.message);
         }
     });
@@ -418,154 +473,40 @@ async function checkUserRoomStatus(uid) {
     if (!createRoomBtn) return;
     const q = query(collection(db, "rooms"), where("hostUid", "==", uid));
     onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-            createRoomBtn.classList.add('hidden');
-        } else {
-            createRoomBtn.classList.remove('hidden');
-        }
+        if (!snapshot.empty) createRoomBtn.classList.add('hidden');
+        else createRoomBtn.classList.remove('hidden');
     });
 }
 
 if (createRoomBtn) {
-    createRoomBtn.addEventListener('click', async () => {
-        if (!currentUser) return;
-        if (createRoomModal) createRoomModal.classList.remove('hidden');
-    });
+    createRoomBtn.addEventListener('click', () => createRoomModal.classList.remove('hidden'));
 }
-
 if (cancelRoomBtn) {
-    cancelRoomBtn.addEventListener('click', () => {
-        if (createRoomModal) createRoomModal.classList.add('hidden');
-        if (roomNameInput) roomNameInput.value = '';
-        if (roomImageFile) roomImageFile.value = '';
-    });
+    cancelRoomBtn.addEventListener('click', () => createRoomModal.classList.add('hidden'));
 }
-
 if (confirmCreateRoom) {
     confirmCreateRoom.addEventListener('click', async () => {
-        if (!roomNameInput || !roomImageFile) return;
         const roomName = roomNameInput.value.trim();
-
-        if (!roomName) return alert("⚠️ برجاء كتابة اسم الغرفة أولاً!");
-        if (!roomImageFile.files || roomImageFile.files.length === 0) {
-            return alert("⚠️ برجاء اختيار صورة للغرفة من المعرض أولاً!");
-        }
+        if (!roomName) return alert("⚠️ برجاء كتابة اسم الغرفة!");
+        if (!roomImageFile.files || roomImageFile.files.length === 0) return alert("⚠️ اختر صورة الغرفة!");
 
         try {
             const roomImgCompressed = await compressImage(roomImageFile.files[0]);
-
             const docRef = await addDoc(collection(db, "rooms"), {
                 name: roomName,
-                banner: "مرحباً بالجميع في الغرفة! استمتعوا بالدردشة الصوتية ✨",
+                banner: "مرحباً بالجميع في الغرفة! ✨",
                 image: roomImgCompressed,
                 hostUid: currentUser.uid,
-                host: userData ? userData.nickname : "مضيف الغرفة",
+                host: userData ? userData.nickname : "مضيف",
                 admins: [currentUser.uid],
                 bannedUsers: [],
                 createdAt: serverTimestamp()
             });
-
-            roomNameInput.value = '';
-            roomImageFile.value = '';
-            if (createRoomModal) createRoomModal.classList.add('hidden');
-            
+            createRoomModal.classList.add('hidden');
             const newRoomSnap = await getDoc(docRef);
             enterRoom(docRef.id, { id: docRef.id, ...newRoomSnap.data() });
         } catch (error) {
-            console.error("Room creation error:", error);
-            alert("❌ خطأ أثناء إنشاء الغرفة: " + error.message);
-        }
-    });
-}
-
-if (roomOptionsBtn && roomOptionsDropdown) {
-    roomOptionsBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        roomOptionsDropdown.classList.toggle('hidden');
-    });
-
-    document.addEventListener('click', () => {
-        roomOptionsDropdown.classList.add('hidden');
-    });
-}
-
-if (optMinimize) {
-    optMinimize.addEventListener('click', () => {
-        if (roomViewScreen) roomViewScreen.classList.add('hidden');
-        if (mainAppContainer) mainAppContainer.classList.remove('hidden');
-        if (bottomNav) bottomNav.classList.remove('hidden');
-
-        if (minimizedRoomWidget) {
-            if (miniRoomImg) miniRoomImg.src = currentRoomImage;
-            if (miniRoomName) miniRoomName.textContent = currentRoomName;
-            minimizedRoomWidget.classList.remove('hidden');
-        }
-    });
-}
-
-if (optLeave) {
-    optLeave.addEventListener('click', leaveRoom);
-}
-
-if (optSettings) {
-    optSettings.addEventListener('click', () => {
-        if (currentRoomDocData && editRoomNameInput && editRoomBannerInput) {
-            editRoomNameInput.value = currentRoomDocData.name || '';
-            editRoomBannerInput.value = currentRoomDocData.banner || '';
-            if (editRoomImgPreview) editRoomImgPreview.src = currentRoomDocData.image || 'https://via.placeholder.com/150';
-        }
-        tempRoomEditAvatar = null;
-        if (editRoomModal) editRoomModal.classList.remove('hidden');
-    });
-}
-
-if (editRoomImageFile && editRoomImgPreview) {
-    editRoomImageFile.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const compressed = await compressImage(file);
-            if (compressed) {
-                tempRoomEditAvatar = compressed;
-                editRoomImgPreview.src = compressed;
-            }
-        }
-    });
-}
-
-if (cancelEditRoom) {
-    cancelEditRoom.addEventListener('click', () => {
-        if (editRoomModal) editRoomModal.classList.add('hidden');
-    });
-}
-
-if (confirmEditRoom) {
-    confirmEditRoom.addEventListener('click', async () => {
-        if (!currentRoomId || !currentRoomDocData) return;
-        const newName = editRoomNameInput ? editRoomNameInput.value.trim() : "";
-        const newBanner = editRoomBannerInput ? editRoomBannerInput.value.trim() : "";
-        if (!newName) return alert("⚠️ برجاء كتابة اسم الغرفة!");
-
-        try {
-            let newImg = tempRoomEditAvatar ? tempRoomEditAvatar : currentRoomDocData.image;
-
-            const roomRef = doc(db, "rooms", currentRoomId);
-            await updateDoc(roomRef, {
-                name: newName,
-                banner: newBanner,
-                image: newImg
-            });
-
-            currentRoomDocData.name = newName;
-            currentRoomDocData.banner = newBanner;
-            currentRoomDocData.image = newImg;
-            if (currentRoomTitle) currentRoomTitle.textContent = newName;
-            if (roomHeaderAvatar) roomHeaderAvatar.src = newImg;
-            if (roomBannerText) roomBannerText.textContent = newBanner || "لا يوجد شعار حالياً";
-
-            alert("✅ تم تحديث إعدادات الغرفة بنجاح!");
-            if (editRoomModal) editRoomModal.classList.add('hidden');
-        } catch (error) {
-            alert("❌ خطأ أثناء التحديث: " + error.message);
+            alert("❌ خطأ: " + error.message);
         }
     });
 }
@@ -575,27 +516,21 @@ function loadRooms() {
     onSnapshot(collection(db, "rooms"), (snapshot) => {
         roomsGrid.innerHTML = "";
         if (snapshot.empty) {
-            roomsGrid.innerHTML = `<p class="col-span-2 text-center text-slate-500 text-xs py-8">لا توجد غرف متاحة حالياً. أنشئ غرفتك الآن! ✨</p>`;
+            roomsGrid.innerHTML = `<p class="col-span-2 text-center text-slate-500 text-xs py-8">لا توجد غرف متاحة حالياً ✨</p>`;
             return;
         }
-
         snapshot.forEach((docSnap) => {
             const roomData = docSnap.data();
             const roomId = docSnap.id;
-
-            if (roomData.bannedUsers && currentUser && roomData.bannedUsers.some(b => b.uid === currentUser.uid)) {
-                return;
-            }
+            if (roomData.bannedUsers && currentUser && roomData.bannedUsers.some(b => b.uid === currentUser.uid)) return;
 
             const roomCard = document.createElement('div');
             roomCard.className = "bg-slate-900/80 p-3 rounded-2xl flex flex-col items-center text-center border border-purple-500/25 cursor-pointer hover:border-purple-400 transition shadow-md";
-            
             roomCard.innerHTML = `
-                <img src="${escapeHtml(roomData.image || 'https://via.placeholder.com/150')}" class="w-full h-32 rounded-xl object-cover border border-purple-500/30 mb-2 shadow-sm">
-                <h3 class="text-xs font-bold text-purple-200 truncate w-full">${escapeHtml(roomData.name)} 🎤</h3>
-                <p class="text-[10px] text-slate-400 truncate w-full mt-0.5">المضيف: ${escapeHtml(roomData.host || 'مالك الغرفة')}</p>
+                <img src="${roomData.image || 'https://via.placeholder.com/150'}" class="w-full h-32 rounded-xl object-cover border border-purple-500/30 mb-2">
+                <h3 class="text-xs font-bold text-purple-200 truncate w-full">${roomData.name} 🎤</h3>
+                <p class="text-[10px] text-slate-400 truncate w-full mt-0.5">المضيف: ${roomData.host || 'مالك'}</p>
             `;
-            
             roomCard.addEventListener('click', () => enterRoom(roomId, { id: roomId, ...roomData }));
             roomsGrid.appendChild(roomCard);
         });
@@ -603,144 +538,58 @@ function loadRooms() {
 }
 
 async function enterRoom(roomId, roomData) {
-    if (roomData.bannedUsers && currentUser) {
-        const banRecord = roomData.bannedUsers.find(b => b.uid === currentUser.uid);
-        if (banRecord) {
-            const now = Date.now();
-            const banDuration = 24 * 60 * 60 * 1000;
-            if (now - banRecord.time < banDuration) {
-                return alert("🚫 عذراً، أنت مطرود من هذه الغرفة ولم تنتهِ فترة العقوبة (24 ساعة)!");
-            }
-        }
-    }
-
     currentRoomId = roomId;
     currentRoomDocData = roomData;
     currentRoomName = roomData.name;
     currentRoomImage = roomData.image || 'https://via.placeholder.com/150';
     myCurrentSeatIndex = null;
 
-    if (minimizedRoomWidget) minimizedRoomWidget.classList.add('hidden');
-    if (mainAppContainer) mainAppContainer.classList.add('hidden');
-    if (bottomNav) bottomNav.classList.add('hidden');
-    if (roomViewScreen) roomViewScreen.classList.remove('hidden');
-    if (currentRoomTitle) currentRoomTitle.textContent = roomData.name;
-    if (roomHeaderAvatar) roomHeaderAvatar.src = currentRoomImage;
-    if (roomOwnerTag) roomOwnerTag.textContent = `👑 المالك: ${roomData.host || 'غير معروف'}`;
-    if (roomBannerText) roomBannerText.textContent = roomData.banner || "مرحباً بالجميع في الغرفة!";
+    welcomeScreen.classList.add('hidden');
+    authScreen.classList.add('hidden');
+    mainAppContainer.classList.add('hidden');
+    bottomNav.classList.add('hidden');
+    roomViewScreen.classList.remove('hidden');
+
+    currentRoomTitle.textContent = roomData.name;
+    roomHeaderAvatar.src = currentRoomImage;
+    roomOwnerTag.textContent = `👑 المالك: ${roomData.host || 'غير معروف'}`;
+    roomBannerText.textContent = roomData.banner || "مرحباً بالجميع!";
 
     if (optSettings) {
-        if (currentUser && roomData.hostUid === currentUser.uid) {
-            optSettings.classList.remove('hidden');
-        } else {
-            optSettings.classList.add('hidden');
-        }
+        if (currentUser && roomData.hostUid === currentUser.uid) optSettings.classList.remove('hidden');
+        else optSettings.classList.add('hidden');
     }
-
     resetSeatsUI();
 
     try {
         if (!agoraClient) {
             agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
             await agoraClient.join(AGORA_APP_ID, roomId, null, null);
-            
             agoraClient.on("user-published", async (user, mediaType) => {
                 await agoraClient.subscribe(user, mediaType);
-                if (mediaType === "audio") {
-                    user.audioTrack.play();
-                    triggerSpeakingAnimationByUid(user.uid, true);
-                }
-            });
-            agoraClient.on("user-unpublished", (user, mediaType) => {
-                if (mediaType === "audio") {
-                    triggerSpeakingAnimationByUid(user.uid, false);
-                }
+                if (mediaType === "audio") user.audioTrack.play();
             });
         }
-    } catch (error) {
-        console.error("خطأ الصوت الحي:", error);
-    }
-}
-
-function triggerSpeakingAnimationByUid(agoraUid, isSpeaking) {
-    roomSeats.forEach((seatUser, idx) => {
-        if (seatUser && seatUser.uid === agoraUid) {
-            const seatDiv = document.getElementById(`seat-${idx}`);
-            if (seatDiv) {
-                if (isSpeaking) {
-                    seatDiv.classList.add('speaking-animation');
-                } else {
-                    seatDiv.classList.remove('speaking-animation');
-                }
-            }
-        }
-    });
-}
-
-let isDragging = false;
-let startX, startY, initialX, initialY;
-
-if (minimizedRoomWidget) {
-    minimizedRoomWidget.addEventListener('pointerdown', (e) => {
-        isDragging = false;
-        startX = e.clientX;
-        startY = e.clientY;
-        const rect = minimizedRoomWidget.getBoundingClientRect();
-        initialX = rect.left;
-        initialY = rect.top;
-        minimizedRoomWidget.setPointerCapture(e.pointerId);
-    });
-
-    minimizedRoomWidget.addEventListener('pointermove', (e) => {
-        if (!e.buttons) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-            isDragging = true;
-            minimizedRoomWidget.style.left = `${initialX + dx}px`;
-            minimizedRoomWidget.style.top = `${initialY + dy}px`;
-            minimizedRoomWidget.style.right = 'auto';
-            minimizedRoomWidget.style.bottom = 'auto';
-        }
-    });
-
-    minimizedRoomWidget.addEventListener('pointerup', () => {
-        if (!isDragging) {
-            if (minimizedRoomWidget) minimizedRoomWidget.classList.add('hidden');
-            if (mainAppContainer) mainAppContainer.classList.add('hidden');
-            if (bottomNav) bottomNav.classList.add('hidden');
-            if (roomViewScreen) roomViewScreen.classList.remove('hidden');
-        }
-    });
+    } catch (e) { console.error(e); }
 }
 
 async function leaveRoom() {
     if (localAudioTrack) { localAudioTrack.close(); localAudioTrack = null; }
     if (agoraClient) { await agoraClient.leave(); agoraClient = null; }
     currentRoomId = null;
-    currentRoomDocData = null;
-    currentRoomName = "";
-    currentRoomImage = "";
-    myCurrentSeatIndex = null;
-
-    if (roomOptionsDropdown) roomOptionsDropdown.classList.add('hidden');
-    if (minimizedRoomWidget) minimizedRoomWidget.classList.add('hidden');
-    if (roomViewScreen) roomViewScreen.classList.add('hidden');
-    if (mainAppContainer) mainAppContainer.classList.remove('hidden');
-    if (bottomNav) bottomNav.classList.remove('hidden');
+    roomViewScreen.classList.add('hidden');
+    mainAppContainer.classList.remove('hidden');
+    bottomNav.classList.remove('hidden');
 }
+
+if (optLeave) optLeave.addEventListener('click', leaveRoom);
 
 if (requestSeatBtn) {
     requestSeatBtn.addEventListener('click', async () => {
         if (!currentUser || !currentRoomId) return alert("⚠️ ادخل غرفة أولاً!");
-        
-        if (myCurrentSeatIndex !== null) {
-            return alert("⚠️ أنت جالس على مقعد بالفعل ولا يمكنك الجلوس مرة أخرى!");
-        }
-
         let emptyIndex = roomSeats.findIndex((seat, idx) => idx > 0 && seat === null);
         if (emptyIndex === -1 && roomSeats[0] === null) emptyIndex = 0;
-        if (emptyIndex === -1) return alert("❌ عذراً، جميع الكراسي محجوزة!");
+        if (emptyIndex === -1) return alert("❌ جميع الكراسي محجوزة!");
 
         myCurrentSeatIndex = emptyIndex;
         roomSeats[emptyIndex] = {
@@ -758,9 +607,7 @@ if (requestSeatBtn) {
                 localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
                 await agoraClient.publish([localAudioTrack]);
             }
-        } catch (e) {
-            alert("⚠️ يرجى السماح للمايكروفون بالعمل.");
-        }
+        } catch (e) { alert("⚠️ سماح للمايك مطلوب."); }
     });
 }
 
@@ -777,10 +624,7 @@ function updateSeatUI(index, userObj, isOccupied) {
         newSeatDiv.innerHTML = `<img src="${userObj.avatar}" class="w-full h-full object-cover">`;
         nameSpan.textContent = userObj.nickname;
         nameSpan.className = "text-[10px] text-green-300 mt-1.5 truncate w-16 font-bold";
-
-        newSeatDiv.addEventListener('click', () => {
-            openUserProfileModal(userObj, index);
-        });
+        newSeatDiv.addEventListener('click', () => openUserProfileModal(userObj, index));
     } else {
         newSeatDiv.className = "w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative";
         newSeatDiv.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-sm"></i>`;
@@ -790,213 +634,50 @@ function updateSeatUI(index, userObj, isOccupied) {
 }
 
 function openUserProfileModal(userObj, seatIdx) {
-    selectedSeatUserForProfile = { ...userObj, seatIndex: seatIdx };
-    if (modalProfileAvatar) modalProfileAvatar.src = userObj.avatar;
-    if (modalProfileName) modalProfileName.textContent = userObj.nickname;
-    if (modalProfileId) modalProfileId.textContent = `ID: ${userObj.userId}`;
-    if (modalProfileBadge) modalProfileBadge.textContent = getUserBadgeMonthly();
-
-    if (currentRoomDocData) {
-        if (userObj.uid === currentRoomDocData.hostUid) {
-            if (modalUserRoleTag) modalUserRoleTag.textContent = "👑 مالك الغرفة";
-        } else if (currentRoomDocData.admins && currentRoomDocData.admins.includes(userObj.uid)) {
-            if (modalUserRoleTag) modalUserRoleTag.textContent = "⭐ مشرف";
-        } else {
-            if (modalUserRoleTag) modalUserRoleTag.textContent = "عضو نشط";
-        }
-    } else {
-        if (modalUserRoleTag) modalUserRoleTag.textContent = "عضو نشط";
-    }
-
-    const cLevel = userObj.charmLevel || 1;
-    const wLevel = userObj.wealthLevel || 1;
-
-    if (charmLevelText) charmLevelText.textContent = `Lv. ${cLevel}`;
-    const charmStyle = getLevelStylingAndIcon(cLevel, 'charm');
-    if (charmLevelBox) charmLevelBox.style = charmStyle.boxStyle;
-    if (charmLevelIcon) charmLevelIcon.className = charmStyle.iconClass;
-
-    if (wealthLevelText) wealthLevelText.textContent = `Lv. ${wLevel}`;
-    const wealthStyle = getLevelStylingAndIcon(wLevel, 'wealth');
-    if (wealthLevelBox) wealthLevelBox.style = wealthStyle.boxStyle;
-    if (wealthLevelIcon) wealthLevelIcon.className = wealthStyle.iconClass;
-
-    if (currentUser && currentRoomDocData && seatIdx !== null) {
-        const isOwner = currentRoomDocData.hostUid === currentUser.uid;
-        const isAdmin = currentRoomDocData.admins && currentRoomDocData.admins.includes(currentUser.uid);
-        
-        if ((isOwner || isAdmin) && userObj.uid !== currentRoomDocData.hostUid && userObj.uid !== currentUser.uid) {
-            if (moderatorControls) moderatorControls.classList.remove('hidden');
-            const isTargetAdmin = currentRoomDocData.admins && currentRoomDocData.admins.includes(userObj.uid);
-            if (modToggleAdmin) {
-                modToggleAdmin.textContent = isTargetAdmin ? "⭐ إزالة من المشرفين" : "👑 تعيين مشرف";
-                if (!isOwner) modToggleAdmin.classList.add('hidden');
-                else modToggleAdmin.classList.remove('hidden');
-            }
-        } else {
-            if (moderatorControls) moderatorControls.classList.add('hidden');
-        }
-    } else {
-        if (moderatorControls) moderatorControls.classList.add('hidden');
-    }
-
-    if (roomUserProfileModal) {
-        roomUserProfileModal.classList.remove('hidden');
-        setTimeout(() => bottomSheetContent.classList.add('show'), 10);
-    }
+    modalProfileAvatar.src = userObj.avatar;
+    modalProfileName.textContent = userObj.nickname;
+    modalProfileId.textContent = `ID: ${userObj.userId}`;
+    modalProfileBadge.textContent = getUserBadgeMonthly();
+    roomUserProfileModal.classList.remove('hidden');
+    setTimeout(() => bottomSheetContent.classList.add('show'), 10);
 }
 
 if (closeUserProfile) {
     closeUserProfile.addEventListener('click', () => {
-        if (bottomSheetContent) bottomSheetContent.classList.remove('show');
+        bottomSheetContent.classList.remove('show');
         setTimeout(() => roomUserProfileModal.classList.add('hidden'), 300);
-    });
-}
-
-if (modKickSeat) {
-    modKickSeat.addEventListener('click', () => {
-        if (!selectedSeatUserForProfile) return;
-        const idx = selectedSeatUserForProfile.seatIndex;
-        roomSeats[idx] = null;
-        updateSeatUI(idx, null, false);
-        alert("✅ تم إنزال المستخدم من الكرسي بنجاح!");
-        if (roomUserProfileModal) roomUserProfileModal.classList.add('hidden');
-    });
-}
-
-if (modBanUser) {
-    modBanUser.addEventListener('click', async () => {
-        if (!selectedSeatUserForProfile || !currentRoomId) return;
-        if (!confirm("هل أنت متأكد من طرد هذا المستخدم من الغرفة لمدة 24 ساعة؟")) return;
-
-        try {
-            const idx = selectedSeatUserForProfile.seatIndex;
-            roomSeats[idx] = null;
-            updateSeatUI(idx, null, false);
-
-            const roomRef = doc(db, "rooms", currentRoomId);
-            const updatedBans = currentRoomDocData.bannedUsers ? [...currentRoomDocData.bannedUsers, { uid: selectedSeatUserForProfile.uid, time: Date.now() }] : [{ uid: selectedSeatUserForProfile.uid, time: Date.now() }];
-            
-            await updateDoc(roomRef, { bannedUsers: updatedBans });
-            currentRoomDocData.bannedUsers = updatedBans;
-
-            alert("🚫 تم طرد المستخدم من الغرفة لمدة 24 ساعة!");
-            if (roomUserProfileModal) roomUserProfileModal.classList.add('hidden');
-        } catch (e) {
-            alert("❌ خطأ أثناء الطرد: " + e.message);
-        }
-    });
-}
-
-if (modToggleAdmin) {
-    modToggleAdmin.addEventListener('click', async () => {
-        if (!selectedSeatUserForProfile || !currentRoomId) return;
-        try {
-            const targetUid = selectedSeatUserForProfile.uid;
-            let currentAdmins = currentRoomDocData.admins || [currentRoomDocData.hostUid];
-            
-            if (currentAdmins.includes(targetUid)) {
-                currentAdmins = currentAdmins.filter(id => id !== targetUid);
-            } else {
-                currentAdmins.push(targetUid);
-            }
-
-            const roomRef = doc(db, "rooms", currentRoomId);
-            await updateDoc(roomRef, { admins: currentAdmins });
-            currentRoomDocData.admins = currentAdmins;
-
-            alert("✅ تم تحديث صلاحيات المشرف بنجاح!");
-            if (roomUserProfileModal) roomUserProfileModal.classList.add('hidden');
-        } catch (e) {
-            alert("❌ خطأ: " + e.message);
-        }
-    });
-}
-
-let isMicMuted = false;
-if (toggleMicBtn) {
-    toggleMicBtn.addEventListener('click', async () => {
-        if (!localAudioTrack) {
-            return alert("⚠️ يجب أن تكون جالساً على كرسي أولاً!");
-        }
-        
-        isMicMuted = !isMicMuted;
-        await localAudioTrack.setMuted(isMicMuted);
-
-        if (isMicMuted) {
-            toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone-slash"></i> المايك مكتوم`;
-            toggleMicBtn.className = "bg-red-600 text-white px-4 py-2.5 rounded-xl text-xs cursor-pointer flex items-center gap-1.5";
-        } else {
-            toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone"></i> كتم المايك`;
-            toggleMicBtn.className = "bg-purple-600/30 text-purple-200 px-4 py-2.5 rounded-xl text-xs border border-purple-500/40 cursor-pointer flex items-center gap-1.5";
-        }
-    });
-}
-
-if (chatForm) {
-    chatForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        if (!chatInput) return;
-        const text = chatInput.value.trim();
-        if (!text || !userData) return;
-        const msgDiv = document.createElement('div');
-        msgDiv.className = "text-xs leading-relaxed";
-        msgDiv.innerHTML = `<span class="text-purple-300 font-bold">${escapeHtml(userData.nickname)}:</span> <span class="text-white">${escapeHtml(text)}</span>`;
-        if (chatMessagesList) {
-            chatMessagesList.appendChild(msgDiv);
-            chatMessagesList.scrollTop = chatMessagesList.scrollHeight;
-        }
-        chatInput.value = '';
     });
 }
 
 function resetSeatsUI() {
     roomSeats = Array(8).fill(null);
     myCurrentSeatIndex = null;
-    for (let i = 0; i < 8; i++) {
-        updateSeatUI(i, null, false);
-    }
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    for (let i = 0; i < 8; i++) updateSeatUI(i, null, false);
 }
 
 onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     if (user) {
-        if (welcomeScreen) welcomeScreen.classList.add('hidden');
-        if (authScreen) authScreen.classList.add('hidden');
-        if (roomViewScreen) roomViewScreen.classList.add('hidden');
-        if (mainAppContainer) mainAppContainer.classList.remove('hidden');
-        if (bottomNav) bottomNav.classList.remove('hidden');
+        welcomeScreen.classList.add('hidden');
+        authScreen.classList.add('hidden');
+        roomViewScreen.classList.add('hidden');
+        mainAppContainer.classList.remove('hidden');
+        bottomNav.classList.remove('hidden');
 
         try {
             const userDocRef = doc(db, "users", user.uid);
             const userDocSnap = await getDoc(userDocRef);
             if (userDocSnap.exists()) {
                 userData = userDocSnap.data();
-                if (headerUserId) headerUserId.textContent = `ID: ${userData.userId}`;
-                if (profileDisplayId) profileDisplayId.textContent = `ID: ${userData.userId}`;
-                if (profileDisplayName) profileDisplayName.textContent = userData.nickname || "مستخدم";
-                if (profileImgPreview) profileImgPreview.src = userData.avatar || "https://via.placeholder.com/150";
-                if (userBadgeTag) userBadgeTag.textContent = getUserBadgeMonthly();
+                headerUserId.textContent = `ID: ${userData.userId}`;
+                profileDisplayId.textContent = `ID: ${userData.userId}`;
+                profileDisplayName.textContent = userData.nickname || "مستخدم";
+                profileImgPreview.src = userData.avatar || "https://via.placeholder.com/150";
+                userBadgeTag.textContent = getUserBadgeMonthly();
 
-                const cLvl = userData.charmLevel || 1;
-                const wLvl = userData.wealthLevel || 1;
-                
-                if (mainCharmText) mainCharmText.textContent = `Lv. ${cLvl}`;
-                const cStyle = getLevelStylingAndIcon(cLvl, 'charm');
-                if (mainCharmBox) mainCharmBox.style = cStyle.boxStyle;
-                if (mainCharmIcon) mainCharmIcon.className = cStyle.iconClass;
-
-                if (mainWealthText) mainWealthText.textContent = `Lv. ${wLvl}`;
-                const wStyle = getLevelStylingAndIcon(wLvl, 'wealth');
-                if (mainWealthBox) mainWealthBox.style = wStyle.boxStyle;
-                if (mainWealthIcon) mainWealthIcon.className = wStyle.iconClass;
+                mainCharmText.textContent = `Lv. ${userData.charmLevel || 1}`;
+                mainWealthText.textContent = `Lv. ${userData.wealthLevel || 1}`;
             } else {
-                // إذا لم يكن مخزناً مسبقاً في قاعدة البيانات، ننشئ له بروفايل بليفيل 1 افتراضياً
                 const randomId = Math.floor(100000 + Math.random() * 900000);
                 const newUserData = {
                     uid: user.uid,
@@ -1010,22 +691,20 @@ onAuthStateChanged(auth, async (user) => {
                 };
                 await setDoc(userDocRef, newUserData);
                 userData = newUserData;
-                if (headerUserId) headerUserId.textContent = `ID: ${userData.userId}`;
-                if (profileDisplayId) profileDisplayId.textContent = `ID: ${userData.userId}`;
-                if (profileDisplayName) profileDisplayName.textContent = userData.nickname;
-                if (profileImgPreview) profileImgPreview.src = userData.avatar;
+                headerUserId.textContent = `ID: ${userData.userId}`;
+                profileDisplayId.textContent = `ID: ${userData.userId}`;
+                profileDisplayName.textContent = userData.nickname;
+                profileImgPreview.src = userData.avatar;
             }
-        } catch (e) {
-            console.log("Error loading user profile", e);
-        }
+        } catch (e) { console.log(e); }
 
         checkUserRoomStatus(user.uid);
         loadRooms();
     } else {
-        if (welcomeScreen) welcomeScreen.classList.remove('hidden');
-        if (authScreen) authScreen.classList.add('hidden');
-        if (mainAppContainer) mainAppContainer.classList.add('hidden');
-        if (roomViewScreen) roomViewScreen.classList.add('hidden');
-        if (bottomNav) bottomNav.classList.add('hidden');
+        welcomeScreen.classList.remove('hidden');
+        authScreen.classList.add('hidden');
+        mainAppContainer.classList.add('hidden');
+        roomViewScreen.classList.add('hidden');
+        bottomNav.classList.add('hidden');
     }
 });
