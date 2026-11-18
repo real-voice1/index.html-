@@ -266,7 +266,6 @@ if (authForm) {
     });
 }
 
-// استخدام signInWithRedirect بدلاً من Popup لتجنب خطأ الموبايل
 if (googleLoginBtn) {
     googleLoginBtn.addEventListener('click', async () => {
         try {
@@ -539,6 +538,7 @@ if (closeSeatModal) {
     });
 }
 
+// الجلوس على المقعد مع طلب إذن الميكروفون بوضوح لمنع أي خطأ
 if (optSitSeat) {
     optSitSeat.addEventListener('click', async () => {
         if (selectedSeatIndex === null || !currentUser) return;
@@ -550,21 +550,24 @@ if (optSitSeat) {
             return alert("❌ عذراً، هذا المقعد مقفل من مدير الغرفة!");
         }
 
-        if (myCurrentSeatIndex !== null) {
-            roomSeats[myCurrentSeatIndex] = null;
-        }
-
-        myCurrentSeatIndex = selectedSeatIndex;
-        roomSeats[selectedSeatIndex] = {
-            uid: currentUser.uid,
-            nickname: userData ? userData.nickname : "مستخدم",
-            avatar: userData ? userData.avatar : "https://via.placeholder.com/150",
-            userId: userData ? userData.userId : "110789"
-        };
-        
-        renderSeats();
-
         try {
+            // طلب إذن الميكروفون من متصفح الموبايل صراحةً أولاً
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+
+            if (myCurrentSeatIndex !== null) {
+                roomSeats[myCurrentSeatIndex] = null;
+            }
+
+            myCurrentSeatIndex = selectedSeatIndex;
+            roomSeats[selectedSeatIndex] = {
+                uid: currentUser.uid,
+                nickname: userData ? userData.nickname : "مستخدم",
+                avatar: userData ? userData.avatar : "https://via.placeholder.com/150",
+                userId: userData ? userData.userId : "110789"
+            };
+            
+            renderSeats();
+
             if (!localAudioTrack && agoraClient) {
                 localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
                 await agoraClient.publish([localAudioTrack]);
@@ -574,7 +577,7 @@ if (optSitSeat) {
                 alert(`🎤 جلست على المقعد وتم فتح الميكروفون بنجاح!`);
             }
         } catch (err) {
-            alert("⚠️ يرجى السماح للمتصفح بالوصول للمايك.");
+            alert("⚠️ يرجى السماح للمتصفح بالوصول للمايك من إعدادات المتصفح.");
         }
     });
 }
