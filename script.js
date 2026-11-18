@@ -83,7 +83,15 @@ const miniPlayerTitle = document.getElementById('mini-player-title');
 const miniPlayerClose = document.getElementById('mini-player-close');
 
 const onlineCountNum = document.getElementById('online-count-num');
-const toggleMicBtn = document.getElementById('toggle-mic-btn');
+const floatingMicToggleBtn = document.getElementById('floating-mic-toggle-btn');
+const floatingMicIcon = document.getElementById('floating-mic-icon');
+
+// عناصر نافذة خيارات المايك (Bottom Sheet)
+const seatOptionsModal = document.getElementById('seat-options-modal');
+const seatSheetContent = document.getElementById('seat-sheet-content');
+const closeSeatModal = document.getElementById('close-seat-modal');
+const optSitSeat = document.getElementById('opt-sit-seat');
+const optToggleMicSeat = document.getElementById('opt-toggle-mic-seat');
 
 const headerUserId = document.getElementById('header-user-id');
 const profileDisplayName = document.getElementById('profile-display-name');
@@ -107,48 +115,13 @@ const modalAvatarPreview = document.getElementById('modal-avatar-preview');
 const changeRoomImgTrigger = document.getElementById('change-room-img-trigger');
 const roomNewImageFile = document.getElementById('room-new-image-file');
 
-const roomUserProfileModal = document.getElementById('room-user-profile-modal');
-const bottomSheetContent = document.getElementById('bottom-sheet-content');
-const closeUserProfile = document.getElementById('close-user-profile');
-const modalProfileAvatar = document.getElementById('modal-profile-avatar');
-const modalProfileName = document.getElementById('modal-profile-name');
-const modalProfileId = document.getElementById('modal-profile-id');
-const modalProfileBadge = document.getElementById('modal-profile-badge');
-
-const adminActionsContainer = document.getElementById('admin-actions-container');
-const actionKickMic = document.getElementById('action-kick-mic');
-const actionBan24h = document.getElementById('action-ban-24h');
-const actionMakeAdmin = document.getElementById('action-make-admin');
-const actionBanYear = document.getElementById('action-ban-year');
-
-const settingsAccountCenter = document.getElementById('settings-account-center');
-const modalAccountCenter = document.getElementById('modal-account-center');
-const closeAccountCenter = document.getElementById('close-account-center');
-const accCenterEmail = document.getElementById('acc-center-email');
-const accCenterUid = document.getElementById('acc-center-uid');
-
-const settingsLanguage = document.getElementById('settings-language');
-const modalLanguage = document.getElementById('modal-language');
-const closeLanguage = document.getElementById('close-language');
-const langArBtn = document.getElementById('lang-ar-btn');
-const langEnBtn = document.getElementById('lang-en-btn');
-const currentLangLabel = document.getElementById('current-lang-label');
-
-const settingsDeleteAccount = document.getElementById('settings-delete-account');
-const modalDeleteAccount = document.getElementById('modal-delete-account');
-const closeDeleteModal = document.getElementById('close-delete-modal');
-const deleteConfirmPassword = document.getElementById('delete-confirm-password');
-const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
-
-const settingsLogoutSwitch = document.getElementById('settings-logout-switch');
-
 let isLoginMode = false;
 let currentUser = null;
 let currentRoomId = null;
 let currentRoomDocData = null;
 let roomSeats = Array(8).fill(null);
 let userData = null;
-let selectedTargetUser = null;
+let selectedSeatIndex = null;
 let tempSelectedAvatar = null;
 let myCurrentSeatIndex = null;
 
@@ -255,185 +228,131 @@ floatingMiniPlayer.addEventListener('pointerup', (e) => {
     floatingMiniPlayer.releasePointerCapture(e.pointerId);
 });
 
-// تفعيل كتم / فتح المايك
-if (toggleMicBtn) {
-    toggleMicBtn.addEventListener('click', async () => {
-        if (!localAudioTrack) return alert("⚠️ يجب أن تجلس على كرسي أولاً بالضغط على أي مايك فارغ!");
+// زرار التحكم الجانبي السريع في فتح/قفل الصوت
+if (floatingMicToggleBtn) {
+    floatingMicToggleBtn.addEventListener('click', async () => {
+        if (!localAudioTrack) return alert("⚠️ يجب أن تجلس على مقعد أولاً لتفعيل المايك!");
         isMicMuted = !isMicMuted;
         await localAudioTrack.setMuted(isMicMuted);
         if (isMicMuted) {
-            toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone-slash text-red-400"></i> فتح المايك`;
-            toggleMicBtn.className = "bg-red-600/30 text-red-200 px-6 py-2.5 rounded-xl text-xs border border-red-500/40 cursor-pointer flex items-center gap-1.5 shadow-lg";
+            floatingMicToggleBtn.className = "w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-2xl border-2 border-red-400 cursor-pointer hover:scale-105 transition";
+            floatingMicIcon.className = "fa-solid fa-microphone-slash text-base";
         } else {
-            toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone text-green-400"></i> كتم المايك`;
-            toggleMicBtn.className = "bg-purple-600/30 text-purple-200 px-6 py-2.5 rounded-xl text-xs border border-purple-500/40 cursor-pointer flex items-center gap-1.5 shadow-lg";
+            floatingMicToggleBtn.className = "w-12 h-12 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-2xl border-2 border-purple-400 cursor-pointer hover:scale-105 transition";
+            floatingMicIcon.className = "fa-solid fa-microphone text-base";
         }
     });
 }
 
-// رسم الكراسي وتفعيل الاستجابة الفورية عند الضغط
+// رسم الكراسي وعرض قائمة خيارات المقعد عند الضغط عليها
 function renderSeats() {
     for (let i = 0; i < 8; i++) {
         const seatBox = document.getElementById(`seat-${i}`);
         const nameSpan = document.getElementById(`seat-name-${i}`);
         if (!seatBox || !nameSpan) continue;
 
-        // إزالة أي أحداث سابقة لتجنب التكرار وضمان الاستجابة
         const newSeatBox = seatBox.cloneNode(true);
         seatBox.parentNode.replaceChild(newSeatBox, seatBox);
 
         const occupant = roomSeats[i];
         if (occupant) {
-            // الكرسي محجوز (عرض صورة المستخدم وفتح بروفايله عند الضغط)
             newSeatBox.className = "w-14 h-14 rounded-full bg-slate-900 border-2 border-green-500 flex items-center justify-center relative overflow-hidden shadow-md cursor-pointer";
             newSeatBox.innerHTML = `<img src="${occupant.avatar}" class="w-full h-full object-cover">`;
             nameSpan.textContent = occupant.nickname;
             nameSpan.className = "text-[10px] text-green-300 truncate w-16 font-bold";
-            
-            newSeatBox.addEventListener('click', (e) => {
-                e.stopPropagation();
-                openUserProfileModal(occupant, i);
-            });
         } else {
-            // الكرسي فاضي (الضغط عليه يدخلك تلقائياً)
             newSeatBox.className = "w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer hover:border-purple-400 transition";
             newSeatBox.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-sm"></i>`;
             nameSpan.textContent = "فاضي";
             nameSpan.className = "text-[10px] text-slate-500 truncate w-16";
-
-            newSeatBox.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                if (!currentUser || !currentRoomId) return;
-
-                // لو المستخدم قاعد على مايك تاني، فضيه الأول
-                if (myCurrentSeatIndex !== null) {
-                    roomSeats[myCurrentSeatIndex] = null;
-                }
-
-                myCurrentSeatIndex = i;
-                roomSeats[i] = {
-                    uid: currentUser.uid,
-                    nickname: userData ? userData.nickname : "مستخدم",
-                    avatar: userData ? userData.avatar : "https://via.placeholder.com/150",
-                    userId: userData ? userData.userId : "110789"
-                };
-                
-                renderSeats();
-
-                try {
-                    if (!localAudioTrack && agoraClient) {
-                        localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-                        await agoraClient.publish([localAudioTrack]);
-                    }
-                } catch (err) {
-                    console.error("Mic error:", err);
-                    alert("⚠️ يرجى السماح للمتصفح بالوصول للمايك.");
-                }
-            });
         }
-    }
-}
 
-function openUserProfileModal(userObj, seatIdx) {
-    selectedTargetUser = { ...userObj, seatIdx };
-    modalProfileAvatar.src = userObj.avatar;
-    modalProfileName.textContent = userObj.nickname;
-    modalProfileId.textContent = `ID: ${userObj.userId}`;
-    modalProfileBadge.textContent = getUserBadgeMonthly();
-
-    if (currentRoomDocData && currentUser) {
-        const isHost = currentRoomDocData.hostUid === currentUser.uid;
-        const admins = currentRoomDocData.admins || [];
-        const isAdmin = admins.includes(currentUser.uid);
-
-        if (isHost || isAdmin) {
-            adminActionsContainer.classList.remove('hidden');
-            if (isHost) {
-                actionMakeAdmin.classList.remove('hidden');
-                actionBanYear.classList.remove('hidden');
+        // عند الضغط على أي مايك، تظهر نافذة خيارات المقعد المطابقة للصورة
+        newSeatBox.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectedSeatIndex = i;
+            if (occupant && occupant.uid === currentUser.uid) {
+                optSitSeat.textContent = "القيام من المقعد 🚶‍♂️";
             } else {
-                actionMakeAdmin.classList.add('hidden');
-                actionBanYear.classList.add('hidden');
+                optSitSeat.textContent = "الجلوس على المقعد 🪑";
             }
-        } else {
-            adminActionsContainer.classList.add('hidden');
-        }
-    } else {
-        adminActionsContainer.classList.add('hidden');
+            seatOptionsModal.classList.remove('hidden');
+            setTimeout(() => seatSheetContent.classList.add('show'), 10);
+        });
     }
-
-    roomUserProfileModal.classList.remove('hidden');
-    setTimeout(() => bottomSheetContent.classList.add('show'), 10);
 }
 
-if (closeUserProfile) {
-    closeUserProfile.addEventListener('click', () => {
-        bottomSheetContent.classList.remove('show');
-        setTimeout(() => roomUserProfileModal.classList.add('hidden'), 300);
+if (closeSeatModal) {
+    closeSeatModal.addEventListener('click', () => {
+        seatSheetContent.classList.remove('show');
+        setTimeout(() => seatOptionsModal.classList.add('hidden'), 300);
     });
 }
 
-// مهام الإدارة
-if (actionKickMic) {
-    actionKickMic.addEventListener('click', () => {
-        if (!selectedTargetUser) return;
-        const idx = selectedTargetUser.seatIdx;
-        roomSeats[idx] = null;
-        if (selectedTargetUser.uid === currentUser.uid) {
+// تنفيذ خيار الجلوس من القائمة المنبثقة
+if (optSitSeat) {
+    optSitSeat.addEventListener('click', async () => {
+        if (selectedSeatIndex === null || !currentUser) return;
+
+        seatSheetContent.classList.remove('show');
+        setTimeout(() => seatOptionsModal.classList.add('hidden'), 300);
+
+        if (roomSeats[selectedSeatIndex] && roomSeats[selectedSeatIndex].uid === currentUser.uid) {
+            // القيام من المقعد
+            roomSeats[selectedSeatIndex] = null;
             if (localAudioTrack) { localAudioTrack.close(); localAudioTrack = null; }
             myCurrentSeatIndex = null;
+            renderSeats();
+            alert("🚶‍♂️ قمت بالقيام من المقعد.");
+            return;
         }
+
+        if (roomSeats[selectedSeatIndex] !== null) {
+            alert("❌ عذراً، هذا المقعد محجوز لشخص آخر!");
+            return;
+        }
+
+        if (myCurrentSeatIndex !== null) {
+            roomSeats[myCurrentSeatIndex] = null;
+        }
+
+        myCurrentSeatIndex = selectedSeatIndex;
+        roomSeats[selectedSeatIndex] = {
+            uid: currentUser.uid,
+            nickname: userData ? userData.nickname : "مستخدم",
+            avatar: userData ? userData.avatar : "https://via.placeholder.com/150",
+            userId: userData ? userData.userId : "110789"
+        };
+        
         renderSeats();
-        bottomSheetContent.classList.remove('show');
-        setTimeout(() => roomUserProfileModal.classList.add('hidden'), 300);
-    });
-}
 
-if (actionBan24h) {
-    actionBan24h.addEventListener('click', async () => {
-        if (!selectedTargetUser || !currentRoomId) return;
-        if (confirm(`هل تريد طرد ${selectedTargetUser.nickname} لمدة 24 ساعة؟`)) {
-            try {
-                const roomRef = doc(db, "rooms", currentRoomId);
-                const currentBanned = currentRoomDocData.bannedUsers || [];
-                const banExpiry = Date.now() + (24 * 60 * 60 * 1000);
-                currentBanned.push({ uid: selectedTargetUser.uid, expiry: banExpiry });
-                await updateDoc(roomRef, { bannedUsers: currentBanned });
-                leaveRoom();
-            } catch (e) { alert("❌ خطأ: " + e.message); }
-        }
-    });
-}
-
-if (actionMakeAdmin) {
-    actionMakeAdmin.addEventListener('click', async () => {
-        if (!selectedTargetUser || !currentRoomId) return;
         try {
-            const roomRef = doc(db, "rooms", currentRoomId);
-            const admins = currentRoomDocData.admins || [];
-            if (!admins.includes(selectedTargetUser.uid)) {
-                admins.push(selectedTargetUser.uid);
-                await updateDoc(roomRef, { admins: admins });
-                currentRoomDocData.admins = admins;
-                alert(`⭐ تم تعيين ${selectedTargetUser.nickname} مشرفاً بالغرفة!`);
+            if (!localAudioTrack && agoraClient) {
+                localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+                await agoraClient.publish([localAudioTrack]);
+                isMicMuted = false;
+                floatingMicToggleBtn.className = "w-12 h-12 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-2xl border-2 border-purple-400 cursor-pointer hover:scale-105 transition";
+                floatingMicIcon.className = "fa-solid fa-microphone text-base";
+                alert(`🎤 جلست على المقعد وتم فتح الميكروفون وبث صوتك بنجاح!`);
             }
-        } catch (e) { alert("❌ خطأ: " + e.message); }
+        } catch (err) {
+            alert("⚠️ يرجى السماح للمتصفح بالوصول للمايك.");
+        }
     });
 }
 
-if (actionBanYear) {
-    actionBanYear.addEventListener('click', async () => {
-        if (!selectedTargetUser || !currentRoomId) return;
-        if (confirm(`⚠️ حظر ${selectedTargetUser.nickname} لمدة سنة كاملة؟`)) {
-            try {
-                const roomRef = doc(db, "rooms", currentRoomId);
-                const currentBanned = currentRoomDocData.bannedUsers || [];
-                const banExpiry = Date.now() + (365 * 24 * 60 * 60 * 1000);
-                currentBanned.push({ uid: selectedTargetUser.uid, expiry: banExpiry });
-                await updateDoc(roomRef, { bannedUsers: currentBanned });
-                leaveRoom();
-            } catch (e) { alert("❌ خطأ: " + e.message); }
+// تعطيل الميكروفون من القائمة
+if (optToggleMicSeat) {
+    optToggleMicSeat.addEventListener('click', async () => {
+        if (localAudioTrack) {
+            isMicMuted = !isMicMuted;
+            await localAudioTrack.setMuted(isMicMuted);
+            alert(isMicMuted ? "🔇 تم تعطيل الميكروفون." : "🎤 تم تفعيل الميكروفون.");
+        } else {
+            alert("⚠️ أنت لست على مقعد لتشغيل/تعطيل المايك.");
         }
+        seatSheetContent.classList.remove('show');
+        setTimeout(() => seatOptionsModal.classList.add('hidden'), 300);
     });
 }
 
