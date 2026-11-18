@@ -219,7 +219,7 @@
         </div>
     </div>
 
-    <!-- 4. شاشة الغرفة الداخلية مع زرار المايك الجانبي -->
+    <!-- 4. شاشة الغرفة الداخلية -->
     <div id="room-view-screen" class="w-full max-w-lg hidden flex flex-col h-[85vh] relative">
         <div class="flex justify-between items-center mb-3 border-b border-purple-500/20 pb-3 px-1 relative">
             <div class="flex items-center gap-3">
@@ -274,7 +274,7 @@
             </script>
         </div>
 
-        <!-- زرار جانبى للتحكم السريع في فتح وقفل الصوت للمستخدم -->
+        <!-- زرار جانبي للتحكم السريع في فتح وقفل المايك -->
         <div class="absolute bottom-6 left-4 z-30">
             <button id="floating-mic-toggle-btn" class="w-12 h-12 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-2xl border-2 border-purple-400 cursor-pointer hover:scale-105 transition" title="فتح/قفل المايك السريع">
                 <i class="fa-solid fa-microphone text-base" id="floating-mic-icon"></i>
@@ -282,18 +282,52 @@
         </div>
     </div>
 
-    <!-- نافذة خيارات المقعد (Bottom Sheet مثل الصورة المطابقة) -->
+    <!-- نافذة خيارات المقعد (قفل المقعد / ترقية / إلخ) -->
     <div id="seat-options-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end hidden">
         <div id="seat-sheet-content" class="bottom-sheet p-5 w-full max-w-lg mx-auto text-white flex flex-col space-y-2 text-center text-xs">
             <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-2"></div>
             
             <button id="opt-sit-seat" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 rounded-2xl font-bold text-purple-200 border border-purple-500/20 cursor-pointer shadow">الجلوس على المقعد 🪑</button>
             <button id="opt-toggle-mic-seat" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 rounded-2xl font-bold text-slate-200 border border-purple-500/20 cursor-pointer shadow">تعطيل الميكروفون 🎤</button>
-            <button id="opt-lock-seat" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 rounded-2xl font-bold text-slate-200 border border-purple-500/20 cursor-pointer shadow">قفل المقعد 🔒</button>
-            <button id="opt-upgrade" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 rounded-2xl font-bold text-amber-300 border border-purple-500/20 cursor-pointer shadow">ترقية 💎</button>
-            <button id="opt-lock-admin-seat" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 rounded-2xl font-bold text-red-300 border border-purple-500/20 cursor-pointer shadow">قفل مقعد المشرف 🛡️</button>
+            <button id="opt-lock-seat" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 rounded-2xl font-bold text-amber-300 border border-purple-500/20 cursor-pointer shadow">قفل المقعد 🔒</button>
 
             <button id="close-seat-modal" class="w-full py-3.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl font-bold text-white cursor-pointer mt-3 shadow-lg">إلغاء</button>
+        </div>
+    </div>
+
+    <!-- نافذة بروفايل المستخدم والصلاحيات (للمالك: طرد 24 ساعة أو سنة) -->
+    <div id="room-user-profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end hidden">
+        <div id="profile-sheet-content" class="bottom-sheet p-6 w-full max-w-lg mx-auto text-white flex flex-col max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4 relative">
+                <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto"></div>
+                <button id="close-user-profile" class="absolute left-2 text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="flex items-center gap-4 mb-5 pb-4 border-b border-purple-500/20">
+                <div class="w-20 h-20 rounded-full border-2 border-amber-400 p-0.5 relative shrink-0 shadow-xl">
+                    <img id="modal-profile-avatar" src="https://via.placeholder.com/150" class="w-full h-full rounded-full object-cover">
+                </div>
+                <div class="flex-1 text-right">
+                    <div class="flex items-center gap-2">
+                        <h3 id="modal-profile-name" class="text-base font-bold text-purple-200">اسم المستخدم</h3>
+                        <span class="bg-blue-500/20 text-blue-300 text-[10px] px-2 py-0.5 rounded-md border border-blue-500/30">مصر 🇪🇬</span>
+                    </div>
+                    <p id="modal-profile-id" class="text-xs text-slate-400 mt-1">ID: 110789</p>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span id="modal-profile-badge" class="bg-amber-500/20 text-amber-300 text-[9px] px-2.5 py-0.5 rounded-full border border-amber-500/40 font-bold">🌟 نجم الشهر</span>
+                        <span id="modal-user-role-tag" class="bg-purple-600/30 text-purple-200 text-[9px] px-2.5 py-0.5 rounded-full border border-purple-500/40">عضو</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- أزرار الإدارة الخاصة بمالك الغرفة (طرد 24 ساعة أو سنة وإنزال من المايك) -->
+            <div id="admin-actions-container" class="space-y-2.5 mt-2 hidden border-t border-purple-500/20 pt-4 text-xs">
+                <p class="text-purple-400 font-bold mb-2 text-right">لوحة تحكم مدير الغرفة 👑🛠️</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="action-kick-mic" class="bg-slate-800 hover:bg-slate-700 text-amber-300 p-3 rounded-xl border border-amber-500/30 cursor-pointer font-bold">🔽 إنزال من المايك</button>
+                    <button id="action-ban-24h" class="bg-orange-950/40 hover:bg-orange-900/40 text-orange-300 p-3 rounded-xl border border-orange-500/30 cursor-pointer font-bold">⏳ طرد 24 ساعة</button>
+                    <button id="action-ban-year" class="col-span-2 bg-red-950/50 hover:bg-red-900/50 text-red-300 p-3 rounded-xl border border-red-500/30 cursor-pointer font-bold">🚫 حظر وطرد لمدة سنة كاملة (مالك الغرفة)</button>
+                </div>
+            </div>
         </div>
     </div>
 
