@@ -63,14 +63,13 @@
         </button>
     </div>
 
-    <!-- 2. شاشة تسجيل الدخول + زر Google -->
+    <!-- 2. شاشة تسجيل الدخول -->
     <div id="auth-screen" class="full-mobile-card p-6 rounded-3xl w-full max-w-lg hidden flex flex-col justify-center mt-4">
         <div class="text-center mb-6">
             <h2 class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent" id="auth-title">تسجيل الدخول بالحساب</h2>
             <p class="text-xs text-slate-400 mt-2">سجل الدخول بالإيميل أو عبر Google</p>
         </div>
 
-        <!-- زر تسجيل الدخول بواسطة جوجل الاحترافي -->
         <button id="google-login-btn" class="w-full bg-white text-slate-900 font-bold py-3.5 rounded-2xl shadow-lg text-sm flex items-center justify-center gap-3 mb-5 cursor-pointer hover:bg-slate-100 transition">
             <i class="fa-brands fa-google text-red-500 text-base"></i> متابعة باستخدام Google
         </button>
@@ -120,6 +119,7 @@
             </div>
         </div>
 
+        <!-- تبويب الملف الشخصي (خاصتي) مع قائمة الإعدادات الجديدة -->
         <div id="tab-profile" class="w-full p-4 hidden flex flex-col">
             <div class="flex items-center justify-between mb-6 border-b border-purple-500/20 pb-5 px-1">
                 <div class="flex items-center gap-3.5">
@@ -135,11 +135,11 @@
                     </div>
                 </div>
                 <button id="edit-profile-btn" class="text-purple-300 text-xs bg-purple-900/40 px-3.5 py-2 rounded-xl border border-purple-500/30 cursor-pointer">
-                    <i class="fa-solid fa-pen ml-1"></i> تعديل البروفايل
+                    <i class="fa-solid fa-pen ml-1"></i> تعديل
                 </button>
             </div>
 
-            <!-- مستويات الجاذبية والثروة في البروفايل الرئيسي تبدأ من 1 -->
+            <!-- مستويات الجاذبية والثروة -->
             <div class="grid grid-cols-2 gap-3 mb-6">
                 <div id="main-charm-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
                     <div>
@@ -173,20 +173,117 @@
                 </div>
             </div>
 
+            <!-- قسم الإعدادات المطلوب إضافتها -->
             <div class="space-y-3 text-xs px-1">
-                <div class="bg-slate-900/60 p-4 rounded-2xl flex justify-between items-center border border-purple-500/20 cursor-pointer">
-                    <span>محفظة العملات والجواهر 💰</span>
+                <div class="text-purple-400 font-bold mb-1">إعدادات الحساب والتطبيق ⚙️</div>
+                
+                <!-- 1. مركز الحساب -->
+                <div id="settings-account-center" class="bg-slate-900/60 p-4 rounded-2xl flex justify-between items-center border border-purple-500/25 cursor-pointer hover:bg-slate-900 transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-id-card text-purple-400 text-base"></i>
+                        <span>مركز الحساب (معلومات الأمان والـ ID)</span>
+                    </div>
                     <i class="fa-solid fa-chevron-left text-slate-500 text-xs"></i>
                 </div>
-                <div class="bg-slate-900/60 p-4 rounded-2xl flex justify-between items-center border border-purple-500/20 cursor-pointer">
-                    <span>متجر الفساتين والإطارات 👗</span>
+
+                <!-- 2. اللغة -->
+                <div id="settings-language" class="bg-slate-900/60 p-4 rounded-2xl flex justify-between items-center border border-purple-500/25 cursor-pointer hover:bg-slate-900 transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-globe text-blue-400 text-base"></i>
+                        <span>اللغة (Language)</span>
+                    </div>
+                    <span id="current-lang-label" class="text-slate-400 text-[11px]">العربية 🇪🇬</span>
+                </div>
+
+                <!-- 3. حذف الحساب بالشروط -->
+                <div id="settings-delete-account" class="bg-slate-900/60 p-4 rounded-2xl flex justify-between items-center border border-red-500/25 cursor-pointer hover:bg-red-950/20 transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-triangle-exclamation text-red-400 text-base"></i>
+                        <span class="text-red-300">حذف الحساب (بشروط نهائية)</span>
+                    </div>
                     <i class="fa-solid fa-chevron-left text-slate-500 text-xs"></i>
+                </div>
+
+                <!-- 4. تسجيل الخروج وإضافة حساب آخر بـ Gmail جديد -->
+                <div id="settings-logout-switch" class="bg-gradient-to-r from-purple-900/30 to-pink-900/30 p-4 rounded-2xl flex justify-between items-center border border-purple-500/40 cursor-pointer hover:border-purple-400 transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-right-from-bracket text-pink-400 text-base"></i>
+                        <span class="font-bold text-pink-200">تسجيل الخروج وإضافة حساب Gmail آخر</span>
+                    </div>
+                    <i class="fa-solid fa-plus text-xs text-pink-300"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 4. شاشة الغرفة الداخلية -->
+    <!-- نافذة مركز الحساب -->
+    <div id="modal-account-center" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-slate-900 border border-purple-500/40 p-6 rounded-3xl w-full max-w-sm text-white shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b border-purple-500/20 pb-2">
+                <h3 class="text-sm font-bold text-purple-300">مركز الحساب</h3>
+                <button id="close-account-center" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div class="bg-slate-950 p-3 rounded-xl border border-purple-500/20">
+                    <span class="text-slate-400 block mb-1">البريد الإلكتروني المرتبط:</span>
+                    <span id="acc-center-email" class="font-bold text-purple-200">email@gmail.com</span>
+                </div>
+                <div class="bg-slate-950 p-3 rounded-xl border border-purple-500/20">
+                    <span class="text-slate-400 block mb-1">رقم المعرف الفريد (ID):</span>
+                    <span id="acc-center-uid" class="font-bold text-amber-300">110789</span>
+                </div>
+                <div class="bg-slate-950 p-3 rounded-xl border border-purple-500/20">
+                    <span class="text-slate-400 block mb-1">حالة الحساب:</span>
+                    <span class="font-bold text-green-400">نشط ومؤمن عبر Firebase</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة اختيار اللغة -->
+    <div id="modal-language" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-slate-900 border border-purple-500/40 p-6 rounded-3xl w-full max-w-sm text-white text-center shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b border-purple-500/20 pb-2">
+                <h3 class="text-sm font-bold text-purple-300">اختر لغة التطبيق</h3>
+                <button id="close-language" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <button id="lang-ar-btn" class="w-full p-3 rounded-xl bg-purple-600/30 border border-purple-500/40 text-purple-200 font-bold cursor-pointer hover:bg-purple-600 transition">
+                    العربية 🇪🇬 (مدعومة بالكامل)
+                </button>
+                <button id="lang-en-btn" class="w-full p-3 rounded-xl bg-slate-950 border border-purple-500/20 text-slate-300 cursor-pointer hover:bg-purple-600/20 transition">
+                    English 🇺🇸 (Default)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة شروط حذف الحساب -->
+    <div id="modal-delete-account" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-slate-900 border border-red-500/40 p-6 rounded-3xl w-full max-w-sm text-white shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b border-red-500/20 pb-2">
+                <h3 class="text-sm font-bold text-red-400">⚠️ شروط حذف الحساب نهائياً</h3>
+                <button id="close-delete-modal" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3 text-xs text-slate-300 mb-4">
+                <p class="font-bold text-amber-300">شروط الحذف:</p>
+                <ul class="list-disc pr-4 space-y-1 text-[11px] text-slate-400">
+                    <li>سيتم مسح جميع بياناتك وجواهرك ومستوياتك نهائياً.</li>
+                    <li>لا يمكن استرجاع الحساب أو الـ ID بعد إتمام الحذف.</li>
+                    <li>يجب كتابة كلمة المرور الحالية لتأكيد الهوية.</li>
+                </ul>
+                <div>
+                    <label class="block text-slate-400 mb-1 mt-3">أدخل كلمة المرور للتأكيد:</label>
+                    <input type="password" id="delete-confirm-password" placeholder="••••••••" class="w-full p-3 rounded-xl bg-slate-950 border border-red-500/30 text-white text-xs">
+                </div>
+            </div>
+            <button id="confirm-delete-btn" class="w-full bg-red-600 hover:bg-red-700 py-3 rounded-xl font-bold cursor-pointer text-xs shadow-lg text-white">
+                تأكيد حذف الحساب نهائياً 🗑️
+            </button>
+        </div>
+    </div>
+
+    <!-- نافذة الغرفة الداخلية -->
     <div id="room-view-screen" class="w-full max-w-lg hidden flex flex-col h-[85vh]">
         <div class="flex justify-between items-center mb-3 border-b border-purple-500/20 pb-3 px-1 relative">
             <div class="flex items-center gap-3">
@@ -221,7 +318,6 @@
             <p id="room-banner-text" class="text-xs text-purple-200 truncate flex-1 font-medium">مرحباً بالجميع في الغرفة! استمتعوا بالدردشة الصوتية ✨</p>
         </div>
 
-        <!-- مسرح الكراسي -->
         <div class="grid grid-cols-4 gap-4 mb-4 text-center px-2">
             <div class="flex flex-col items-center">
                 <div id="seat-0" class="w-14 h-14 rounded-full bg-slate-900 border-2 border-purple-500 flex items-center justify-center relative cursor-pointer shadow-lg">
@@ -267,15 +363,13 @@
         </div>
     </div>
 
-    <!-- نافذة بروفايل المستخدم من الأسفل (Bottom Sheet الاحترافي - بدون جملة الترحيب) -->
+    <!-- بروفايل المستخدم السفلي -->
     <div id="room-user-profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end hidden">
         <div id="bottom-sheet-content" class="bottom-sheet p-6 w-full max-w-lg mx-auto text-white flex flex-col max-h-[85vh] overflow-y-auto">
-            
             <div class="flex justify-between items-center mb-4 relative">
                 <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto"></div>
                 <button id="close-user-profile" class="absolute left-2 text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-
             <div class="flex items-center gap-4 mb-5 pb-4 border-b border-purple-500/20">
                 <div class="w-20 h-20 rounded-full border-2 border-amber-400 p-0.5 relative shrink-0 shadow-xl">
                     <img id="modal-profile-avatar" src="https://via.placeholder.com/150" class="w-full h-full rounded-full object-cover">
@@ -292,8 +386,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- مستويات الجاذبية والثروة تبدأ من 1 -->
             <div class="grid grid-cols-2 gap-3 mb-5">
                 <div id="charm-level-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
                     <div>
@@ -302,7 +394,6 @@
                     </div>
                     <i id="charm-level-icon" class="fa-solid fa-heart text-pink-400 text-xl"></i>
                 </div>
-
                 <div id="wealth-level-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
                     <div>
                         <span id="wealth-level-text" class="text-xs font-black block">Lv. 1</span>
@@ -310,26 +401,6 @@
                     </div>
                     <i id="wealth-level-icon" class="fa-solid fa-gem text-amber-400 text-xl"></i>
                 </div>
-            </div>
-
-            <div class="bg-gradient-to-r from-amber-900/30 to-purple-900/30 border border-amber-500/30 p-3.5 rounded-2xl flex justify-between items-center mb-5 cursor-pointer">
-                <div class="flex items-center gap-2.5">
-                    <i class="fa-solid fa-crown text-amber-400 text-base"></i>
-                    <span class="text-xs font-bold text-amber-200">امتيازات وشارات الـ VIP العظمى</span>
-                </div>
-                <i class="fa-solid fa-chevron-left text-slate-400 text-xs"></i>
-            </div>
-
-            <div id="moderator-controls" class="space-y-2.5 hidden pt-2 border-t border-purple-500/20">
-                <button id="mod-toggle-admin" class="w-full bg-purple-600/30 hover:bg-purple-600 text-purple-200 py-2.5 rounded-xl text-xs transition cursor-pointer font-bold">
-                    👑 تعيين / إلغاء مشرف
-                </button>
-                <button id="mod-kick-seat" class="w-full bg-orange-500/20 hover:bg-orange-500 text-orange-200 py-2.5 rounded-xl text-xs transition cursor-pointer font-bold">
-                    🪑 إنزال من الكرسي
-                </button>
-                <button id="mod-ban-user" class="w-full bg-red-500/20 hover:bg-red-500 text-red-200 py-2.5 rounded-xl text-xs transition cursor-pointer font-bold">
-                    🚫 طرد من الغرفة (24 ساعة)
-                </button>
             </div>
         </div>
     </div>
@@ -352,7 +423,6 @@
                     <span class="text-[10px] text-purple-300 mt-2">اضغط على الصورة لتغييرها 🖼️</span>
                     <input type="file" id="input-avatar-file" accept="image/*" class="hidden">
                 </div>
-
                 <div class="text-right">
                     <label class="block text-slate-400 mb-1.5">الاسم المستعار</label>
                     <input type="text" id="input-nickname" class="w-full p-3 rounded-xl bg-slate-950 border border-purple-500/30 text-white text-sm">
@@ -367,14 +437,11 @@
         <div class="bg-slate-900 border border-purple-500/40 p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl">
             <h3 class="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">إنشاء غرفتك الخاصة</h3>
             <p class="text-xs text-slate-400 mb-4">يجب كتابة اسم الغرفة واختيار صورتها من المعرض!</p>
-            
             <input type="text" id="room-name-input" placeholder="اسم الغرفة (مثلاً: سهرة فنانين 🎤)" class="w-full px-4 py-3 rounded-xl bg-slate-950 text-xs border border-purple-500/30 text-white mb-3.5">
-            
             <div class="text-right mb-5">
                 <label class="block text-xs text-purple-300 mb-1.5">صورة الغرفة من المعرض (إجباري) 🖼️</label>
                 <input type="file" id="room-image-file" accept="image/*" class="w-full p-2 rounded-xl bg-slate-950 border border-purple-500/30 text-white file:bg-purple-600 file:text-white file:border-0 file:rounded-lg file:py-1 file:px-3 text-[11px] cursor-pointer">
             </div>
-
             <div class="flex gap-2.5">
                 <button type="button" id="cancel-room-btn" class="w-1/2 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl text-xs cursor-pointer">إلغاء</button>
                 <button type="button" id="confirm-create-room" class="w-1/2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-xl text-xs shadow-lg cursor-pointer">إنشاء الغرفة</button>
