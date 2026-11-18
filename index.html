@@ -19,20 +19,6 @@
             -webkit-backdrop-filter: blur(12px);
             min-height: 85vh;
         }
-        #minimized-room-widget {
-            touch-action: none;
-            cursor: grab;
-            user-select: none;
-        }
-        @keyframes speak-pulse {
-            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-            70% { box-shadow: 0 0 0 12px rgba(34, 197, 94, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
-        }
-        .speaking-animation {
-            animation: speak-pulse 1.5s infinite;
-            border-color: #22c55e !important;
-        }
         .bottom-sheet {
             background: rgba(11, 15, 25, 0.98);
             backdrop-filter: blur(20px);
@@ -158,21 +144,6 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-3 mb-6 text-center">
-                <div class="bg-slate-900/60 p-3 rounded-2xl border border-purple-500/20">
-                    <span class="text-[10px] text-slate-400 block">متابعة</span>
-                    <span class="text-sm font-bold text-purple-300">4</span>
-                </div>
-                <div class="bg-slate-900/60 p-3 rounded-2xl border border-purple-500/20">
-                    <span class="text-[10px] text-slate-400 block">معجبين</span>
-                    <span class="text-sm font-bold text-pink-300">42</span>
-                </div>
-                <div class="bg-slate-900/60 p-3 rounded-2xl border border-purple-500/20">
-                    <span class="text-[10px] text-slate-400 block">صديق</span>
-                    <span class="text-sm font-bold text-amber-300">3</span>
-                </div>
-            </div>
-
             <!-- قسم الإعدادات المطلوب -->
             <div class="space-y-3 text-xs px-1 pb-6">
                 <div class="text-purple-400 font-bold mb-1">إعدادات الحساب والتطبيق ⚙️</div>
@@ -232,10 +203,6 @@
                     <span class="text-slate-400 block mb-1">رقم المعرف الفريد (ID):</span>
                     <span id="acc-center-uid" class="font-bold text-amber-300">110789</span>
                 </div>
-                <div class="bg-slate-950 p-3 rounded-xl border border-purple-500/20">
-                    <span class="text-slate-400 block mb-1">حالة الحساب:</span>
-                    <span class="font-bold text-green-400">نشط ومؤمن عبر Firebase</span>
-                </div>
             </div>
         </div>
     </div>
@@ -248,12 +215,8 @@
                 <button id="close-language" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="space-y-3 text-xs">
-                <button id="lang-ar-btn" class="w-full p-3 rounded-xl bg-purple-600/30 border border-purple-500/40 text-purple-200 font-bold cursor-pointer hover:bg-purple-600 transition">
-                    العربية 🇪🇬 (مدعومة بالكامل)
-                </button>
-                <button id="lang-en-btn" class="w-full p-3 rounded-xl bg-slate-950 border border-purple-500/20 text-slate-300 cursor-pointer hover:bg-purple-600/20 transition">
-                    English 🇺🇸 (Default)
-                </button>
+                <button id="lang-ar-btn" class="w-full p-3 rounded-xl bg-purple-600/30 border border-purple-500/40 text-purple-200 font-bold cursor-pointer">العربية 🇪🇬</button>
+                <button id="lang-en-btn" class="w-full p-3 rounded-xl bg-slate-950 border border-purple-500/20 text-slate-300 cursor-pointer">English 🇺🇸</button>
             </div>
         </div>
     </div>
@@ -269,7 +232,6 @@
                 <p class="font-bold text-amber-300">شروط الحذف:</p>
                 <ul class="list-disc pr-4 space-y-1 text-[11px] text-slate-400">
                     <li>سيتم مسح جميع بياناتك وجواهرك ومستوياتك نهائياً.</li>
-                    <li>لا يمكن استرجاع الحساب أو الـ ID بعد إتمام الحذف.</li>
                     <li>يجب كتابة كلمة المرور الحالية لتأكيد الهوية بدقة.</li>
                 </ul>
                 <div>
@@ -277,9 +239,7 @@
                     <input type="password" id="delete-confirm-password" placeholder="••••••••" class="w-full p-3 rounded-xl bg-slate-950 border border-red-500/30 text-white text-xs">
                 </div>
             </div>
-            <button id="confirm-delete-btn" class="w-full bg-red-600 hover:bg-red-700 py-3 rounded-xl font-bold cursor-pointer text-xs shadow-lg text-white">
-                تأكيد حذف الحساب نهائياً 🗑️
-            </button>
+            <button id="confirm-delete-btn" class="w-full bg-red-600 hover:bg-red-700 py-3 rounded-xl font-bold cursor-pointer text-xs shadow-lg text-white">تأكيد حذف الحساب نهائياً 🗑️</button>
         </div>
     </div>
 
@@ -293,29 +253,7 @@
                     <p id="room-owner-tag" class="text-[9px] text-amber-400">👑 المالك: جاري التحميل...</p>
                 </div>
             </div>
-
-            <div class="relative">
-                <button id="room-options-btn" class="bg-slate-900/80 hover:bg-slate-800 text-purple-300 w-9 h-9 rounded-xl flex items-center justify-center border border-purple-500/30 cursor-pointer shadow-md">
-                    <i class="fa-solid fa-ellipsis-vertical text-base"></i>
-                </button>
-
-                <div id="room-options-dropdown" class="absolute left-0 mt-2 w-40 bg-slate-900 border border-purple-500/40 rounded-2xl shadow-2xl hidden z-50 overflow-hidden py-1 text-xs">
-                    <button id="opt-minimize" class="w-full text-right px-4 py-2.5 hover:bg-purple-600/20 text-purple-200 flex items-center gap-2 cursor-pointer">
-                        <i class="fa-solid fa-compress w-4"></i> تصغير الغرفة
-                    </button>
-                    <button id="opt-settings" class="w-full text-right px-4 py-2.5 hover:bg-purple-600/20 text-purple-200 flex items-center gap-2 cursor-pointer hidden">
-                        <i class="fa-solid fa-gear w-4"></i> الإعدادات
-                    </button>
-                    <button id="opt-leave" class="w-full text-right px-4 py-2.5 hover:bg-red-600/20 text-red-300 flex items-center gap-2 cursor-pointer border-t border-purple-500/10">
-                        <i class="fa-solid fa-right-from-bracket w-4"></i> خروج من الغرفة
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div id="room-banner-container" class="bg-gradient-to-r from-purple-900/40 to-pink-900/40 border border-purple-500/30 rounded-2xl p-2.5 mb-3 flex items-center gap-2.5 shadow-inner">
-            <i class="fa-solid fa-bullhorn text-amber-400 text-sm shrink-0 animate-bounce"></i>
-            <p id="room-banner-text" class="text-xs text-purple-200 truncate flex-1 font-medium">مرحباً بالجميع في الغرفة! استمتعوا بالدردشة الصوتية ✨</p>
+            <button id="opt-leave" class="bg-red-600/20 text-red-300 px-3 py-1.5 rounded-xl text-xs border border-red-500/30 cursor-pointer">خروج الغرفة</button>
         </div>
 
         <div class="grid grid-cols-4 gap-4 mb-4 text-center px-2">
@@ -340,68 +278,9 @@
             </script>
         </div>
 
-        <div class="flex-1 bg-slate-900/60 rounded-2xl p-3.5 mb-4 flex flex-col border border-purple-500/20 overflow-hidden">
-            <div class="text-xs text-purple-300 font-bold mb-2 border-b border-purple-500/10 pb-1.5">دردشة الغرفة 💬</div>
-            <div id="chat-messages-list" class="flex-1 overflow-y-auto space-y-1.5 text-xs pr-1">
-                <div class="text-slate-400 text-xs">مرحباً بك في الغرفة! استمتع بالصوت الحي ✨</div>
-            </div>
-            <form id="chat-form" class="flex gap-2 mt-2 pt-2 border-t border-purple-500/10">
-                <input type="text" id="chat-input" placeholder="اكتب رسالة..." class="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-950 text-xs border border-purple-500/30 focus:outline-none focus:border-purple-500 text-white">
-                <button type="submit" class="bg-purple-600 text-white px-4 py-2.5 rounded-xl text-xs cursor-pointer">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
-            </form>
-        </div>
-
-        <div class="flex gap-3 justify-center pt-2">
-            <button id="toggle-mic-btn" class="bg-purple-600/30 text-purple-200 px-4 py-2.5 rounded-xl text-xs border border-purple-500/40 cursor-pointer flex items-center gap-1.5">
-                <i class="fa-solid fa-microphone"></i> كتم المايك
-            </button>
-            <button id="request-seat-btn" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg cursor-pointer">
-                الجلوس على كرسي 🪑
-            </button>
-        </div>
-    </div>
-
-    <!-- بروفايل المستخدم السفلي -->
-    <div id="room-user-profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end hidden">
-        <div id="bottom-sheet-content" class="bottom-sheet p-6 w-full max-w-lg mx-auto text-white flex flex-col max-h-[85vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4 relative">
-                <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto"></div>
-                <button id="close-user-profile" class="absolute left-2 text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div class="flex items-center gap-4 mb-5 pb-4 border-b border-purple-500/20">
-                <div class="w-20 h-20 rounded-full border-2 border-amber-400 p-0.5 relative shrink-0 shadow-xl">
-                    <img id="modal-profile-avatar" src="https://via.placeholder.com/150" class="w-full h-full rounded-full object-cover">
-                </div>
-                <div class="flex-1">
-                    <div class="flex items-center gap-2">
-                        <h3 id="modal-profile-name" class="text-base font-bold text-purple-200">اسم المستخدم</h3>
-                        <span id="modal-user-gender-flag" class="bg-blue-500/20 text-blue-300 text-[10px] px-2 py-0.5 rounded-md border border-blue-500/30">مصر 🇪🇬 ♂</span>
-                    </div>
-                    <p id="modal-profile-id" class="text-xs text-slate-400 mt-1">ID: 110789</p>
-                    <div class="flex items-center gap-2 mt-2">
-                        <span id="modal-profile-badge" class="bg-amber-500/20 text-amber-300 text-[9px] px-2.5 py-0.5 rounded-full border border-amber-500/40 font-bold">🌟 نجم الشهر</span>
-                        <span id="modal-user-role-tag" class="bg-purple-600/30 text-purple-200 text-[9px] px-2.5 py-0.5 rounded-full border border-purple-500/40">عضو</span>
-                    </div>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3 mb-5">
-                <div id="charm-level-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
-                    <div>
-                        <span id="charm-level-text" class="text-xs font-black block">Lv. 1</span>
-                        <span class="text-[10px] opacity-80 block mt-0.5">الجاذبية 💖</span>
-                    </div>
-                    <i id="charm-level-icon" class="fa-solid fa-heart text-pink-400 text-xl"></i>
-                </div>
-                <div id="wealth-level-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
-                    <div>
-                        <span id="wealth-level-text" class="text-xs font-black block">Lv. 1</span>
-                        <span class="text-[10px] opacity-80 block mt-0.5">الثروة 💰</span>
-                    </div>
-                    <i id="wealth-level-icon" class="fa-solid fa-gem text-amber-400 text-xl"></i>
-                </div>
-            </div>
+        <div class="flex gap-3 justify-center pt-2 mt-auto">
+            <button id="toggle-mic-btn" class="bg-purple-600/30 text-purple-200 px-4 py-2.5 rounded-xl text-xs border border-purple-500/40 cursor-pointer">كتم المايك</button>
+            <button id="request-seat-btn" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg cursor-pointer">الجلوس على كرسي 🪑</button>
         </div>
     </div>
 
@@ -416,11 +295,7 @@
                 <div class="flex flex-col items-center justify-center">
                     <div id="avatar-picker-trigger" class="w-20 h-20 rounded-full border-2 border-amber-400 p-0.5 relative cursor-pointer group shadow-lg">
                         <img id="modal-avatar-preview" src="https://via.placeholder.com/150" class="w-full h-full rounded-full object-cover">
-                        <div class="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                            <i class="fa-solid fa-camera text-white text-base"></i>
-                        </div>
                     </div>
-                    <span class="text-[10px] text-purple-300 mt-2">اضغط على الصورة لتغييرها 🖼️</span>
                     <input type="file" id="input-avatar-file" accept="image/*" class="hidden">
                 </div>
                 <div class="text-right">
@@ -436,11 +311,10 @@
     <div id="create-room-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-slate-900 border border-purple-500/40 p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl">
             <h3 class="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">إنشاء غرفتك الخاصة</h3>
-            <p class="text-xs text-slate-400 mb-4">يجب كتابة اسم الغرفة واختيار صورتها من المعرض!</p>
             <input type="text" id="room-name-input" placeholder="اسم الغرفة (مثلاً: سهرة فنانين 🎤)" class="w-full px-4 py-3 rounded-xl bg-slate-950 text-xs border border-purple-500/30 text-white mb-3.5">
             <div class="text-right mb-5">
-                <label class="block text-xs text-purple-300 mb-1.5">صورة الغرفة من المعرض (إجباري) 🖼️</label>
-                <input type="file" id="room-image-file" accept="image/*" class="w-full p-2 rounded-xl bg-slate-950 border border-purple-500/30 text-white file:bg-purple-600 file:text-white file:border-0 file:rounded-lg file:py-1 file:px-3 text-[11px] cursor-pointer">
+                <label class="block text-xs text-purple-300 mb-1.5">صورة الغرفة من المعرض 🖼️</label>
+                <input type="file" id="room-image-file" accept="image/*" class="w-full p-2 rounded-xl bg-slate-950 border border-purple-500/30 text-white text-[11px] cursor-pointer">
             </div>
             <div class="flex gap-2.5">
                 <button type="button" id="cancel-room-btn" class="w-1/2 bg-slate-800 text-slate-300 font-bold py-3 rounded-xl text-xs cursor-pointer">إلغاء</button>
@@ -454,14 +328,6 @@
         <button id="nav-rooms-btn" class="flex flex-col items-center text-purple-400 cursor-pointer">
             <i class="fa-solid fa-house text-lg"></i>
             <span class="text-[11px] mt-1">غرفة</span>
-        </button>
-        <button id="nav-games-btn" class="flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer">
-            <i class="fa-solid fa-dice text-lg"></i>
-            <span class="text-[11px] mt-1">لعبة</span>
-        </button>
-        <button id="nav-chat-btn" class="flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer">
-            <i class="fa-solid fa-comment-dots text-lg"></i>
-            <span class="text-[11px] mt-1">رسالة</span>
         </button>
         <button id="nav-profile-btn" class="flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer">
             <i class="fa-solid fa-user text-lg"></i>
