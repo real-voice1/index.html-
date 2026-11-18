@@ -4,7 +4,8 @@ import {
     createUserWithEmailAndPassword, 
     signInWithEmailAndPassword, 
     GoogleAuthProvider,
-    signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
     signOut,
     deleteUser,
     EmailAuthProvider,
@@ -18,7 +19,6 @@ import {
     doc, 
     getDoc, 
     setDoc, 
-    updateDoc,
     deleteDoc,
     onSnapshot, 
     query, 
@@ -69,18 +69,9 @@ const roomNameInput = document.getElementById('room-name-input');
 const roomImageFile = document.getElementById('room-image-file'); 
 const roomsGrid = document.getElementById('rooms-grid'); 
 
-const roomOptionsBtn = document.getElementById('room-options-btn');
-const roomOptionsDropdown = document.getElementById('room-options-dropdown');
-const optMinimize = document.getElementById('opt-minimize');
-const optSettings = document.getElementById('opt-settings');
 const optLeave = document.getElementById('opt-leave');
-
 const toggleMicBtn = document.getElementById('toggle-mic-btn');
 const requestSeatBtn = document.getElementById('request-seat-btn');
-
-const chatForm = document.getElementById('chat-form');
-const chatInput = document.getElementById('chat-input');
-const chatMessagesList = document.getElementById('chat-messages-list');
 
 const headerUserId = document.getElementById('header-user-id');
 const profileDisplayName = document.getElementById('profile-display-name');
@@ -101,7 +92,6 @@ const inputAvatarFile = document.getElementById('input-avatar-file');
 const avatarPickerTrigger = document.getElementById('avatar-picker-trigger');
 const modalAvatarPreview = document.getElementById('modal-avatar-preview');
 
-// عناصر أزرار الإعدادات والنافذة المنبثقة
 const settingsAccountCenter = document.getElementById('settings-account-center');
 const modalAccountCenter = document.getElementById('modal-account-center');
 const closeAccountCenter = document.getElementById('close-account-center');
@@ -123,18 +113,9 @@ const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
 
 const settingsLogoutSwitch = document.getElementById('settings-logout-switch');
 
-const roomUserProfileModal = document.getElementById('room-user-profile-modal');
-const bottomSheetContent = document.getElementById('bottom-sheet-content');
-const closeUserProfile = document.getElementById('close-user-profile');
-const modalProfileAvatar = document.getElementById('modal-profile-avatar');
-const modalProfileName = document.getElementById('modal-profile-name');
-const modalProfileId = document.getElementById('modal-profile-id');
-const modalProfileBadge = document.getElementById('modal-profile-badge');
-
 let isLoginMode = false;
 let currentUser = null;
 let currentRoomId = null;
-let currentRoomDocData = null;
 let roomSeats = Array(8).fill(null);
 let userData = null;
 let myCurrentSeatIndex = null;
@@ -171,7 +152,33 @@ function compressImage(file) {
     });
 }
 
-// 1. تفعيل مركز الحساب
+// معالجة نتيجة تسجيل الدخول بـ Google عبر التوجيه (Redirect)
+getRedirectResult(auth)
+    .then(async (result) => {
+        if (result && result.user) {
+            const user = result.user;
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+
+            if (!userSnap.exists()) {
+                const randomId = Math.floor(100000 + Math.random() * 900000);
+                await setDoc(userRef, {
+                    uid: user.uid,
+                    email: user.email,
+                    userId: randomId,
+                    nickname: user.displayName || user.email.split('@')[0],
+                    avatar: user.photoURL || "https://via.placeholder.com/150",
+                    charmLevel: 1,
+                    wealthLevel: 1,
+                    createdAt: serverTimestamp()
+                });
+            }
+        }
+    }).catch((error) => {
+        console.error("Google Redirect Error:", error);
+    });
+
+// أزرار الإعدادات
 if (settingsAccountCenter) {
     settingsAccountCenter.addEventListener('click', () => {
         if (currentUser && userData) {
@@ -185,7 +192,6 @@ if (closeAccountCenter) {
     closeAccountCenter.addEventListener('click', () => modalAccountCenter.classList.add('hidden'));
 }
 
-// 2. تفعيل اللغة
 if (settingsLanguage) {
     settingsLanguage.addEventListener('click', () => modalLanguage.classList.remove('hidden'));
 }
@@ -195,17 +201,14 @@ if (closeLanguage) {
 if (langArBtn && langEnBtn) {
     langArBtn.addEventListener('click', () => {
         if (currentLangLabel) currentLangLabel.textContent = "العربية 🇪🇬";
-        alert("✅ تم اختيار اللغة العربية بنجاح!");
         modalLanguage.classList.add('hidden');
     });
     langEnBtn.addEventListener('click', () => {
         if (currentLangLabel) currentLangLabel.textContent = "English 🇺🇸";
-        alert("✅ Language switched to English!");
         modalLanguage.classList.add('hidden');
     });
 }
 
-// 3. تفعيل حذف الحساب بالشروط (يطلب كلمة المرور وإعادة التوثيق)
 if (settingsDeleteAccount) {
     settingsDeleteAccount.addEventListener('click', () => {
         if (deleteConfirmPassword) deleteConfirmPassword.value = '';
@@ -223,47 +226,30 @@ if (confirmDeleteBtn) {
         try {
             const user = auth.currentUser;
             if (!user) return;
-
             const credential = EmailAuthProvider.credential(user.email, pass);
             await reauthenticateWithCredential(user, credential);
             await deleteDoc(doc(db, "users", user.uid));
             await deleteUser(user);
-
-            alert("🗑️ تم حذف الحساب نهائياً بنجاح وفقاً للشروط.");
+            alert("🗑️ تم حذف الحساب نهائياً بنجاح.");
             if (modalDeleteAccount) modalDeleteAccount.classList.add('hidden');
         } catch (error) {
-            console.error("Delete account error:", error);
             alert("❌ فشل حذف الحساب: تأكد من صحة كلمة المرور أو أن الحساب مسجل بـ Google.");
         }
     });
 }
 
-// 4. تسجيل الخروج وإضافة حساب آخر بـ Gmail جديد (تم التعديل للتحكم الكامل بالشاشات)
 if (settingsLogoutSwitch) {
     settingsLogoutSwitch.addEventListener('click', async () => {
         if (confirm("هل تريد تسجيل الخروج والانتقال لإضافة حساب Gmail آخر؟")) {
             try {
                 await signOut(auth);
-                
-                // إخفاء الغرف والتطبيق الرئيسي وشريط التنقل فوراً
                 if (roomViewScreen) roomViewScreen.classList.add('hidden');
                 if (mainAppContainer) mainAppContainer.classList.add('hidden');
                 if (bottomNav) bottomNav.classList.add('hidden');
                 if (welcomeScreen) welcomeScreen.classList.add('hidden');
-                
-                // إظهار واجهة تسجيل الدخول مباشرة لإدخال حساب جديد
                 if (authScreen) authScreen.classList.remove('hidden');
-                
-                // تفريغ حقول الإدخال لتسهيل كتابة إيميل جديد
-                const emailInput = document.getElementById('email');
-                const passwordInput = document.getElementById('password');
-                if (emailInput) emailInput.value = '';
-                if (passwordInput) passwordInput.value = '';
-
-                alert("👋 تم تسجيل الخروج بنجاح. يمكنك الآن إدخال أو تسجيل حساب Gmail آخر!");
             } catch (error) {
                 console.error("Logout error:", error);
-                alert("❌ حدث خطأ أثناء تسجيل الخروج: " + error.message);
             }
         }
     });
@@ -287,29 +273,12 @@ if (toggleAuthModeBtn) {
     });
 }
 
+// تفعيل تسجيل الدخول بـ Google عبر Redirect للتوافق التام مع الموبايل
 if (googleLoginBtn) {
     googleLoginBtn.addEventListener('click', async () => {
         const provider = new GoogleAuthProvider();
         try {
-            const result = await signInWithPopup(auth, provider);
-            const user = result.user;
-            const userRef = doc(db, "users", user.uid);
-            const userSnap = await getDoc(userRef);
-
-            if (!userSnap.exists()) {
-                const randomId = Math.floor(100000 + Math.random() * 900000);
-                await setDoc(userRef, {
-                    uid: user.uid,
-                    email: user.email,
-                    userId: randomId,
-                    nickname: user.displayName || user.email.split('@')[0],
-                    avatar: user.photoURL || "https://via.placeholder.com/150",
-                    charmLevel: 1,
-                    wealthLevel: 1,
-                    createdAt: serverTimestamp()
-                });
-            }
-            alert("✅ تم تسجيل الدخول بـ Google بنجاح!");
+            await signInWithRedirect(auth, provider);
         } catch (error) {
             console.error("Google Auth Error:", error);
             alert("❌ خطأ في المصادقة عبر Google: " + error.message);
@@ -326,7 +295,6 @@ if (authForm) {
         try {
             if (isLoginMode) {
                 await signInWithEmailAndPassword(auth, email, password);
-                alert("✅ تم تسجيل الدخول بنجاح!");
             } else {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
@@ -363,21 +331,6 @@ if (navRoomsBtn && navProfileBtn) {
         tabRooms.classList.add('hidden');
         navProfileBtn.className = "flex flex-col items-center text-purple-400 cursor-pointer";
         navRoomsBtn.className = "flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer";
-    });
-}
-
-if (mainProfileImgContainer) {
-    mainProfileImgContainer.addEventListener('click', () => {
-        if (userData && currentUser) {
-            openUserProfileModal({
-                uid: currentUser.uid,
-                nickname: userData.nickname || "مستخدم",
-                avatar: userData.avatar || "https://via.placeholder.com/150",
-                userId: userData.userId || "110789",
-                charmLevel: userData.charmLevel || 1,
-                wealthLevel: userData.wealthLevel || 1
-            }, null);
-        }
     });
 }
 
@@ -512,9 +465,6 @@ function loadRooms() {
 
 async function enterRoom(roomId, roomData) {
     currentRoomId = roomId;
-    currentRoomDocData = roomData;
-    myCurrentSeatIndex = null;
-
     welcomeScreen.classList.add('hidden');
     authScreen.classList.add('hidden');
     mainAppContainer.classList.add('hidden');
@@ -548,75 +498,6 @@ async function leaveRoom() {
 
 if (optLeave) optLeave.addEventListener('click', leaveRoom);
 
-if (requestSeatBtn) {
-    requestSeatBtn.addEventListener('click', async () => {
-        if (!currentUser || !currentRoomId) return alert("⚠️ ادخل غرفة أولاً!");
-        let emptyIndex = roomSeats.findIndex((seat, idx) => idx > 0 && seat === null);
-        if (emptyIndex === -1 && roomSeats[0] === null) emptyIndex = 0;
-        if (emptyIndex === -1) return alert("❌ جميع الكراسي محجوزة!");
-
-        myCurrentSeatIndex = emptyIndex;
-        roomSeats[emptyIndex] = {
-            uid: currentUser.uid,
-            nickname: userData ? userData.nickname : "مستخدم",
-            avatar: userData ? userData.avatar : "https://via.placeholder.com/150",
-            userId: userData ? userData.userId : "110789"
-        };
-        updateSeatUI(emptyIndex, roomSeats[emptyIndex], true);
-
-        try {
-            if (!localAudioTrack && agoraClient) {
-                localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-                await agoraClient.publish([localAudioTrack]);
-            }
-        } catch (e) { alert("⚠️ سماح للمايك مطلوب."); }
-    });
-}
-
-function updateSeatUI(index, userObj, isOccupied) {
-    const seatDiv = document.getElementById(`seat-${index}`);
-    const nameSpan = document.getElementById(`seat-name-${index}`);
-    if (!seatDiv || !nameSpan) return;
-
-    const newSeatDiv = seatDiv.cloneNode(true);
-    seatDiv.parentNode.replaceChild(newSeatDiv, seatDiv);
-
-    if (isOccupied && userObj) {
-        newSeatDiv.className = "w-14 h-14 rounded-full bg-slate-900 border-2 border-green-500 flex items-center justify-center relative overflow-hidden shadow-md cursor-pointer";
-        newSeatDiv.innerHTML = `<img src="${userObj.avatar}" class="w-full h-full object-cover">`;
-        nameSpan.textContent = userObj.nickname;
-        nameSpan.className = "text-[10px] text-green-300 mt-1.5 truncate w-16 font-bold";
-        newSeatDiv.addEventListener('click', () => openUserProfileModal(userObj, index));
-    } else {
-        newSeatDiv.className = "w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative";
-        newSeatDiv.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-sm"></i>`;
-        nameSpan.textContent = index === 0 ? "المضيف" : "فاضي";
-        nameSpan.className = "text-[10px] text-slate-500 mt-1.5 truncate w-16";
-    }
-}
-
-function openUserProfileModal(userObj, seatIdx) {
-    modalProfileAvatar.src = userObj.avatar;
-    modalProfileName.textContent = userObj.nickname;
-    modalProfileId.textContent = `ID: ${userObj.userId}`;
-    modalProfileBadge.textContent = getUserBadgeMonthly();
-    roomUserProfileModal.classList.remove('hidden');
-    setTimeout(() => bottomSheetContent.classList.add('show'), 10);
-}
-
-if (closeUserProfile) {
-    closeUserProfile.addEventListener('click', () => {
-        bottomSheetContent.classList.remove('show');
-        setTimeout(() => roomUserProfileModal.classList.add('hidden'), 300);
-    });
-}
-
-function resetSeatsUI() {
-    roomSeats = Array(8).fill(null);
-    myCurrentSeatIndex = null;
-    for (let i = 0; i < 8; i++) updateSeatUI(i, null, false);
-}
-
 onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     if (user) {
@@ -636,7 +517,6 @@ onAuthStateChanged(auth, async (user) => {
                 profileDisplayName.textContent = userData.nickname || "مستخدم";
                 profileImgPreview.src = userData.avatar || "https://via.placeholder.com/150";
                 userBadgeTag.textContent = getUserBadgeMonthly();
-
                 mainCharmText.textContent = `Lv. ${userData.charmLevel || 1}`;
                 mainWealthText.textContent = `Lv. ${userData.wealthLevel || 1}`;
             } else {
