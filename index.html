@@ -33,7 +33,6 @@
             animation: speak-pulse 1.5s infinite;
             border-color: #22c55e !important;
         }
-        /* تصميم نافذة البروفايل السفلي (Bottom Sheet) */
         .bottom-sheet {
             background: rgba(11, 15, 25, 0.98);
             backdrop-filter: blur(20px);
@@ -64,7 +63,7 @@
         </button>
     </div>
 
-    <!-- 2. شاشة تسجيل الدخول بالإيميل -->
+    <!-- 2. شاشة تسجيل الدخول -->
     <div id="auth-screen" class="full-mobile-card p-6 rounded-3xl w-full max-w-lg hidden flex flex-col justify-center mt-4">
         <div class="text-center mb-8">
             <h2 class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent" id="auth-title">تسجيل الدخول بالحساب</h2>
@@ -95,6 +94,7 @@
 
     <!-- 3. شاشة التطبيق الرئيسية -->
     <div id="main-app-container" class="w-full max-w-lg hidden flex flex-col">
+        <!-- تبويب الغرف -->
         <div id="tab-rooms" class="w-full p-4 flex flex-col">
             <div class="flex justify-between items-center mb-4 px-1">
                 <div>
@@ -110,10 +110,12 @@
             </div>
         </div>
 
+        <!-- تبويب الملف الشخصي (خاصتي) -->
         <div id="tab-profile" class="w-full p-4 hidden flex flex-col">
             <div class="flex items-center justify-between mb-6 border-b border-purple-500/20 pb-5 px-1">
                 <div class="flex items-center gap-3.5">
-                    <div class="w-18 h-18 rounded-full border-2 border-amber-400 p-0.5 relative">
+                    <!-- تم تفعيل النقر على صورة البروفايل الرئيسية هنا لفتح البروفايل -->
+                    <div id="main-profile-img-container" class="w-18 h-18 rounded-full border-2 border-amber-400 p-0.5 relative cursor-pointer shadow-lg hover:scale-105 transition">
                         <img id="profile-img-preview" src="https://via.placeholder.com/150" class="w-full h-full rounded-full object-cover">
                     </div>
                     <div>
@@ -127,6 +129,25 @@
                 <button id="edit-profile-btn" class="text-purple-300 text-xs bg-purple-900/40 px-3.5 py-2 rounded-xl border border-purple-500/30 cursor-pointer">
                     <i class="fa-solid fa-pen ml-1"></i> تعديل البروفايل
                 </button>
+            </div>
+
+            <!-- مستويات الجاذبية والثروة في البروفايل الرئيسي (من 1 إلى 100 وتتطور كل 10 مستويات) -->
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div id="main-charm-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
+                    <div>
+                        <span id="main-charm-text" class="text-xs font-black block">Lv. 2</span>
+                        <span class="text-[10px] opacity-80 block mt-0.5">الجاذبية 💖</span>
+                    </div>
+                    <i id="main-charm-icon" class="fa-solid fa-heart text-pink-400 text-xl"></i>
+                </div>
+
+                <div id="main-wealth-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
+                    <div>
+                        <span id="main-wealth-text" class="text-xs font-black block">Lv. 10</span>
+                        <span class="text-[10px] opacity-80 block mt-0.5">الثروة 💰</span>
+                    </div>
+                    <i id="main-wealth-icon" class="fa-solid fa-gem text-amber-400 text-xl"></i>
+                </div>
             </div>
 
             <div class="grid grid-cols-3 gap-3 mb-6 text-center">
@@ -192,7 +213,7 @@
             <p id="room-banner-text" class="text-xs text-purple-200 truncate flex-1 font-medium">مرحباً بالجميع في الغرفة! استمتعوا بالدردشة الصوتية ✨</p>
         </div>
 
-        <!-- مسرح الـ 8 كراسي -->
+        <!-- مسرح الكراسي -->
         <div class="grid grid-cols-4 gap-4 mb-4 text-center px-2">
             <div class="flex flex-col items-center">
                 <div id="seat-0" class="w-14 h-14 rounded-full bg-slate-900 border-2 border-purple-500 flex items-center justify-center relative cursor-pointer shadow-lg">
@@ -238,17 +259,15 @@
         </div>
     </div>
 
-    <!-- نافذة بروفايل المستخدم من الأسفل (Bottom Sheet الاحترافي المطابق للصورة) -->
+    <!-- نافذة بروفايل المستخدم من الأسفل (Bottom Sheet الاحترافي) -->
     <div id="room-user-profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end hidden">
         <div id="bottom-sheet-content" class="bottom-sheet p-6 w-full max-w-lg mx-auto text-white flex flex-col max-h-[85vh] overflow-y-auto">
             
-            <!-- زر الإغلاق -->
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex justify-between items-center mb-4 relative">
                 <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto"></div>
-                <button id="close-user-profile" class="absolute left-6 text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <button id="close-user-profile" class="absolute left-2 text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
-            <!-- معلومات المستخدم الأساسية (صورة، اسم، ID، علم الدولة، النوع) -->
             <div class="flex items-center gap-4 mb-4 pb-4 border-b border-purple-500/20">
                 <div class="w-20 h-20 rounded-full border-2 border-amber-400 p-0.5 relative shrink-0 shadow-xl">
                     <img id="modal-profile-avatar" src="https://via.placeholder.com/150" class="w-full h-full rounded-full object-cover">
@@ -266,14 +285,12 @@
                 </div>
             </div>
 
-            <!-- بوكس نبذة تعريفي أو الحالة -->
             <div class="bg-slate-900/80 p-3.5 rounded-2xl mb-4 border border-purple-500/20 text-xs text-slate-300 text-center">
                 مرحباً بك في ملفي الشخصي، استمتع بصوتي وأوقاتك معنا في REAL VOICE ✨
             </div>
 
-            <!-- مستويات الجاذبية والثروة (من 1 إلى 100 وتتغير الأيقونة كل 10 لفلات) -->
+            <!-- مستويات الجاذبية والثروة من 1 إلى 100 مع الأيقونات المتطورة -->
             <div class="grid grid-cols-2 gap-3 mb-5">
-                <!-- مستوى الجاذبية -->
                 <div id="charm-level-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
                     <div>
                         <span id="charm-level-text" class="text-xs font-black block">Lv. 2</span>
@@ -282,7 +299,6 @@
                     <i id="charm-level-icon" class="fa-solid fa-heart text-pink-400 text-xl"></i>
                 </div>
 
-                <!-- مستوى الثروة -->
                 <div id="wealth-level-box" class="p-3 rounded-2xl flex items-center justify-between border shadow-md">
                     <div>
                         <span id="wealth-level-text" class="text-xs font-black block">Lv. 10</span>
@@ -292,7 +308,6 @@
                 </div>
             </div>
 
-            <!-- زر امتيازات الـ VIP -->
             <div class="bg-gradient-to-r from-amber-900/30 to-purple-900/30 border border-amber-500/30 p-3.5 rounded-2xl flex justify-between items-center mb-5 cursor-pointer">
                 <div class="flex items-center gap-2.5">
                     <i class="fa-solid fa-crown text-amber-400 text-base"></i>
@@ -301,7 +316,6 @@
                 <i class="fa-solid fa-chevron-left text-slate-400 text-xs"></i>
             </div>
 
-            <!-- أقسام تحكم المشرف والمالك (تظهر فقط للإدارة عند النقر على الآخرين) -->
             <div id="moderator-controls" class="space-y-2.5 hidden pt-2 border-t border-purple-500/20">
                 <button id="mod-toggle-admin" class="w-full bg-purple-600/30 hover:bg-purple-600 text-purple-200 py-2.5 rounded-xl text-xs transition cursor-pointer font-bold">
                     👑 تعيين / إلغاء مشرف
@@ -316,38 +330,7 @@
         </div>
     </div>
 
-    <!-- النافذة الأخرى (تعديل الملف الشخصي، إعدادات الغرفة، إنشاء غرفة، إلخ...) -->
-    <!-- (باقي النوافذ مثل تعديل البروفايل وإنشاء الغرفة تظل كما هي بنفس الأكواد المتقدمة) -->
-    
-    <div id="edit-room-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-slate-900 border border-purple-500/40 p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl">
-            <h3 class="text-lg font-bold text-amber-300 mb-4">إعدادات الغرفة ⚙️</h3>
-            
-            <div class="text-right mb-3">
-                <label class="block text-xs text-purple-300 mb-1">اسم الغرفة</label>
-                <input type="text" id="edit-room-name-input" class="w-full px-4 py-3 rounded-xl bg-slate-950 text-xs border border-purple-500/30 text-white">
-            </div>
-
-            <div class="text-right mb-3">
-                <label class="block text-xs text-purple-300 mb-1">شعار / إعلان الغرفة (يراه الجميع)</label>
-                <input type="text" id="edit-room-banner-input" placeholder="اكتب شعار الغرفة هنا..." class="w-full px-4 py-3 rounded-xl bg-slate-950 text-xs border border-purple-500/30 text-white">
-            </div>
-
-            <div class="text-right mb-5">
-                <label class="block text-xs text-purple-300 mb-1.5">أيقونة / صورة الغرفة الصغيرة 🖼️</label>
-                <div class="flex items-center gap-3">
-                    <img id="edit-room-img-preview" src="https://via.placeholder.com/150" class="w-12 h-12 rounded-xl object-cover border border-purple-400">
-                    <input type="file" id="edit-room-image-file" accept="image/*" class="w-full p-2 rounded-xl bg-slate-950 border border-purple-500/30 text-white text-[11px] cursor-pointer">
-                </div>
-            </div>
-
-            <div class="flex gap-2.5">
-                <button type="button" id="cancel-edit-room" class="w-1/2 bg-slate-800 text-slate-300 py-3 rounded-xl text-xs cursor-pointer font-bold">إلغاء</button>
-                <button type="button" id="confirm-edit-room" class="w-1/2 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl text-xs font-bold cursor-pointer shadow-lg">حفظ التعديلات</button>
-            </div>
-        </div>
-    </div>
-
+    <!-- نافذة تعديل الملف الشخصي -->
     <div id="edit-profile-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-slate-900 border border-purple-500/40 p-6 rounded-3xl w-full max-w-sm text-white text-center shadow-2xl">
             <div class="flex justify-between items-center mb-4 border-b border-purple-500/20 pb-2">
@@ -375,6 +358,7 @@
         </div>
     </div>
 
+    <!-- نافذة إنشاء غرفة -->
     <div id="create-room-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
         <div class="bg-slate-900 border border-purple-500/40 p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl">
             <h3 class="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">إنشاء غرفتك الخاصة</h3>
