@@ -4,8 +4,7 @@ import {
     createUserWithEmailAndPassword, 
     signInWithEmailAndPassword, 
     GoogleAuthProvider,
-    signInWithRedirect,
-    getRedirectResult,
+    signInWithPopup,
     signOut,
     onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -82,7 +81,7 @@ const onlineCountNum = document.getElementById('online-count-num');
 const floatingMicToggleBtn = document.getElementById('floating-mic-toggle-btn');
 const floatingMicIcon = document.getElementById('floating-mic-icon');
 
-// نافذة خيارات المقعد
+// نافذة خيارات المقعد والمايك
 const seatOptionsModal = document.getElementById('seat-options-modal');
 const seatSheetContent = document.getElementById('seat-sheet-content');
 const closeSeatModal = document.getElementById('close-seat-modal');
@@ -90,7 +89,7 @@ const optSitSeat = document.getElementById('opt-sit-seat');
 const optToggleMicSeat = document.getElementById('opt-toggle-mic-seat');
 const optLockSeat = document.getElementById('opt-lock-seat');
 
-// بروفايل المستخدم داخل الغرفة وصلاحيات المالك
+// بروفايل المستخدم وصلاحيات المالك
 const roomUserProfileModal = document.getElementById('room-user-profile-modal');
 const profileSheetContent = document.getElementById('profile-sheet-content');
 const closeUserProfile = document.getElementById('close-user-profile');
@@ -128,7 +127,7 @@ let currentUser = null;
 let currentRoomId = null;
 let currentRoomDocData = null;
 let roomSeats = Array(8).fill(null);
-let seatLockedStatus = Array(8).fill(false); // حالة قفل المقاعد
+let seatLockedStatus = Array(8).fill(false);
 let userData = null;
 let selectedSeatIndex = null;
 let selectedTargetUser = null;
@@ -166,7 +165,134 @@ function compressImage(file) {
     });
 }
 
-// قائمة الثلاث نقاط داخل الغرفة
+// التنقل بين التبويبات (غرفة / خاصتي)
+if (navRoomsBtn && navProfileBtn) {
+    navRoomsBtn.addEventListener('click', () => {
+        tabRooms.classList.remove('hidden');
+        tabProfile.classList.add('hidden');
+        navRoomsBtn.className = "flex flex-col items-center text-purple-400 cursor-pointer";
+        navProfileBtn.className = "flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer";
+    });
+
+    navProfileBtn.addEventListener('click', () => {
+        tabRooms.classList.add('hidden');
+        tabProfile.classList.remove('hidden');
+        navProfileBtn.className = "flex flex-col items-center text-purple-400 cursor-pointer";
+        navRoomsBtn.className = "flex flex-col items-center text-slate-400 hover:text-purple-300 cursor-pointer";
+    });
+}
+
+// شاشة الترحيب وتسجيل الدخول
+if (startBtn) {
+    startBtn.addEventListener('click', () => {
+        welcomeScreen.classList.add('hidden');
+        authScreen.classList.remove('hidden');
+    });
+}
+
+if (toggleAuthModeBtn) {
+    toggleAuthModeBtn.addEventListener('click', () => {
+        isLoginMode = !isLoginMode;
+        if (isLoginMode) {
+            authTitle.textContent = "تسجيل الدخول";
+            authSubmitBtn.textContent = "دخول";
+            toggleAuthModeBtn.textContent = "ليس لديك حساب؟ انشئ حساب جديد";
+        } else {
+            authTitle.textContent = "إنشاء حساب جديد";
+            authSubmitBtn.textContent = "تسجيل";
+            toggleAuthModeBtn.textContent = "لديك حساب بالفعل؟ سجل دخولك";
+        }
+    });
+}
+
+if (authForm) {
+    authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        try {
+            if (isLoginMode) {
+                await signInWithEmailAndPassword(auth, email, password);
+            } else {
+                await createUserWithEmailAndPassword(auth, email, password);
+            }
+        } catch (err) {
+            alert("❌ خطأ: " + err.message);
+        }
+    });
+}
+
+if (googleLoginBtn) {
+    googleLoginBtn.addEventListener('click', async () => {
+        try {
+            const provider = new GoogleAuthProvider();
+            await signInWithPopup(auth, provider);
+        } catch (err) {
+            alert("❌ خطأ في تسجيل جوجل: " + err.message);
+        }
+    });
+}
+
+// إنشاء الغرف
+if (createRoomBtn) {
+    createRoomBtn.addEventListener('click', () => createRoomModal.classList.remove('hidden'));
+}
+if (cancelRoomBtn) {
+    cancelRoomBtn.addEventListener('click', () => createRoomModal.classList.add('hidden'));
+}
+
+if (confirmCreateRoom) {
+    confirmCreateRoom.addEventListener('click', async () => {
+        const roomName = roomNameInput.value.trim();
+        if (!roomName) return alert("⚠️ يرجى كتابة اسم الغرفة!");
+        let roomImgUrl = "https://via.placeholder.com/150";
+        if (roomImageFile.files[0]) {
+            roomImgUrl = await compressImage(roomImageFile.files[0]);
+        }
+        try {
+            const roomRef = await addDoc(collection(db, "rooms"), {
+                name: roomName,
+                image: roomImgUrl,
+                host: userData ? userData.nickname : "مالك الغرفة",
+                hostUid: currentUser.uid,
+                bannedUsers: [],
+                createdAt: serverTimestamp()
+            });
+            createRoomModal.classList.add('hidden');
+            roomNameInput.value = "";
+            enterRoom(roomRef.id, { name: roomName, image: roomImgUrl, host: userData.nickname, hostUid: currentUser.uid, bannedUsers: [] });
+        } catch (err) {
+            alert("❌ خطأ في إنشاء الغرفة: " + err.message);
+        }
+    });
+}
+
+// تحميل الغرف المتاحة
+function loadRooms() {
+    if (!roomsGrid) return;
+    onSnapshot(collection(db, "rooms"), (snapshot) => {
+        roomsGrid.innerHTML = "";
+        if (snapshot.empty) {
+            roomsGrid.innerHTML = `<p class="col-span-2 text-center text-slate-500 text-xs py-8">لا توجد غرف متاحة حالياً، أنشئ غرفتك الآن!</p>`;
+            return;
+        }
+        snapshot.forEach((docSnap) => {
+            const room = docSnap.data();
+            const roomId = docSnap.id;
+            const roomCard = document.createElement('div');
+            roomCard.className = "bg-slate-900/90 border border-purple-500/30 rounded-2xl p-3 flex flex-col items-center cursor-pointer hover:border-purple-400 transition shadow-lg";
+            roomCard.innerHTML = `
+                <img src="${room.image || 'https://via.placeholder.com/150'}" class="w-16 h-16 rounded-xl object-cover mb-2 border border-purple-500/40">
+                <h4 class="text-xs font-bold text-purple-200 truncate w-full text-center">${room.name}</h4>
+                <p class="text-[10px] text-amber-400 mt-1 truncate">👑 ${room.host || 'مالك الغرفة'}</p>
+            `;
+            roomCard.addEventListener('click', () => enterRoom(roomId, room));
+            roomsGrid.appendChild(roomCard);
+        });
+    });
+}
+
+// القائمة المنسدلة داخل الغرفة
 if (roomOptionsBtn && roomOptionsDropdown) {
     roomOptionsBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -175,7 +301,6 @@ if (roomOptionsBtn && roomOptionsDropdown) {
     document.addEventListener('click', () => roomOptionsDropdown.classList.add('hidden'));
 }
 
-// تصغير الغرفة (Mini Player)
 if (optMinimize) {
     optMinimize.addEventListener('click', () => {
         roomViewScreen.classList.add('hidden');
@@ -193,7 +318,6 @@ if (miniPlayerTrigger) {
     });
 }
 
-// زرار التحكم الجانبي السريع في فتح/قفل الصوت
 if (floatingMicToggleBtn) {
     floatingMicToggleBtn.addEventListener('click', async () => {
         if (!localAudioTrack) return alert("⚠️ يجب أن تجلس على مقعد أولاً لتفعيل المايك!");
@@ -209,7 +333,7 @@ if (floatingMicToggleBtn) {
     });
 }
 
-// رسم الكراسي وعرض حالات المقاعد (مقفل أو مشهود أو فاضي)
+// رسم المقاعد (الكراسي)
 function renderSeats() {
     for (let i = 0; i < 8; i++) {
         const seatBox = document.getElementById(`seat-${i}`);
@@ -305,7 +429,7 @@ if (optSitSeat) {
     });
 }
 
-// قفل وفتح المقعد للجميع
+// قفل وفتح المقعد
 if (optLockSeat) {
     optLockSeat.addEventListener('click', () => {
         if (selectedSeatIndex === null) return;
@@ -335,7 +459,7 @@ if (optToggleMicSeat) {
     });
 }
 
-// عرض بروفايل المستخدم أو بروفايلك الخاص كمدير للغرفة
+// عرض بروفايل المستخدم أو بروفايلك الخاص (كمدير الغرفة)
 function openUserProfileModal(userObj, seatIdx) {
     selectedTargetUser = { ...userObj, seatIdx };
     modalProfileAvatar.src = userObj.avatar;
@@ -369,7 +493,7 @@ if (closeUserProfile) {
     });
 }
 
-// وظائف طرد وطرد سنة وإنزال من المايك
+// مهام الإدارة (الطرد 24 ساعة، طرد سنة، إنزال من المايك)
 if (actionKickMic) {
     actionKickMic.addEventListener('click', () => {
         if (!selectedTargetUser) return;
@@ -518,7 +642,7 @@ async function leaveRoom() {
 if (optLeave) optLeave.addEventListener('click', leaveRoom);
 if (miniPlayerClose) miniPlayerClose.addEventListener('click', leaveRoom);
 
-// المصادقة ومراقبة المستخدم
+// مراقبة حالة المصادقة
 onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     if (user) {
@@ -553,8 +677,8 @@ onAuthStateChanged(auth, async (user) => {
 
         loadRooms();
     } else {
-        if (welcomeScreen) welcomeScreen.classList.add('hidden');
-        if (authScreen) authScreen.classList.remove('hidden');
+        if (welcomeScreen) welcomeScreen.classList.remove('hidden');
+        if (authScreen) authScreen.classList.add('hidden');
         if (mainAppContainer) mainAppContainer.classList.add('hidden');
         if (roomViewScreen) roomViewScreen.classList.add('hidden');
         if (floatingMiniPlayer) floatingMiniPlayer.classList.add('hidden');
@@ -562,7 +686,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// تفعيل الضغط على صورتك الشخصية لعرض البروفايل الخاص بك كمدير للغرفة
+// فتح بروفايلك الخاص كمدير للغرفة عند الضغط على صورتك في تبويب الملف الشخصي
 if (profileImgPreview) {
     profileImgPreview.addEventListener('click', () => {
         if (userData && currentUser) {
