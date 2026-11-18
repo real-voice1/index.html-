@@ -76,7 +76,6 @@ const roomOptionsDropdown = document.getElementById('room-options-dropdown');
 const optMinimize = document.getElementById('opt-minimize');
 const optLeave = document.getElementById('opt-leave');
 
-// المشغل العائم المصغر (Mini Player)
 const floatingMiniPlayer = document.getElementById('floating-mini-player');
 const miniPlayerTrigger = document.getElementById('mini-player-trigger');
 const miniPlayerImg = document.getElementById('mini-player-img');
@@ -85,7 +84,6 @@ const miniPlayerClose = document.getElementById('mini-player-close');
 
 const onlineCountNum = document.getElementById('online-count-num');
 const toggleMicBtn = document.getElementById('toggle-mic-btn');
-const requestSeatBtn = document.getElementById('request-seat-btn');
 
 const headerUserId = document.getElementById('header-user-id');
 const profileDisplayName = document.getElementById('profile-display-name');
@@ -212,7 +210,7 @@ if (roomOptionsBtn && roomOptionsDropdown) {
     document.addEventListener('click', () => roomOptionsDropdown.classList.add('hidden'));
 }
 
-// زر تصغير الغرفة (Mini Player) مع إبقاء الصوت شغال وسحب المربع في أي مكان
+// تصغير الغرفة (Mini Player)
 if (optMinimize) {
     optMinimize.addEventListener('click', () => {
         roomViewScreen.classList.add('hidden');
@@ -223,7 +221,6 @@ if (optMinimize) {
     });
 }
 
-// الضغط على المربع المصغر لإرجاع الغرفة كاملة
 if (miniPlayerTrigger) {
     miniPlayerTrigger.addEventListener('click', () => {
         floatingMiniPlayer.classList.add('hidden');
@@ -231,7 +228,7 @@ if (miniPlayerTrigger) {
     });
 }
 
-// إمكانية سحب وتحريك المربع المصغر (Mini Player) في أي مكان على الشاشة للموبايل والكمبيوتر
+// سحب وتحريك المربع المصغر
 let isDragging = false;
 let startX, startY, initialX, initialY;
 
@@ -261,65 +258,68 @@ floatingMiniPlayer.addEventListener('pointerup', (e) => {
 // تفعيل كتم / فتح المايك
 if (toggleMicBtn) {
     toggleMicBtn.addEventListener('click', async () => {
-        if (!localAudioTrack) return alert("⚠️ يجب أن تجلس على كرسي أولاً!");
+        if (!localAudioTrack) return alert("⚠️ يجب أن تجلس على كرسي أولاً عبر الضغط على أي مايك فارغ!");
         isMicMuted = !isMicMuted;
         await localAudioTrack.setMuted(isMicMuted);
         if (isMicMuted) {
             toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone-slash text-red-400"></i> فتح المايك`;
-            toggleMicBtn.className = "bg-red-600/30 text-red-200 px-4 py-2.5 rounded-xl text-xs border border-red-500/40 cursor-pointer flex items-center gap-1.5";
+            toggleMicBtn.className = "bg-red-600/30 text-red-200 px-6 py-2.5 rounded-xl text-xs border border-red-500/40 cursor-pointer flex items-center gap-1.5 shadow-lg";
         } else {
             toggleMicBtn.innerHTML = `<i class="fa-solid fa-microphone text-green-400"></i> كتم المايك`;
-            toggleMicBtn.className = "bg-purple-600/30 text-purple-200 px-4 py-2.5 rounded-xl text-xs border border-purple-500/40 cursor-pointer flex items-center gap-1.5";
+            toggleMicBtn.className = "bg-purple-600/30 text-purple-200 px-6 py-2.5 rounded-xl text-xs border border-purple-500/40 cursor-pointer flex items-center gap-1.5 shadow-lg";
         }
     });
 }
 
-// الجلوس على كرسي
-if (requestSeatBtn) {
-    requestSeatBtn.addEventListener('click', async () => {
-        if (!currentUser || !currentRoomId) return alert("⚠️ ادخل غرفة أولاً!");
-        let emptyIndex = roomSeats.findIndex((seat, idx) => idx > 0 && seat === null);
-        if (emptyIndex === -1 && roomSeats[0] === null) emptyIndex = 0;
-        if (emptyIndex === -1) return alert("❌ جميع الكراسي محجوزة!");
+// رسم الكراسي وتفعيل الصعود التلقائي عند الضغط على أي مايك فارغ
+function renderSeats() {
+    for (let i = 0; i < 8; i++) {
+        const seatDiv = document.getElementById(`seat-${i}`);
+        const nameSpan = document.getElementById(`seat-name-${i}`);
+        if (!seatDiv || !nameSpan) continue;
 
-        myCurrentSeatIndex = emptyIndex;
-        roomSeats[emptyIndex] = {
-            uid: currentUser.uid,
-            nickname: userData ? userData.nickname : "مستخدم",
-            avatar: userData ? userData.avatar : "https://via.placeholder.com/150",
-            userId: userData ? userData.userId : "110789"
-        };
-        updateSeatUI(emptyIndex, roomSeats[emptyIndex], true);
+        const newSeatDiv = seatDiv.cloneNode(true);
+        seatDiv.parentNode.replaceChild(newSeatDiv, seatDiv);
 
-        try {
-            if (!localAudioTrack && agoraClient) {
-                localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-                await agoraClient.publish([localAudioTrack]);
-                alert("🎤 تم فتح المايك وبث صوتك بنجاح!");
-            }
-        } catch (e) { alert("⚠️ سماح المتصفح للوصول إلى المايك مطلوب."); }
-    });
-}
+        const occupant = roomSeats[i];
+        if (occupant) {
+            newSeatDiv.className = "w-14 h-14 rounded-full bg-slate-900 border-2 border-green-500 flex items-center justify-center relative overflow-hidden shadow-md cursor-pointer";
+            newSeatDiv.innerHTML = `<img src="${occupant.avatar}" class="w-full h-full object-cover">`;
+            nameSpan.textContent = occupant.nickname;
+            nameSpan.className = "text-[10px] text-green-300 truncate w-16 font-bold";
+            newSeatDiv.addEventListener('click', () => openUserProfileModal(occupant, i));
+        } else {
+            newSeatDiv.className = "w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative cursor-pointer hover:border-purple-400 transition";
+            newSeatDiv.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-sm"></i>`;
+            nameSpan.textContent = "فاضي";
+            nameSpan.className = "text-[10px] text-slate-500 truncate w-16";
 
-function updateSeatUI(index, userObj, isOccupied) {
-    const seatDiv = document.getElementById(`seat-${index}`);
-    const nameSpan = document.getElementById(`seat-name-${index}`);
-    if (!seatDiv || !nameSpan) return;
+            // الضغط على مايك فاضي يقعدك عليه تلقائياً
+            newSeatDiv.addEventListener('click', async () => {
+                if (!currentUser || !currentRoomId) return;
+                if (myCurrentSeatIndex !== null) {
+                    // لو قاعد على مايك تاني، قوم منه الأول
+                    roomSeats[myCurrentSeatIndex] = null;
+                }
 
-    const newSeatDiv = seatDiv.cloneNode(true);
-    seatDiv.parentNode.replaceChild(newSeatDiv, seatDiv);
+                myCurrentSeatIndex = i;
+                roomSeats[i] = {
+                    uid: currentUser.uid,
+                    nickname: userData ? userData.nickname : "مستخدم",
+                    avatar: userData ? userData.avatar : "https://via.placeholder.com/150",
+                    userId: userData ? userData.userId : "110789"
+                };
+                renderSeats();
 
-    if (isOccupied && userObj) {
-        newSeatDiv.className = "w-14 h-14 rounded-full bg-slate-900 border-2 border-green-500 flex items-center justify-center relative overflow-hidden shadow-md cursor-pointer";
-        newSeatDiv.innerHTML = `<img src="${userObj.avatar}" class="w-full h-full object-cover">`;
-        nameSpan.textContent = userObj.nickname;
-        nameSpan.className = "text-[10px] text-green-300 truncate w-16 font-bold";
-        newSeatDiv.addEventListener('click', () => openUserProfileModal(userObj, index));
-    } else {
-        newSeatDiv.className = "w-14 h-14 rounded-full bg-slate-900 border border-purple-500/30 flex items-center justify-center relative";
-        newSeatDiv.innerHTML = `<i class="fa-solid fa-microphone-slash text-slate-500 text-sm"></i>`;
-        nameSpan.textContent = "فاضي";
-        nameSpan.className = "text-[10px] text-slate-500 truncate w-16";
+                try {
+                    if (!localAudioTrack && agoraClient) {
+                        localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+                        await agoraClient.publish([localAudioTrack]);
+                        alert(`🎤 صعدت على (مايك ${i+1}) وتم فتح المايك وبث صوتك بنجاح!`);
+                    }
+                } catch (e) { alert("⚠️ سماح المتصفح للوصول إلى المايك مطلوب."); }
+            });
+        }
     }
 }
 
@@ -368,11 +368,11 @@ if (actionKickMic) {
         if (!selectedTargetUser) return;
         const idx = selectedTargetUser.seatIdx;
         roomSeats[idx] = null;
-        updateSeatUI(idx, null, false);
         if (selectedTargetUser.uid === currentUser.uid) {
             if (localAudioTrack) { localAudioTrack.close(); localAudioTrack = null; }
             myCurrentSeatIndex = null;
         }
+        renderSeats();
         alert(`🔽 تم إنزال ${selectedTargetUser.nickname} من المايك.`);
         bottomSheetContent.classList.remove('show');
         setTimeout(() => roomUserProfileModal.classList.add('hidden'), 300);
@@ -458,6 +458,8 @@ if (changeRoomImgTrigger && roomNewImageFile) {
 async function enterRoom(roomId, roomData) {
     currentRoomId = roomId;
     currentRoomDocData = roomData;
+    roomSeats = Array(8).fill(null);
+    myCurrentSeatIndex = null;
 
     if (roomData.bannedUsers && currentUser) {
         const banRecord = roomData.bannedUsers.find(b => b.uid === currentUser.uid);
@@ -482,8 +484,8 @@ async function enterRoom(roomId, roomData) {
     if (headerAvatarEl) headerAvatarEl.src = roomData.image || 'https://via.placeholder.com/150';
     if (ownerTagEl) ownerTagEl.textContent = `👑 المالك: ${roomData.host || 'غير معروف'}`;
 
-    // تفعيل عداد المتواجدين (مثال حي بناءً على الاتصال الصوتي)
     if (onlineCountNum) onlineCountNum.textContent = "1";
+    renderSeats();
 
     try {
         if (!agoraClient) {
@@ -505,11 +507,9 @@ async function enterRoom(roomId, roomData) {
     } catch (e) { console.error("Agora Error:", e); }
 }
 
-// الخروج النهائي من الغرفة وإخفاء الأكونت تماماً من المايكات
 async function leaveRoom() {
     if (myCurrentSeatIndex !== null) {
         roomSeats[myCurrentSeatIndex] = null;
-        updateSeatUI(myCurrentSeatIndex, null, false);
         myCurrentSeatIndex = null;
     }
     if (localAudioTrack) { localAudioTrack.close(); localAudioTrack = null; }
@@ -525,7 +525,7 @@ async function leaveRoom() {
 if (optLeave) optLeave.addEventListener('click', leaveRoom);
 if (miniPlayerClose) miniPlayerClose.addEventListener('click', leaveRoom);
 
-// أزرار الإعدادات والتنقل
+// الإعدادات والتسجيل
 if (settingsAccountCenter) {
     settingsAccountCenter.addEventListener('click', () => {
         if (currentUser && userData) {
