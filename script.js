@@ -1,9 +1,8 @@
-/* REAL VOICE — الملف الكامل المتكامل (الواجهة + Firebase Realtime + Agora RTC) */
+/* REAL VOICE — الملف الكامل المتكامل (الواجهة + Firebase Realtime + Agora RTC + مشغل موسيقى مشترك + ميزات إضافية) */
 (function (global) {
   "use strict";
 
   /* ========= 1. الإعدادات المركزية ========= */
-  // ضع مفاتيح مشروعك من (Firebase Console > Project settings > Your apps)
   var FIREBASE_CONFIG = {
     apiKey: "AIzaSyDyx4MBxvRM0L5FrrjVOfVePlKRSxGpMg4",
     authDomain: "real-voice-aec71.firebaseapp.com",
@@ -12,7 +11,6 @@
     appId: "1:1051527775983:web:ae3794c162184fd56b7d1a"
   };
 
-  // رابط سيرفر التوكن الفعال على Railway
   var TOKEN_URL = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";
 
   var CONFIG = {
@@ -45,6 +43,75 @@
     { id: "lvl3", t: "⭐ وصلت المستوى 3" }
   ];
 
+  // مقترحات أغاني MP3 مجانية للمشغل المشترك
+  var DEFAULT_TRACKS = [
+    {
+      id: "t1",
+      title: "Night Chill Beat",
+      artist: "SoundHelix",
+      cover: "🎵",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+    },
+    {
+      id: "t2",
+      title: "Acoustic Vibes",
+      artist: "SoundHelix",
+      cover: "🎸",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+    },
+    {
+      id: "t3",
+      title: "Midnight Lounge",
+      artist: "SoundHelix",
+      cover: "🌙",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+    },
+    {
+      id: "t4",
+      title: "Energy Pulse",
+      artist: "SoundHelix",
+      cover: "⚡",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"
+    }
+  ];
+
+  // 12 ملصق جاهز للشات
+  var STICKERS = [
+    { id: "s1", e: "🥳", n: "حفلة" },
+    { id: "s2", e: "🎤", n: "غناء" },
+    { id: "s3", e: "👑", n: "ملكي" },
+    { id: "s4", e: "🔥", n: "نار" },
+    { id: "s5", e: "💖", n: "حب" },
+    { id: "s6", e: "😂", n: "ضحك" },
+    { id: "s7", e: "🎮", n: "جيمر" },
+    { id: "s8", e: "☕", n: "قهوة" },
+    { id: "s9", e: "🌙", n: "سهرة" },
+    { id: "s10", e: "👏", n: "تصفيق" },
+    { id: "s11", e: "💎", n: "ألماس" },
+    { id: "s12", e: "🚀", n: "انطلاق" }
+  ];
+
+  var ROOM_THEMES = [
+    { id: "default", name: "بنفسجي ليلي", bg: "linear-gradient(175deg, #170e2e, #090612 68%)", frame: "linear-gradient(135deg, #f59e0b, #ec4899)" },
+    { id: "ocean", name: "أزرق المحيط", bg: "linear-gradient(175deg, #082f49, #061322 70%)", frame: "linear-gradient(135deg, #22d3ee, #3b82f6)" },
+    { id: "rose", name: "وردي نيون", bg: "linear-gradient(175deg, #4a0d2e, #120610 70%)", frame: "linear-gradient(135deg, #f472b6, #a855f7)" },
+    { id: "emerald", name: "زمردي VIP", bg: "linear-gradient(175deg, #064e3b, #051410 70%)", frame: "linear-gradient(135deg, #34d399, #eab308)" }
+  ];
+
+  var TRUTH_OR_DARE = [
+    "صراحة: ما أكثر شيء تحبه في غرف الدردشة الصوتية؟",
+    "صراحة: ما آخر أغنية سمعتها اليوم؟",
+    "تحدٍ: غنّي مقطعاً قصيراً لمدة 10 ثوانٍ على المايك!",
+    "تحدٍ: صف يومك في 3 كلمات فقط في الشات!"
+  ];
+
+  var QUIZ_BANK = [
+    { q: "ما هي عاصمة مصر؟", opts: ["الإسكندرية", "القاهرة", "الجيزة", "أسوان"], ans: 1 },
+    { q: "كم عدد كواكب المجموعة الشمسية؟", opts: ["7", "8", "9", "10"], ans: 1 },
+    { q: "ما هو أسرع حيوان بري؟", opts: ["الفهد", "الأسد", "الحصان", "الذئب"], ans: 0 },
+    { q: "في أي قارة تقع البرازيل؟", opts: ["أوروبا", "أفريقيا", "أمريكا الجنوبية", "آسيا"], ans: 2 }
+  ];
+
   /* ========= 2. أدوات مساعدة ========= */
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -54,8 +121,13 @@
   }
   function initials(n) { n = String(n || "").trim(); return n ? n.slice(0, 2) : "RV"; }
   function now() { return Date.now(); }
+  function serverTs() {
+    return (global.firebase && firebase.database && firebase.database.ServerValue)
+      ? firebase.database.ServerValue.TIMESTAMP
+      : Date.now();
+  }
   function timeStr(t) {
-    var d = new Date(t), h = d.getHours(), m = d.getMinutes();
+    var d = new Date(t || Date.now()), h = d.getHours(), m = d.getMinutes();
     return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
   }
   function uid() { return "u" + Math.random().toString(36).slice(2, 9); }
@@ -113,16 +185,26 @@
     registry[scope] = [];
   }
 
-  /* ========= 4. محرك الصوت الحقيقي (Agora RTC) ========= */
+  /* ========= 4. محرك الصوت الحقيقي (Agora RTC) + المشغل الموسيقي المشترك ========= */
   var voice = {
     client: null,
     localTrack: null,
     channel: null,
-    role: null,      // "publisher" | "subscriber"
+    role: null,
     uidNum: 0,
     joining: false,
     leaving: false,
-    speakingNums: {} // { [agoraUid]: true }
+    speakingNums: {}
+  };
+
+  var musicState = {
+    data: null,
+    queue: [],
+    bufferTrack: null,
+    fallbackAudio: null,
+    sleepTimerId: null,
+    lastTrackKey: "",
+    roomXpEarned: 0
   };
 
   function setupAgoraClient() {
@@ -147,11 +229,13 @@
       }
       if (user) delete voice.speakingNums[user.uid];
       updateSpeakingIndicators();
+      applyMusicDucking();
     });
 
     voice.client.on("user-left", function (user) {
       if (user) delete voice.speakingNums[user.uid];
       updateSpeakingIndicators();
+      applyMusicDucking();
     });
 
     voice.client.on("volume-indicator", function (volumes) {
@@ -164,6 +248,7 @@
       });
       voice.speakingNums = active;
       updateSpeakingIndicators();
+      applyMusicDucking();
     });
   }
 
@@ -194,6 +279,384 @@
       } catch (e) { /* */ }
       voice.localTrack = null;
     }
+  }
+
+  async function stopMusicBroadcast() {
+    if (musicState.bufferTrack) {
+      try {
+        musicState.bufferTrack.stopProcessAudioBuffer();
+      } catch (e) { /* */ }
+      try {
+        if (voice.client && voice.client.connectionState === "CONNECTED") {
+          await voice.client.unpublish([musicState.bufferTrack]);
+        }
+      } catch (e) { /* */ }
+      try {
+        musicState.bufferTrack.stop();
+        musicState.bufferTrack.close();
+      } catch (e) { /* */ }
+      musicState.bufferTrack = null;
+    }
+    if (musicState.fallbackAudio) {
+      try {
+        musicState.fallbackAudio.pause();
+        musicState.fallbackAudio.src = "";
+      } catch (e) { /* */ }
+      musicState.fallbackAudio = null;
+    }
+  }
+
+  function applyMusicDucking() {
+    var m = musicState.data;
+    if (!m) return;
+    var baseVol = typeof m.volume === "number" ? m.volume : 0.7;
+    var someoneSpeaking = Object.keys(voice.speakingNums || {}).length > 0;
+    var targetVol = (m.duck !== false && someoneSpeaking) ? Math.max(0.12, baseVol * 0.25) : baseVol;
+
+    if (musicState.bufferTrack && typeof musicState.bufferTrack.setVolume === "function") {
+      try { musicState.bufferTrack.setVolume(Math.round(targetVol * 100)); } catch (e) { /* */ }
+    }
+    if (musicState.fallbackAudio) {
+      try { musicState.fallbackAudio.volume = Math.min(1, Math.max(0, targetVol)); } catch (e) { /* */ }
+    }
+  }
+
+  function playFallbackAudio(m) {
+    try {
+      if (!musicState.fallbackAudio) {
+        musicState.fallbackAudio = new Audio();
+        musicState.fallbackAudio.crossOrigin = "anonymous";
+      }
+      var audio = musicState.fallbackAudio;
+      if (audio.src !== m.url) audio.src = m.url;
+      applyMusicDucking();
+
+      if (m.paused) {
+        audio.pause();
+        return;
+      }
+
+      var started = typeof m.startedAt === "number" ? m.startedAt : Date.now();
+      var expectedSec = Math.max(0, (Date.now() - started) / 1000);
+      if (Math.abs((audio.currentTime || 0) - expectedSec) > 1.5) {
+        audio.currentTime = expectedSec;
+      }
+      audio.play().catch(function () { /* تتطلب تفاعل المستخدم */ });
+    } catch (e) {
+      console.warn("Fallback audio error:", e);
+    }
+  }
+
+  async function syncDjMusicBroadcast(m) {
+    if (!UI.roomId || !m || !m.url || m.djUid !== S.me.id || m.paused) {
+      await stopMusicBroadcast();
+      return;
+    }
+
+    var needPublish = voice.role !== "publisher";
+    if (needPublish) {
+      await joinVoiceChannel(UI.roomId, "publisher");
+    }
+
+    if (global.AgoraRTC && typeof AgoraRTC.createBufferSourceAudioTrack === "function" && voice.client && voice.client.connectionState === "CONNECTED") {
+      try {
+        await stopMusicBroadcast();
+        var track = await AgoraRTC.createBufferSourceAudioTrack({ source: m.url });
+        musicState.bufferTrack = track;
+        applyMusicDucking();
+        await voice.client.publish([track]);
+        track.startProcessAudioBuffer();
+        return;
+      } catch (err) {
+        console.warn("BufferSource track failed, using fallback <audio>:", err);
+        toast("تعذر بث الموسيقى عبر Agora، تم التفعيل المحلي");
+      }
+    }
+    playFallbackAudio(m);
+  }
+
+  function renderMusicMini() {
+    var mini = $("music-mini");
+    if (!mini) return;
+    var m = musicState.data;
+    if (!m || !m.url) {
+      mini.classList.add("hidden");
+      return;
+    }
+    mini.classList.remove("hidden");
+    var statusIcon = m.paused ? "⏸️" : "🎵";
+    $("music-mini-title").textContent = statusIcon + " " + (m.title || "أغنية") + " — " + (m.artist || "غير معروف");
+  }
+
+  function canControlMusic(room) {
+    if (!room) return false;
+    var r = role(room, S.me.id);
+    return r === "owner" || r === "mod";
+  }
+
+  async function startTrackNow(room, trackObj) {
+    if (!room || !canControlMusic(room)) { toast("للمالك أو المشرف فقط"); return; }
+    var payload = {
+      djUid: S.me.id,
+      trackId: trackObj.id || uid(),
+      url: trackObj.url,
+      title: clean(trackObj.title || "أغنية"),
+      artist: clean(trackObj.artist || "REAL VOICE"),
+      cover: trackObj.cover || "🎵",
+      startedAt: serverTs(),
+      paused: false,
+      pausedAt: 0,
+      volume: (musicState.data && typeof musicState.data.volume === "number") ? musicState.data.volume : 0.7,
+      duck: musicState.data ? musicState.data.duck !== false : true,
+      skipVotes: {}
+    };
+    if (cloud.on && cloud.db) {
+      await cloud.db.ref("rooms/" + room.id + "/music").set(payload);
+    } else {
+      musicState.data = Object.assign({}, payload, { startedAt: Date.now() });
+      renderMusicMini();
+      await syncDjMusicBroadcast(musicState.data);
+    }
+    pushRoomMsg(room, { sys: true, text: "🎵 بدأ تشغيل: " + payload.title + " — " + payload.artist, t: now() });
+  }
+
+  async function togglePlayPauseMusic(room) {
+    if (!room || !musicState.data || !canControlMusic(room)) { toast("للمالك أو المشرف فقط"); return; }
+    var nextPaused = !musicState.data.paused;
+    var upd = {
+      paused: nextPaused,
+      pausedAt: nextPaused ? Date.now() : 0,
+      startedAt: nextPaused ? musicState.data.startedAt : serverTs()
+    };
+    if (cloud.on && cloud.db) {
+      await cloud.db.ref("rooms/" + room.id + "/music").update(upd);
+    } else {
+      musicState.data = Object.assign({}, musicState.data, upd, { startedAt: Date.now() });
+      renderMusicMini();
+      await syncDjMusicBroadcast(musicState.data);
+    }
+  }
+
+  async function skipMusicTrack(room, force) {
+    if (!room || !musicState.data) return;
+    if (!force && !canControlMusic(room)) {
+      // تصويت تخطي (≥ 50% من الموجودين في الغرفة)
+      var votes = Object.assign({}, musicState.data.skipVotes || {});
+      votes[S.me.id] = true;
+      var needed = Math.max(1, Math.ceil(count(room) * 0.5));
+      var currentVotes = Object.keys(votes).length;
+      if (currentVotes < needed) {
+        if (cloud.on && cloud.db) await cloud.db.ref("rooms/" + room.id + "/music/skipVotes").set(votes);
+        toast("تم تسجيل صوتك للتخطي (" + currentVotes + "/" + needed + ")");
+        return;
+      }
+    }
+
+    var nextTrack = musicState.queue && musicState.queue.length ? musicState.queue[0] : null;
+    if (nextTrack) {
+      if (cloud.on && cloud.db && nextTrack._key) {
+        await cloud.db.ref("rooms/" + room.id + "/queue/" + nextTrack._key).remove();
+      } else {
+        musicState.queue.shift();
+      }
+      await startTrackNow(room, nextTrack);
+    } else {
+      if (cloud.on && cloud.db) {
+        await cloud.db.ref("rooms/" + room.id + "/music").set({
+          djUid: musicState.data.djUid || null,
+          trackId: null, url: "", title: "", artist: "", cover: "🎵",
+          startedAt: serverTs(), paused: true, pausedAt: 0,
+          volume: musicState.data.volume || 0.7, duck: musicState.data.duck !== false, skipVotes: {}
+        });
+      } else {
+        musicState.data = null;
+        await stopMusicBroadcast();
+        renderMusicMini();
+      }
+      toast("انتهى طابور الأغاني");
+    }
+  }
+
+  async function addTrackToQueue(room, trackObj) {
+    if (!room) return;
+    var item = {
+      id: trackObj.id || uid(),
+      url: trackObj.url.trim(),
+      title: clean(trackObj.title || "أغنية مخصصة"),
+      artist: clean(trackObj.artist || S.me.name),
+      cover: trackObj.cover || "🎵",
+      addedBy: S.me.id,
+      t: serverTs()
+    };
+    if (!item.url) { toast("أدخل رابط MP3 صحيح"); return; }
+
+    if (cloud.on && cloud.db) {
+      await cloud.db.ref("rooms/" + room.id + "/queue").push(item);
+    } else {
+      musicState.queue.push(Object.assign({}, item, { _key: uid(), t: Date.now() }));
+    }
+    toast("تمت إضافة الأغنية للطابور 🎶");
+
+    // إذا لم يكن هناك أغنية نشطة وكان المستخدم يملك صلاحية التحكم، ابدأها فوراً
+    if ((!musicState.data || !musicState.data.url) && canControlMusic(room)) {
+      var first = musicState.queue[0] || item;
+      if (cloud.on && cloud.db) {
+        var snap = await cloud.db.ref("rooms/" + room.id + "/queue").limitToFirst(1).once("value");
+        snap.forEach(function (ch) { ch.ref.remove(); });
+      } else {
+        musicState.queue.shift();
+      }
+      await startTrackNow(room, first);
+    }
+  }
+
+  function openMusicSheet() {
+    var room = getRoom(UI.roomId);
+    if (!room) return;
+    var isStaff = canControlMusic(room);
+    var m = musicState.data || {};
+    var isDj = m.djUid === S.me.id;
+    var djUser = m.djUid ? getUser(m.djUid).name : "لا يوجد";
+    var duckChecked = m.duck !== false ? "checked" : "";
+
+    var sugHtml = DEFAULT_TRACKS.map(function (t) {
+      return '<button class="btn sm ghost" data-sug="' + t.id + '" type="button" style="margin:2px">' + t.cover + ' ' + esc(t.title) + '</button>';
+    }).join("");
+
+    var qHtml = musicState.queue.length
+      ? musicState.queue.map(function (q, idx) {
+          return '<div class="row glass" style="margin-bottom:6px;padding:8px">' +
+            '<div style="font-size:18px">' + (q.cover || "🎵") + '</div>' +
+            '<div class="info"><div class="name">' + esc(q.title) + '</div><div class="meta">' + esc(q.artist) + '</div></div>' +
+            '<button class="btn sm ghost" data-delq="' + (q._key || idx) + '" type="button">🗑</button></div>';
+        }).join("")
+      : '<div class="small" style="padding:8px 0">الطابور فارغ حالياً</div>';
+
+    var html = '<h3>🎵 مشغل الموسيقى المشترك</h3>' +
+      '<div class="small" style="margin-bottom:8px">الـ DJ الحالي: <b>' + esc(djUser) + '</b> ' + (isDj ? '(أنت)' : '') + '</div>' +
+      '<label>رابط أغنية MP3 مباشر</label>' +
+      '<input id="ms-url" type="url" placeholder="https://example.com/song.mp3" />' +
+      '<div style="display:flex;gap:6px;margin-top:6px">' +
+      '<input id="ms-title" type="text" maxlength="40" placeholder="اسم الأغنية" />' +
+      '<input id="ms-artist" type="text" maxlength="40" placeholder="المغني" /></div>' +
+      '<button class="btn block" id="ms-add" type="button">➕ أضف للطابور</button>' +
+      '<div style="margin-top:8px"><div class="small" style="margin-bottom:4px">اقتراحات سريعة:</div><div>' + sugHtml + '</div></div>' +
+      '<h4 style="margin:12px 0 6px;font-size:13px">قائمة الطابور (' + musicState.queue.length + ')</h4>' +
+      '<div id="ms-queue-box">' + qHtml + '</div>' +
+      '<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">' +
+      (isStaff ? '<button class="btn sm" id="ms-dj" type="button">' + (isDj ? '🎧 أنت DJ الآن' : '🎛️ أنا DJ') + '</button>' : '') +
+      (isStaff ? '<button class="btn sm ghost" id="ms-toggle" type="button">⏯ تشغيل/إيقاف</button>' : '') +
+      '<button class="btn sm ghost" id="ms-skip" type="button">⏭ تخطي / تصويت</button>' +
+      (isStaff ? '<button class="btn sm ghost" id="ms-clear" type="button">مسح الطابور</button>' : '') +
+      '</div>' +
+      '<div class="switchrow"><span>خفض الموسيقى تلقائياً عند الكلام (Ducking)</span><input id="ms-duck" type="checkbox" ' + duckChecked + ' style="width:auto" /></div>' +
+      '<label>مؤقت النوم</label>' +
+      '<div style="display:flex;gap:6px">' +
+      '<button class="btn sm ghost" data-sleep="15" type="button">15 د</button>' +
+      '<button class="btn sm ghost" data-sleep="30" type="button">30 د</button>' +
+      '<button class="btn sm ghost" data-sleep="60" type="button">60 د</button>' +
+      '<button class="btn sm ghost" data-sleep="0" type="button">إلغاء</button></div>';
+
+    openSheet(html);
+    $("sheet").onclick = null;
+
+    $("ms-add").onclick = async function () {
+      var u = $("ms-url").value.trim();
+      var ti = $("ms-title").value.trim() || "أغنية MP3";
+      var ar = $("ms-artist").value.trim() || "مباشر";
+      if (!u) { toast("أدخل رابط الأغنية أولاً"); return; }
+      await addTrackToQueue(room, { url: u, title: ti, artist: ar, cover: "🎵" });
+      openMusicSheet();
+    };
+
+    $("sheet").querySelectorAll("[data-sug]").forEach(function (btn) {
+      btn.onclick = async function () {
+        var found = DEFAULT_TRACKS.filter(function (x) { return x.id === btn.getAttribute("data-sug"); })[0];
+        if (found) {
+          await addTrackToQueue(room, found);
+          openMusicSheet();
+        }
+      };
+    });
+
+    $("sheet").querySelectorAll("[data-delq]").forEach(function (btn) {
+      btn.onclick = async function () {
+        var key = btn.getAttribute("data-delq");
+        if (cloud.on && cloud.db) {
+          await cloud.db.ref("rooms/" + room.id + "/queue/" + key).remove();
+        } else {
+          musicState.queue = musicState.queue.filter(function (x) { return String(x._key) !== String(key); });
+        }
+        openMusicSheet();
+      };
+    });
+
+    if ($("ms-dj")) {
+      $("ms-dj").onclick = async function () {
+        if (!isStaff) { toast("للمالك أو المشرف فقط"); return; }
+        if (cloud.on && cloud.db) {
+          await cloud.db.ref("rooms/" + room.id + "/music").update({ djUid: S.me.id, startedAt: serverTs(), paused: false });
+        } else {
+          musicState.data = Object.assign({}, musicState.data || {}, { djUid: S.me.id, startedAt: Date.now(), paused: false });
+        }
+        toast("أنت الآن الـ DJ في الغرفة 🎛️");
+        await syncDjMusicBroadcast(musicState.data);
+        openMusicSheet();
+      };
+    }
+
+    if ($("ms-toggle")) {
+      $("ms-toggle").onclick = async function () {
+        await togglePlayPauseMusic(room);
+        openMusicSheet();
+      };
+    }
+
+    $("ms-skip").onclick = async function () {
+      await skipMusicTrack(room, false);
+      openMusicSheet();
+    };
+
+    if ($("ms-clear")) {
+      $("ms-clear").onclick = async function () {
+        if (cloud.on && cloud.db) await cloud.db.ref("rooms/" + room.id + "/queue").remove();
+        musicState.queue = [];
+        toast("تم مسح الطابور");
+        openMusicSheet();
+      };
+    }
+
+    $("ms-duck").onchange = async function () {
+      var val = !!$("ms-duck").checked;
+      if (cloud.on && cloud.db && musicState.data) {
+        await cloud.db.ref("rooms/" + room.id + "/music/duck").set(val);
+      } else if (musicState.data) {
+        musicState.data.duck = val;
+      }
+      applyMusicDucking();
+    };
+
+    $("sheet").querySelectorAll("[data-sleep]").forEach(function (btn) {
+      btn.onclick = function () {
+        var mins = Number(btn.getAttribute("data-sleep"));
+        if (musicState.sleepTimerId) {
+          clearTimeout(musicState.sleepTimerId);
+          musicState.sleepTimerId = null;
+        }
+        if (!mins) {
+          toast("تم إلغاء مؤقت النوم");
+          return;
+        }
+        musicState.sleepTimerId = trackTimer("room", setTimeout(async function () {
+          if (musicState.data && canControlMusic(room)) {
+            await togglePlayPauseMusic(room);
+          }
+          await stopMusicBroadcast();
+          toast("انتهى مؤقت النوم 🌙");
+        }, mins * 60 * 1000), "timeout");
+        toast("تم ضبط مؤقت النوم على " + mins + " دقيقة");
+      };
+    });
   }
 
   async function joinVoiceChannel(channelName, desiredRole) {
@@ -285,6 +748,7 @@
     if (voice.leaving) return;
     voice.leaving = true;
     try {
+      await stopMusicBroadcast();
       await stopLocalMic();
       if (voice.client && voice.client.connectionState !== "DISCONNECTED") {
         await voice.client.leave();
@@ -319,11 +783,12 @@
   }
 
   /* ========= 5. الحالة والبيانات (السحابية + المحلية) ========= */
-  var cloud = { on: false, db: null, auth: null, fbUser: null, usersMap: {}, roomsMap: {}, roomMsgs: {}, seenFly: {} };
+  var cloud = { on: false, db: null, auth: null, fbUser: null, usersMap: {}, roomsMap: {}, roomMsgs: {}, seenFly: {}, seenReact: {} };
   var S = null;
   var UI = {
     page: "home", filter: "all", rfilter: "mine", ftab: "friends", query: "", findQ: "",
-    roomId: null, dmId: null, msgColor: "", micMuted: false, giftSel: "heart", giftTarget: "room"
+    roomId: null, dmId: null, msgColor: "", micMuted: false, giftSel: "heart", giftTarget: "room",
+    micQueue: {}, theme: null, quiz: null
   };
 
   function configReady() {
@@ -383,7 +848,9 @@
         id: "RV-" + randNum, num: randNum, name: "مستخدم جديد",
         bio: "مرحباً! أنا جديد في REAL VOICE 👋", coins: CONFIG.startCoins, xp: 0, vip: 0,
         followers: 0, following: 0, visits: 0, joined: now(), country: "🌍 غير محدد",
-        gifts: 0, sent: 0, msgCount: 0, ach: {}
+        gifts: 0, sent: 0, msgCount: 0, ach: {},
+        daily: 0, invites: 0,
+        tasks: { dayKey: new Date().toDateString(), msg: false, friend: false, mic: false, room: false }
       },
       users: demoUsers(),
       rooms: demoRooms(),
@@ -393,6 +860,24 @@
     };
   }
 
+  function ensureDailyTasks() {
+    var today = new Date().toDateString();
+    if (!S.me.tasks || S.me.tasks.dayKey !== today) {
+      S.me.tasks = { dayKey: today, msg: false, friend: false, mic: false, room: false };
+    }
+  }
+
+  function completeTask(key, rewardCoins) {
+    ensureDailyTasks();
+    if (!S.me.tasks[key]) {
+      S.me.tasks[key] = true;
+      S.me.coins += (rewardCoins || 25);
+      addXP(10);
+      toast("مهمة مكتملة! +" + (rewardCoins || 25) + " عملة 🪙");
+      save();
+    }
+  }
+
   function loadLocal() {
     try {
       var raw = localStorage.getItem(CONFIG.storageKey);
@@ -400,6 +885,7 @@
         S = JSON.parse(raw);
         if (S && S.me && S.rooms) {
           if (!S.me.num) S.me.num = hashNum(S.me.id);
+          ensureDailyTasks();
           return;
         }
       }
@@ -420,6 +906,7 @@
       coins: S.me.coins, xp: S.me.xp, vip: S.me.vip,
       followers: S.me.followers, visits: S.me.visits, country: S.me.country,
       gifts: S.me.gifts, sent: S.me.sent, msgCount: S.me.msgCount, ach: S.me.ach,
+      daily: S.me.daily || 0, tasks: S.me.tasks || {}, invites: S.me.invites || 0,
       level: level()
     }).catch(function () { /* */ });
   }
@@ -452,6 +939,21 @@
     };
   }
 
+  function requestBrowserNotifPermission() {
+    if ("Notification" in global && Notification.permission === "default") {
+      Notification.requestPermission().catch(function () { /* */ });
+    }
+  }
+
+  function triggerBrowserNotif(title, body) {
+    if (!S || !S.settings || !S.settings.notif) return;
+    if ("Notification" in global && Notification.permission === "granted") {
+      try {
+        new Notification(title, { body: body });
+      } catch (e) { /* */ }
+    }
+  }
+
   function startCloudSync() {
     if (!cloud.on) return Promise.resolve();
     return new Promise(function (resolve) {
@@ -474,6 +976,15 @@
             S.me.num = myNum;
             S.me.joined = now();
             uRef.set(Object.assign({}, S.me, { online: true, level: level() }));
+          }
+          ensureDailyTasks();
+
+          // تتبع الدعوة عبر ?ref={uid}
+          var params = new URLSearchParams(location.search);
+          var refUid = params.get("ref");
+          if (refUid && refUid !== S.me.id && !S.me._invitedBy) {
+            S.me._invitedBy = refUid;
+            cloud.db.ref("users/" + refUid + "/invites").transaction(function (c) { return (c || 0) + 1; });
           }
 
           trackListener("app", cloud.db.ref(".info/connected"), "value", function (cs) {
@@ -590,8 +1101,11 @@
   function addNotif(icon, text, targetUserId) {
     var uidTarget = targetUserId || S.me.id;
     var item = { id: uid(), icon: icon, text: text, t: now(), read: false };
+    requestBrowserNotifPermission();
+    triggerBrowserNotif("REAL VOICE " + icon, text);
+
     if (cloud.on && cloud.db) {
-      cloud.db.ref("notifications/" + uidTarget).push({ icon: icon, text: text, t: now(), read: false });
+      cloud.db.ref("notifications/" + uidTarget).push({ icon: icon, text: text, t: serverTs(), read: false });
       return;
     }
     if (uidTarget === S.me.id) {
@@ -601,10 +1115,11 @@
   }
 
   function pushRoomMsg(room, msgObj) {
+    var payload = Object.assign({}, msgObj, { t: serverTs() });
     if (cloud.on && cloud.db) {
-      cloud.db.ref("roomMessages/" + room.id).push(msgObj);
+      cloud.db.ref("roomMessages/" + room.id).push(payload);
     } else {
-      room.msgs.push(msgObj);
+      room.msgs.push(Object.assign({}, msgObj, { t: now() }));
       if (room.msgs.length > 150) room.msgs.shift();
       renderRoomChat();
     }
@@ -638,6 +1153,13 @@
     return esc(u.name) + v;
   }
 
+  function updateAppBadge(unreadCount) {
+    if (navigator && typeof navigator.setAppBadge === "function") {
+      if (unreadCount > 0) navigator.setAppBadge(unreadCount).catch(function () { /* */ });
+      else navigator.clearAppBadge().catch(function () { /* */ });
+    }
+  }
+
   /* ========= 7. التنقل ورسم الصفحات ========= */
   function go(page) {
     UI.page = page;
@@ -657,6 +1179,7 @@
     b.textContent = unread; b.classList.toggle("hidden", unread === 0);
     var mu = 0; for (var k in S.unread) mu += S.unread[k] || 0;
     var mb = $("msg-badge"); mb.textContent = mu; mb.classList.toggle("hidden", mu === 0);
+    updateAppBadge(mu);
     var fb = $("friends-badge"); fb.textContent = S.requests.length; fb.classList.toggle("hidden", S.requests.length === 0);
   }
 
@@ -756,15 +1279,17 @@
     ids.sort(function (a, b) { return S.dms[b][S.dms[b].length - 1].t - S.dms[a][S.dms[a].length - 1].t; });
     $("dm-list").innerHTML = ids.length ? ids.map(function (id) {
       var u = getUser(id), last = S.dms[id][S.dms[id].length - 1], un = S.unread[id] || 0;
-      return '<div class="row glass" data-dm="' + id + '">' + avatarHTML(u) + '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">' + (last.from === S.me.id ? "أنت: " : "") + esc(last.text) + '</div></div><div style="text-align:left"><div class="small">' + timeStr(last.t) + "</div>" + (un ? '<span class="badge" style="position:static;display:inline-flex;margin-top:4px">' + un + "</span>" : "") + "</div></div>";
+      var preview = last.audio ? "🎙️ رسالة صوتية" : esc(last.text || "");
+      return '<div class="row glass" data-dm="' + id + '">' + avatarHTML(u) + '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">' + (last.from === S.me.id ? "أنت: " : "") + preview + '</div></div><div style="text-align:left"><div class="small">' + timeStr(last.t) + "</div>" + (un ? '<span class="badge" style="position:static;display:inline-flex;margin-top:4px">' + un + "</span>" : "") + "</div></div>";
     }).join("") : '<div class="empty">لا توجد محادثات بعد.<br>افتح ملف صديق واضغط "رسالة".</div>';
   }
 
   function renderProfile() {
+    ensureDailyTasks();
     var m = S.me, lv = level(), into = m.xp % CONFIG.xpPerLevel;
     $("pf-avatar").textContent = initials(m.name);
     $("pf-name").textContent = m.name;
-    $("pf-id").textContent = "ID: " + m.id;
+    $("pf-id").textContent = "ID: " + m.id + " • الدعوات: " + (m.invites || 0);
     $("pf-badges").innerHTML = '<span class="tag">المستوى ' + lv + "</span>" + (m.vip > 0 ? '<span class="tag vip">👑 VIP ' + m.vip + "</span>" : "");
     $("pf-level").textContent = lv;
     $("pf-xp").textContent = into + " / " + CONFIG.xpPerLevel + " XP";
@@ -778,6 +1303,25 @@
     $("pf-bio").textContent = m.bio;
     $("pf-meta").textContent = m.country + " • انضم في " + new Date(m.joined).toLocaleDateString("ar");
     $("pf-ach").innerHTML = ACHIEVEMENTS.map(function (a) { return '<span class="' + (m.ach[a.id] ? "" : "off") + '">' + a.t + "</span>"; }).join("");
+
+    var canDaily = !m.daily || (Date.now() - Number(m.daily) >= 24 * 60 * 60 * 1000);
+    var dailyBtn = $("pf-daily");
+    if (dailyBtn) {
+      dailyBtn.disabled = !canDaily;
+      dailyBtn.style.opacity = canDaily ? "1" : "0.55";
+      dailyBtn.textContent = canDaily ? "🎁 استلم 100 عملة اليوم" : "✅ تم استلام مكافأة اليوم";
+    }
+
+    var tasksList = [
+      { key: "msg", label: "💬 أرسل رسالة في غرفة" },
+      { key: "friend", label: "👥 أضف صديقاً أو أرسل طلباً" },
+      { key: "mic", label: "🎤 اصعد إلى المايك" },
+      { key: "room", label: "🚪 ادخل غرفة صوتية" }
+    ];
+    $("pf-tasks").innerHTML = tasksList.map(function (tk) {
+      var done = !!(m.tasks && m.tasks[tk.key]);
+      return '<div class="task-item"><span>' + tk.label + '</span><span>' + (done ? "✅ مكتملة (+25 🪙)" : "⏳ 25 🪙") + "</span></div>";
+    }).join("");
   }
 
   function renderAll() {
@@ -870,7 +1414,7 @@
         cloud.db.ref("rooms/" + roomId).set({
           name: room.name, desc: room.desc, cat: room.cat, owner: room.owner,
           seatCount: n, pass: room.pass, priv: room.priv, locked: false,
-          pinned: "", created: room.created, color: room.color, icon: room.icon
+          pinned: "", created: serverTs(), color: room.color, icon: room.icon
         });
       } else {
         S.rooms.unshift(room);
@@ -889,6 +1433,33 @@
     fly.innerHTML = emoji + "<small>" + esc(senderName) + " ➜ " + esc(targetName) + "</small>";
     $("app").appendChild(fly);
     setTimeout(function () { if (fly.parentNode) fly.parentNode.removeChild(fly); }, 2500);
+  }
+
+  function applyRoomTheme(theme) {
+    var rv = $("room-view");
+    if (!rv) return;
+    var t = theme || ROOM_THEMES[0];
+    UI.theme = t;
+    rv.style.background = t.bg || ROOM_THEMES[0].bg;
+    document.documentElement.style.setProperty("--acc2", t.accent || "#ec4899");
+  }
+
+  function renderQuizBox() {
+    var box = $("quiz-box");
+    if (!box) return;
+    var q = UI.quiz;
+    if (!q || !q.active) {
+      box.classList.add("hidden");
+      box.innerHTML = "";
+      return;
+    }
+    box.classList.remove("hidden");
+    var myAns = q.answers && q.answers[S.me.id];
+    var optsHtml = (q.opts || []).map(function (opt, idx) {
+      var mark = myAns === idx ? " ✔" : "";
+      return '<button class="btn sm ghost" data-quizans="' + idx + '" type="button">' + esc(opt) + mark + "</button>";
+    }).join("");
+    box.innerHTML = '<div><b>🧠 سؤال الغرفة:</b> ' + esc(q.q) + '</div><div class="quiz-opts">' + optsHtml + "</div>";
   }
 
   async function enterRoom(id, skipPass) {
@@ -911,6 +1482,14 @@
     }
 
     cleanup("room");
+    musicState.roomXpEarned = 0;
+    musicState.data = null;
+    musicState.queue = [];
+    UI.micQueue = {};
+    UI.quiz = null;
+    applyRoomTheme(ROOM_THEMES[0]);
+    renderMusicMini();
+    renderQuizBox();
 
     if (!inRoom(room, S.me.id)) {
       if (cloud.on && cloud.db) {
@@ -920,10 +1499,11 @@
       } else {
         room.listeners.push(S.me.id);
       }
-      pushRoomMsg(room, { sys: true, text: S.me.name + " دخل الغرفة 👋", t: now() });
+      pushRoomMsg(room, { sys: true, text: S.me.name + " دخل الغرفة 👋" });
       S.me.visits++;
       S.me.ach.first = true;
       addXP(5);
+      completeTask("room", 25);
     }
 
     UI.roomId = id;
@@ -932,7 +1512,17 @@
     $("room-view").classList.add("open");
     renderRoom();
 
+    // XP تلقائي للتواجد: كل 60 ثانية +2 XP (بحد أقصى 10 XP/ساعة)
+    trackTimer("room", setInterval(function () {
+      if (!UI.roomId || musicState.roomXpEarned >= 10) return;
+      musicState.roomXpEarned += 2;
+      addXP(2);
+      save();
+      renderTop();
+    }, 60 * 1000), "interval");
+
     if (cloud.on && cloud.db) {
+      // رسائل الغرفة + الهدايا
       var msgsRef = cloud.db.ref("roomMessages/" + id).limitToLast(100);
       trackListener("room", msgsRef, "value", function (msnap) {
         var mv = msnap.val() || {};
@@ -945,12 +1535,60 @@
         renderRoomChat();
 
         var last = arr[arr.length - 1];
-        if (last && last.giftAnim && !cloud.seenFly[last.key] && (now() - last.t < 8000)) {
+        if (last && last.giftAnim && !cloud.seenFly[last.key] && (now() - (last.t || 0) < 8000)) {
           cloud.seenFly[last.key] = true;
           if (last.from !== S.me.id) {
             showFlyGift(last.giftAnim.e, last.giftAnim.fromName, last.giftAnim.toName);
           }
         }
+      });
+
+      // مزامنة المشغل الموسيقي المشترك
+      trackListener("room", cloud.db.ref("rooms/" + id + "/music"), "value", async function (musSnap) {
+        var prevDj = musicState.data && musicState.data.djUid;
+        var m = musSnap.val() || null;
+        musicState.data = m;
+        renderMusicMini();
+
+        if (prevDj && (!m || !m.djUid) && UI.roomId === id) {
+          pushRoomMsg(room, { sys: true, text: "DJ غادر، اختر DJ جديد" });
+        }
+        await syncDjMusicBroadcast(m);
+      });
+
+      // مزامنة طابور الأغاني
+      trackListener("room", cloud.db.ref("rooms/" + id + "/queue"), "value", function (qSnap) {
+        var qv = qSnap.val() || {};
+        musicState.queue = Object.keys(qv).map(function (k) {
+          return Object.assign({ _key: k }, qv[k]);
+        });
+      });
+
+      // طابور رفع اليد للمايك
+      trackListener("room", cloud.db.ref("rooms/" + id + "/micQueue"), "value", function (mqSnap) {
+        UI.micQueue = mqSnap.val() || {};
+      });
+
+      // التفاعلات الحية (آخر 8 ثوانٍ فقط)
+      trackListener("room", cloud.db.ref("rooms/" + id + "/reactions").limitToLast(20), "child_added", function (rSnap) {
+        var rv = rSnap.val();
+        if (!rv || cloud.seenReact[rSnap.key]) return;
+        cloud.seenReact[rSnap.key] = true;
+        var ts = typeof rv.t === "number" ? rv.t : now();
+        if (now() - ts <= 8000) {
+          showFlyGift(rv.emoji || "👏", rv.fromName || "مستخدم", rv.targetName || "الغرفة");
+        }
+      });
+
+      // تخصيص الغرفة
+      trackListener("room", cloud.db.ref("rooms/" + id + "/theme"), "value", function (thSnap) {
+        applyRoomTheme(thSnap.val());
+      });
+
+      // لعبة الأسئلة
+      trackListener("room", cloud.db.ref("rooms/" + id + "/quiz/current"), "value", function (qzSnap) {
+        UI.quiz = qzSnap.val() || null;
+        renderQuizBox();
       });
     }
 
@@ -969,15 +1607,22 @@
         var ups = {};
         if (si >= 0) ups["rooms/" + rid + "/seats/" + si + "/uid"] = null;
         ups["rooms/" + rid + "/listeners/" + S.me.id] = null;
+        ups["rooms/" + rid + "/micQueue/" + S.me.id] = null;
+        if (musicState.data && musicState.data.djUid === S.me.id) {
+          ups["rooms/" + rid + "/music/djUid"] = null;
+          ups["rooms/" + rid + "/music/paused"] = true;
+        }
         cloud.db.ref().update(ups);
       } else {
         if (si >= 0) room.seats[si].uid = null;
         room.listeners = room.listeners.filter(function (x) { return x !== S.me.id; });
       }
-      pushRoomMsg(room, { sys: true, text: S.me.name + " غادر الغرفة", t: now() });
+      pushRoomMsg(room, { sys: true, text: S.me.name + " غادر الغرفة" });
     }
 
     UI.roomId = null;
+    musicState.data = null;
+    applyRoomTheme(ROOM_THEMES[0]);
     saveLocal();
     $("room-view").classList.remove("open");
 
@@ -1027,6 +1672,8 @@
     mic.classList.toggle("on", !effectiveMuted);
     mic.textContent = effectiveMuted ? "🔇" : "🎤";
 
+    renderMusicMini();
+    renderQuizBox();
     renderRoomChat();
   }
 
@@ -1038,23 +1685,134 @@
     box.innerHTML = room.msgs.map(function (m, i) {
       if (m.sys) return '<div class="msg sys">' + esc(m.text) + "</div>";
       var u = getUser(m.from), me = m.from === S.me.id;
-      return '<div class="msg ' + (me ? "me " : "") + (m.color ? "col-" + m.color : "") + '"' + (me ? ' data-delmsg="' + i + '"' : "") + '><div class="who">' + userNameHTML(u) + "</div>" + esc(m.text) + '<div class="tm">' + timeStr(m.t) + (me ? " • اضغط للحذف" : "") + "</div></div>";
+      var body = "";
+      if (m.sticker) body = '<div style="font-size:38px;line-height:1.1">' + esc(m.sticker) + '</div><div class="small">' + esc(m.text || "") + "</div>";
+      else if (m.img) body = '<img src="' + esc(m.img) + '" alt="صورة" style="max-width:190px;max-height:170px;border-radius:10px;display:block" />';
+      else body = esc(m.text);
+
+      return '<div class="msg ' + (me ? "me " : "") + (m.color ? "col-" + m.color : "") + '"' + (me ? ' data-delmsg="' + i + '"' : "") + '><div class="who">' + userNameHTML(u) + "</div>" + body + '<div class="tm">' + timeStr(m.t) + (me ? " • اضغط للحذف" : "") + "</div></div>";
     }).join("");
     if (stick) box.scrollTop = box.scrollHeight;
   }
 
-  function sendRoomMsg(text) {
+  function sendRoomMsg(text, extra) {
     var room = getRoom(UI.roomId);
     text = String(text || "").trim();
-    if (!room || !text) return;
-    pushRoomMsg(room, { from: S.me.id, text: clean(text), t: now(), color: UI.msgColor });
+    if (!room || (!text && (!extra || (!extra.img && !extra.sticker)))) return;
+    var msg = Object.assign({ from: S.me.id, text: clean(text), color: UI.msgColor }, extra || {});
+    pushRoomMsg(room, msg);
     S.me.msgCount++;
     if (S.me.msgCount >= 5) S.me.ach.chatter = true;
     addXP(2);
+    completeTask("msg", 25);
     save(); renderTop();
   }
 
-  /* ========= 12. إدارة المقاعد والمايك ========= */
+  /* ========= 12. إدارة المقاعد والمايك ورفع اليد والتفاعلات ========= */
+  function sendLiveReaction(emoji, targetName) {
+    var room = getRoom(UI.roomId);
+    if (!room) return;
+    showFlyGift(emoji, S.me.name, targetName || room.name);
+    if (cloud.on && cloud.db) {
+      cloud.db.ref("rooms/" + room.id + "/reactions").push({
+        emoji: emoji,
+        fromUid: S.me.id,
+        fromName: S.me.name,
+        targetName: targetName || room.name,
+        t: serverTs()
+      });
+    }
+  }
+
+  function openSpeakerReactions(u) {
+    var list = ["👏", "❤️", "🔥", "😂"];
+    var html = "<h3>تفاعل مع " + esc(u.name) + '</h3><div style="display:flex;gap:10px;justify-content:center;padding:8px 0">';
+    list.forEach(function (em) {
+      html += '<button class="btn ghost" data-react="' + em + '" style="font-size:24px;padding:8px 14px" type="button">' + em + "</button>";
+    });
+    html += "</div>";
+    openSheet(html);
+    $("sheet").onclick = function (e) {
+      var b = e.target.closest("[data-react]");
+      if (!b) return;
+      closeSheet();
+      sendLiveReaction(b.getAttribute("data-react"), u.name);
+    };
+  }
+
+  function openHandQueueSheet() {
+    var room = getRoom(UI.roomId);
+    if (!room) return;
+    var isStaff = canControlMusic(room);
+    var mySeat = seatIndexOf(room, S.me.id);
+    var alreadyRaised = !!(UI.micQueue && UI.micQueue[S.me.id]);
+    var entries = Object.keys(UI.micQueue || {}).map(function (k) {
+      return { uid: k, item: UI.micQueue[k] };
+    });
+
+    var html = "<h3>✋ طابور طلب المايك</h3>";
+    if (mySeat < 0) {
+      html += '<button class="btn block" id="hq-raise" type="button">' + (alreadyRaised ? "✋ إلغاء رفع اليد" : "✋ ارفع يدك لطلب المايك") + "</button>";
+    }
+
+    if (entries.length) {
+      html += '<div style="margin-top:12px">';
+      entries.forEach(function (ent) {
+        var u = getUser(ent.uid);
+        var allowBtn = isStaff ? '<button class="btn sm" data-allowmic="' + ent.uid + '" type="button">اسمح له بالصعود</button>' : "";
+        html += '<div class="row glass" style="margin-bottom:6px">' + avatarHTML(u, "sm") +
+          '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">بانتظار المايك</div></div>' + allowBtn + "</div>";
+      });
+      html += "</div>";
+    } else {
+      html += '<div class="empty">لا يوجد أحد في طابور المايك</div>';
+    }
+
+    openSheet(html);
+    $("sheet").onclick = null;
+
+    if ($("hq-raise")) {
+      $("hq-raise").onclick = async function () {
+        if (alreadyRaised) {
+          if (cloud.on && cloud.db) await cloud.db.ref("rooms/" + room.id + "/micQueue/" + S.me.id).remove();
+          delete UI.micQueue[S.me.id];
+          toast("تم إنزال اليد");
+        } else {
+          if (cloud.on && cloud.db) {
+            await cloud.db.ref("rooms/" + room.id + "/micQueue/" + S.me.id).set({ uid: S.me.id, name: S.me.name, t: serverTs() });
+          } else {
+            UI.micQueue[S.me.id] = { uid: S.me.id, name: S.me.name, t: now() };
+          }
+          room.mods.concat(room.owner).forEach(function (staffId) {
+            if (staffId && staffId !== S.me.id) addNotif("✋", S.me.name + " يطلب المايك في " + room.name, staffId);
+          });
+          toast("تم رفع يدك ✋");
+        }
+        closeSheet();
+      };
+    }
+
+    $("sheet").querySelectorAll("[data-allowmic]").forEach(function (btn) {
+      btn.onclick = async function () {
+        var targetUid = btn.getAttribute("data-allowmic");
+        var freeIdx = -1;
+        for (var i = 0; i < room.seats.length; i++) {
+          if (!room.seats[i].uid && !room.seats[i].locked) { freeIdx = i; break; }
+        }
+        if (freeIdx < 0) { toast("لا يوجد مقعد فارغ حالياً"); return; }
+        if (cloud.on && cloud.db) {
+          var ups = {};
+          ups["rooms/" + room.id + "/seats/" + freeIdx + "/uid"] = targetUid;
+          ups["rooms/" + room.id + "/listeners/" + targetUid] = null;
+          ups["rooms/" + room.id + "/micQueue/" + targetUid] = null;
+          await cloud.db.ref().update(ups);
+        }
+        toast("تم السماح لـ " + getUser(targetUid).name + " بالصعود 🎤");
+        closeSheet();
+      };
+    });
+  }
+
   function onSeatTap(i) {
     var room = getRoom(UI.roomId);
     if (!room) return;
@@ -1095,6 +1853,7 @@
 
     var u = getUser(s.uid);
     items.push({ label: "👤 عرض الملف الشخصي", fn: function () { openProfile(s.uid); } });
+    items.push({ label: "👏 تفاعل سريع (👏❤️🔥😂)", fn: function () { openSpeakerReactions(u); } });
     if (s.uid !== S.me.id) items.push({ label: "🎁 إرسال هدية", fn: function () { openGifts(s.uid); } });
 
     if (s.uid === S.me.id) {
@@ -1154,7 +1913,7 @@
       });
       if (myRole === "owner") {
         items.push({
-          label: room.mods.indexOf(u.id) >= 0 ? "إزالة الإشراف" : "🛡️ تعيين مشرف",
+          label: room.mods.indexOf(u.id) >= 0 ? "إزالة الإشراف" : "👑 ترقية مشرف",
           fn: function () { toggleMod(room, u.id); }
         });
       }
@@ -1196,6 +1955,7 @@
       }
       var ups = {};
       ups["rooms/" + room.id + "/listeners/" + S.me.id] = null;
+      ups["rooms/" + room.id + "/micQueue/" + S.me.id] = null;
       if (cur >= 0 && cur !== i) ups["rooms/" + room.id + "/seats/" + cur + "/uid"] = null;
       await cloud.db.ref().update(ups);
     } else {
@@ -1206,8 +1966,9 @@
     }
 
     UI.micMuted = false;
-    pushRoomMsg(room, { sys: true, text: S.me.name + " صعد إلى المايك 🎤", t: now() });
+    pushRoomMsg(room, { sys: true, text: S.me.name + " صعد إلى المايك 🎤" });
     addXP(3);
+    completeTask("mic", 25);
     save(); renderRoom(); renderTop();
 
     if (voice.client && voice.client.connectionState === "CONNECTED") {
@@ -1226,7 +1987,7 @@
       else room.mods.push(id);
       saveLocal(); renderRoom();
     }
-    toast(isMod ? "تمت إزالة الإشراف" : "تم تعيين مشرف 🛡️");
+    toast(isMod ? "تمت إزالة الإشراف" : "تمت ترقية مشرف 👑");
   }
 
   function kickUser(room, id, ban) {
@@ -1243,20 +2004,112 @@
       if (ban && room.bans.indexOf(id) < 0) room.bans.push(id);
       saveLocal(); renderRoom();
     }
-    pushRoomMsg(room, { sys: true, text: getUser(id).name + (ban ? " تم حظره من الغرفة" : " تم طرده من الغرفة"), t: now() });
+    pushRoomMsg(room, { sys: true, text: getUser(id).name + (ban ? " تم حظره من الغرفة" : " تم طرده من الغرفة") });
   }
 
-  /* ========= 13. قائمة الغرفة والهدايا ========= */
+  /* ========= 13. قائمة الغرفة والهدايا والألعاب والتخصيص والحظر ========= */
+  function openBannedList(room) {
+    var list = room.bans || [];
+    var html = "<h3>🚫 قائمة المحظورين</h3>";
+    if (!list.length) html += '<div class="empty">لا يوجد محظورون في هذه الغرفة</div>';
+    list.forEach(function (bid) {
+      var u = getUser(bid);
+      html += '<div class="row glass">' + avatarHTML(u, "sm") +
+        '<div class="info"><div class="name">' + esc(u.name) + '</div><div class="meta">' + esc(bid) + '</div></div>' +
+        '<button class="btn sm" data-unbanroom="' + bid + '" type="button">فك الحظر</button></div>';
+    });
+    openSheet(html);
+    $("sheet").onclick = function (e) {
+      var b = e.target.closest("[data-unbanroom]");
+      if (!b) return;
+      var target = b.getAttribute("data-unbanroom");
+      if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/bans/" + target).remove();
+      room.bans = room.bans.filter(function (x) { return x !== target; });
+      toast("تم فك الحظر");
+      openBannedList(room);
+    };
+  }
+
+  function openGamesSheet(room) {
+    var html = "<h3>🎮 ألعاب الغرفة</h3><div class='actlist'>" +
+      '<button data-g="wheel" type="button">🎡 عجلة الحظ (مكافأة 50 - 200 عملة)</button>' +
+      '<button data-g="tod" type="button">🎭 صراحة أم تحدٍ</button>' +
+      '<button data-g="quiz" type="button">🧠 تحدي الأسئلة الجماعي</button>' +
+      '<button data-g="quizstop" class="danger" type="button">⏹️ إيقاف سؤال الأسئلة</button>' +
+      "</div>";
+    openSheet(html);
+    $("sheet").onclick = async function (e) {
+      var btn = e.target.closest("[data-g]");
+      if (!btn) return;
+      var g = btn.getAttribute("data-g");
+      closeSheet();
+      if (g === "wheel") {
+        var prizes = [50, 75, 100, 150, 200];
+        var win = prizes[Math.floor(Math.random() * prizes.length)];
+        S.me.coins += win;
+        save(); renderTop();
+        pushRoomMsg(room, { sys: true, text: "🎡 عجلة الحظ: " + S.me.name + " ربح " + win + " عملة!" });
+        toast("🎡 ربحت " + win + " عملة!");
+      } else if (g === "tod") {
+        var pick = TRUTH_OR_DARE[Math.floor(Math.random() * TRUTH_OR_DARE.length)];
+        pushRoomMsg(room, { sys: true, text: "🎭 " + pick });
+      } else if (g === "quiz") {
+        var qObj = QUIZ_BANK[Math.floor(Math.random() * QUIZ_BANK.length)];
+        var quizPayload = { active: true, q: qObj.q, opts: qObj.opts, ans: qObj.ans, answers: {}, t: serverTs() };
+        if (cloud.on && cloud.db) await cloud.db.ref("rooms/" + room.id + "/quiz/current").set(quizPayload);
+        else { UI.quiz = quizPayload; renderQuizBox(); }
+        pushRoomMsg(room, { sys: true, text: "🧠 بدأ تحدي الأسئلة: " + qObj.q });
+      } else if (g === "quizstop") {
+        if (cloud.on && cloud.db) await cloud.db.ref("rooms/" + room.id + "/quiz/current").set({ active: false });
+        else { UI.quiz = null; renderQuizBox(); }
+      }
+    };
+  }
+
+  function openThemeSheet(room) {
+    var html = "<h3>🎨 تخصيص الغرفة</h3>";
+    ROOM_THEMES.forEach(function (th) {
+      html += '<div class="row glass" style="margin-bottom:6px">' +
+        '<div style="width:36px;height:36px;border-radius:10px;background:' + th.bg + ';border:1px solid var(--border)"></div>' +
+        '<div class="info"><div class="name">' + esc(th.name) + '</div></div>' +
+        '<button class="btn sm" data-th="' + th.id + '" type="button">تطبيق</button></div>';
+    });
+    html += '<label>أو رابط صورة خلفية مخصص (URL)</label><input id="th-url" type="url" placeholder="https://..." /><button class="btn block" id="th-custom" type="button">تطبيق الخلفية</button>';
+    openSheet(html);
+    $("sheet").onclick = null;
+    $("sheet").querySelectorAll("[data-th]").forEach(function (btn) {
+      btn.onclick = async function () {
+        var found = ROOM_THEMES.filter(function (x) { return x.id === btn.getAttribute("data-th"); })[0] || ROOM_THEMES[0];
+        if (cloud.on && cloud.db) await cloud.db.ref("rooms/" + room.id + "/theme").set(found);
+        applyRoomTheme(found);
+        closeSheet();
+        toast("تم تطبيق الثيم 🎨");
+      };
+    });
+    $("th-custom").onclick = async function () {
+      var u = $("th-url").value.trim();
+      if (!u) { toast("أدخل رابط صورة"); return; }
+      var custom = { id: "custom", name: "مخصص", bg: "url('" + u + "') center/cover no-repeat" };
+      if (cloud.on && cloud.db) await cloud.db.ref("rooms/" + room.id + "/theme").set(custom);
+      applyRoomTheme(custom);
+      closeSheet();
+      toast("تم تحديث خلفية الغرفة");
+    };
+  }
+
   function openRoomMenu() {
     var room = getRoom(UI.roomId);
     if (!room) return;
     var r = role(room, S.me.id), items = [];
     items.push({ label: "👥 عرض الموجودين (" + count(room) + ")", fn: function () { showMembers(room); } });
+    items.push({ label: "🎮 ألعاب الغرفة (عجلة / صراحة / أسئلة)", fn: function () { openGamesSheet(room); } });
+    items.push({ label: "🎨 تخصيص الغرفة", fn: function () { openThemeSheet(room); } });
     items.push({ label: "🔗 نسخ رابط الغرفة", fn: copyRoomLink });
     items.push({ label: "💬 مشاركة عبر واتساب", fn: function () { window.open("https://wa.me/?text=" + encodeURIComponent("انضم إلى غرفتي في REAL VOICE: " + room.name + " — " + roomLink(room)), "_blank"); } });
     items.push({ label: "📨 دعوة صديق", fn: function () { inviteFriend(room); } });
 
     if (r === "owner" || r === "mod") {
+      items.push({ label: "🚫 قائمة المحظورين (" + (room.bans ? room.bans.length : 0) + ")", fn: function () { openBannedList(room); } });
       items.push({
         label: "📌 تثبيت رسالة",
         fn: function () {
@@ -1269,6 +2122,30 @@
       });
     }
     if (r === "owner") {
+      items.push({
+        label: "🔇 كتم الكل على المقاعد",
+        fn: function () {
+          room.seats.forEach(function (s, idx) {
+            if (s.uid && s.uid !== S.me.id) {
+              s.muted = true;
+              if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + idx + "/muted").set(true);
+            }
+          });
+          renderRoom();
+          toast("تم كتم الجميع 🔇");
+        }
+      });
+      items.push({
+        label: "🔊 فك الكتم عن الكل",
+        fn: function () {
+          room.seats.forEach(function (s, idx) {
+            s.muted = false;
+            if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + idx + "/muted").set(false);
+          });
+          renderRoom();
+          toast("تم فك الكتم عن الجميع 🔊");
+        }
+      });
       items.push({
         label: "✏️ تغيير اسم الغرفة",
         fn: function () {
@@ -1327,7 +2204,10 @@
     $("pr-ok").onclick = function () { var v = $("pr-in").value.trim(); closeSheet(); cb(v); };
   }
 
-  function roomLink(room) { return location.href.split("#")[0].split("?")[0] + "#room=" + room.id; }
+  function roomLink(room) {
+    return location.href.split("#")[0].split("?")[0] + "?ref=" + encodeURIComponent(S.me.id) + "#room=" + room.id;
+  }
+
   function copyRoomLink() {
     var room = getRoom(UI.roomId);
     if (!room) return;
@@ -1415,7 +2295,6 @@
       sys: true,
       from: S.me.id,
       text: "🎁 " + S.me.name + " أرسل " + gift.e + " " + gift.n + " إلى " + tname,
-      t: now(),
       giftAnim: { e: gift.e, fromName: S.me.name, toName: tname }
     });
 
@@ -1435,7 +2314,7 @@
     toast("تم إرسال الهدية ✅");
   }
 
-  /* ========= 14. الملف الشخصي والأصدقاء والرسائل الخاصة ========= */
+  /* ========= 14. الملف الشخصي والأصدقاء والرسائل الخاصة + الرسائل الصوتية ========= */
   function openProfile(id) {
     if (id === S.me.id) { closeSheet(); if (!UI.roomId) go("profile"); return; }
     var u = getUser(id);
@@ -1516,6 +2395,7 @@
     } else {
       S.sentReq.push(id);
     }
+    completeTask("friend", 25);
     toast("تم إرسال طلب الصداقة ✅");
     saveLocal(); renderAll();
   }
@@ -1552,24 +2432,76 @@
     var box = $("chat-msgs");
     box.innerHTML = list.length ? list.map(function (m, i) {
       var me = m.from === S.me.id;
-      return '<div class="msg ' + (me ? "me" : "") + '"' + (me ? ' data-deldm="' + i + '"' : "") + ">" + esc(m.text) + '<div class="tm">' + timeStr(m.t) + (me ? " • اضغط للحذف" : "") + "</div></div>";
+      var content = m.audio
+        ? '<audio controls src="' + esc(m.audio) + '" style="max-width:210px;height:32px"></audio>'
+        : esc(m.text || "");
+      return '<div class="msg ' + (me ? "me" : "") + '"' + (me ? ' data-deldm="' + i + '"' : "") + ">" + content + '<div class="tm">' + timeStr(m.t) + (me ? " • اضغط للحذف" : "") + "</div></div>";
     }).join("") : '<div class="empty">ابدأ المحادثة بإرسال رسالة 👋</div>';
     box.scrollTop = box.scrollHeight;
   }
 
-  function sendDM() {
+  function sendDM(extra) {
     var inp = $("chat-input"), text = inp.value.trim();
-    if (!text || !UI.dmId) return;
-    var msgObj = { from: S.me.id, text: clean(text), t: now() };
-    inp.value = "";
+    if (!UI.dmId || (!text && (!extra || !extra.audio))) return;
+    var msgObj = Object.assign({ from: S.me.id, text: clean(text), t: serverTs() }, extra || {});
+    if (!extra || !extra.audio) inp.value = "";
 
     if (cloud.on && cloud.db) {
       var tid = dmThreadId(S.me.id, UI.dmId);
       cloud.db.ref("dms/" + tid).push(msgObj);
     } else {
       if (!S.dms[UI.dmId]) S.dms[UI.dmId] = [];
-      S.dms[UI.dmId].push(msgObj);
+      S.dms[UI.dmId].push(Object.assign({}, msgObj, { t: now() }));
       saveLocal(); renderDM();
+    }
+  }
+
+  var voiceRec = { recorder: null, chunks: [], timer: null, active: false };
+  async function toggleVoiceNoteDM() {
+    if (!UI.dmId) return;
+    if (voiceRec.active && voiceRec.recorder) {
+      voiceRec.recorder.stop();
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !global.MediaRecorder) {
+      toast("التسجيل الصوتي غير مدعوم على هذا المتصفح");
+      return;
+    }
+    try {
+      var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      var rec = new MediaRecorder(stream);
+      voiceRec.recorder = rec;
+      voiceRec.chunks = [];
+      voiceRec.active = true;
+      toast("جاري التسجيل (حد أقصى 30 ثانية)... اضغط 🎙️ للإرسال");
+
+      rec.ondataavailable = function (ev) {
+        if (ev.data && ev.data.size > 0) voiceRec.chunks.push(ev.data);
+      };
+      rec.onstop = function () {
+        clearTimeout(voiceRec.timer);
+        voiceRec.active = false;
+        stream.getTracks().forEach(function (tr) { tr.stop(); });
+        var blob = new Blob(voiceRec.chunks, { type: rec.mimeType || "audio/webm" });
+        if (blob.size > 200 * 1024) {
+          toast("حجم التسجيل تجاوز 200KB، جرّب تسجيل أقصر");
+          return;
+        }
+        var reader = new FileReader();
+        reader.onloadend = function () {
+          sendDM({ audio: reader.result });
+          toast("تم إرسال الرسالة الصوتية 🎙️");
+        };
+        reader.readAsDataURL(blob);
+      };
+
+      rec.start();
+      voiceRec.timer = setTimeout(function () {
+        if (voiceRec.active && rec.state !== "inactive") rec.stop();
+      }, 30000);
+    } catch (e) {
+      voiceRec.active = false;
+      toast("تعذر الوصول للميكروفون");
     }
   }
 
@@ -1653,6 +2585,35 @@
     $("sheet").onclick = null;
   }
 
+  function openStickersSheet() {
+    var grid = STICKERS.map(function (st) {
+      return '<button class="gift" data-st="' + st.id + '" type="button"><div class="e">' + st.e + "</div><small>" + esc(st.n) + "</small></button>";
+    }).join("");
+    openSheet("<h3>🎭 الملصقات</h3><div class='giftgrid'>" + grid + "</div>");
+    $("sheet").onclick = function (e) {
+      var btn = e.target.closest("[data-st]");
+      if (!btn) return;
+      var st = STICKERS.filter(function (x) { return x.id === btn.getAttribute("data-st"); })[0];
+      closeSheet();
+      if (st) sendRoomMsg(st.n, { sticker: st.e });
+    };
+  }
+
+  function openPhotoSheet() {
+    openSheet('<h3>📷 إرسال صورة في الشات</h3><label>رابط الصورة المباشر</label><input id="ph-url" type="url" placeholder="https://example.com/image.png" /><div id="ph-prev" style="margin-top:8px;text-align:center"></div><button class="btn block" id="ph-send" type="button">إرسال الصورة</button>');
+    $("sheet").onclick = null;
+    $("ph-url").addEventListener("input", function () {
+      var u = this.value.trim();
+      $("ph-prev").innerHTML = u ? '<img src="' + esc(u) + '" style="max-width:160px;max-height:130px;border-radius:10px" />' : "";
+    });
+    $("ph-send").onclick = function () {
+      var u = $("ph-url").value.trim();
+      if (!u) { toast("أدخل رابط الصورة"); return; }
+      closeSheet();
+      sendRoomMsg("📷 صورة", { img: u });
+    };
+  }
+
   /* ========= 16. ربط الأحداث ========= */
   function bind() {
     document.addEventListener("click", function (e) {
@@ -1663,6 +2624,22 @@
       if ((el = t.closest("#rooms-tabs .tab"))) { UI.rfilter = el.getAttribute("data-rfilter"); renderRooms(); return; }
       if ((el = t.closest("#friends-tabs .tab"))) { UI.ftab = el.getAttribute("data-ftab"); renderFriends(); return; }
       if ((el = t.closest("[data-seat]"))) { onSeatTap(Number(el.getAttribute("data-seat"))); return; }
+      if ((el = t.closest("[data-quizans]"))) {
+        var ansIdx = Number(el.getAttribute("data-quizans"));
+        var room = getRoom(UI.roomId);
+        if (room && UI.quiz && UI.quiz.active) {
+          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/quiz/current/answers/" + S.me.id).set(ansIdx);
+          if (ansIdx === UI.quiz.ans) {
+            S.me.coins += 30;
+            addXP(10);
+            save(); renderTop();
+            toast("إجابة صحيحة! +30 عملة 🎉");
+          } else {
+            toast("إجابة غير صحيحة، حاول في السؤال التالي");
+          }
+        }
+        return;
+      }
       if ((el = t.closest("[data-accept]"))) {
         var a = el.getAttribute("data-accept");
         if (cloud.on && cloud.db) {
@@ -1753,7 +2730,28 @@
       S.txs.unshift({ t: now(), text: "رصيد تجريبي", amount: 500 });
       save(); renderAll(); toast("تمت إضافة 500 عملة 🪙");
     };
+    $("pf-daily").onclick = function () {
+      var last = Number(S.me.daily || 0);
+      if (Date.now() - last < 24 * 60 * 60 * 1000) {
+        toast("لقد استلمت مكافأة اليوم بالفعل");
+        return;
+      }
+      S.me.daily = Date.now();
+      S.me.coins += 100;
+      addXP(10);
+      save(); renderAll();
+      toast("🎁 تم استلام 100 عملة اليوم!");
+    };
+
     $("room-back").onclick = function () { leaveRoom(false); };
+    $("room-music").onclick = openMusicSheet;
+    $("room-hand").onclick = openHandQueueSheet;
+    $("room-sticker").onclick = openStickersSheet;
+    $("room-photo").onclick = openPhotoSheet;
+    $("mmini-toggle").onclick = function () { togglePlayPauseMusic(getRoom(UI.roomId)); };
+    $("mmini-skip").onclick = function () { skipMusicTrack(getRoom(UI.roomId), false); };
+    $("mmini-open").onclick = openMusicSheet;
+
     $("room-menu").onclick = openRoomMenu;
     $("room-share").onclick = copyRoomLink;
     $("room-send").onclick = function () { var i = $("room-input"); sendRoomMsg(i.value); i.value = ""; };
@@ -1777,9 +2775,10 @@
       UI.dmId = null;
       renderAll();
     };
-    $("chat-send").onclick = sendDM;
+    $("chat-send").onclick = function () { sendDM(); };
     $("chat-input").addEventListener("keydown", function (e) { if (e.key === "Enter") sendDM(); });
     $("chat-emoji").onclick = function () { var inp = $("chat-input"); inp.value += EMOJIS[Math.floor(Math.random() * EMOJIS.length)]; inp.focus(); };
+    $("chat-voice").onclick = toggleVoiceNoteDM;
     $("chat-menu").onclick = openDMMenu;
     $("room-emojis").innerHTML = EMOJIS.map(function (e) { return '<button type="button">' + e + "</button>"; }).join("");
   }
