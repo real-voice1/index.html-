@@ -46,6 +46,57 @@
     }
     .glass:active{transform:scale(.982)}
 
+    /* واجهة تسجيل الدخول بجوجل */
+    .auth-gate{
+      position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:18px;
+      background:
+        radial-gradient(circle at 20% 18%, rgba(124,58,237,.35), transparent 46%),
+        radial-gradient(circle at 82% 78%, rgba(236,72,153,.28), transparent 46%),
+        linear-gradient(165deg,#0b0718,#160e2e 60%,#090612)
+    }
+    .auth-card{
+      width:100%;max-width:410px;border-radius:26px;padding:24px 20px;text-align:center;
+      background:linear-gradient(155deg,rgba(255,255,255,.14),rgba(255,255,255,.05));
+      backdrop-filter:blur(22px) saturate(160%);
+      -webkit-backdrop-filter:blur(22px) saturate(160%);
+      border:1px solid var(--border-hi);
+      box-shadow:0 24px 54px rgba(0,0,0,.62), inset 0 1px 1px rgba(255,255,255,.28)
+    }
+    .auth-logo-3d{
+      width:74px;height:74px;margin:0 auto 12px;border-radius:22px;display:grid;place-items:center;font-size:36px;
+      background:linear-gradient(135deg,var(--acc),var(--acc2));
+      border:1.5px solid rgba(255,255,255,.42);
+      box-shadow:0 16px 34px rgba(124,58,237,.45), inset 0 2px 6px rgba(255,255,255,.35)
+    }
+    .auth-title{margin:0;font-size:22px;font-weight:800;letter-spacing:.3px}
+    .auth-sub{margin:6px 0 18px;font-size:12.5px;color:var(--muted);line-height:1.7}
+    .auth-perks{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px
+    }
+    .auth-perk{
+      padding:9px 6px;border-radius:14px;background:rgba(255,255,255,.07);
+      border:1px solid var(--border);font-size:11px;font-weight:700
+    }
+    .auth-perk span{display:block;font-size:18px;margin-bottom:2px}
+    .google-signin-btn{
+      width:100%;padding:12px 16px;border-radius:15px;
+      background:#ffffff;color:#181425;font-size:14px;font-weight:800;
+      display:flex;align-items:center;justify-content:center;gap:10px;
+      box-shadow:0 12px 28px rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.85);
+      transition:transform .16s,box-shadow .16s
+    }
+    .google-signin-btn:active{transform:scale(.97)}
+    .g-badge{
+      width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
+      background:conic-gradient(#ea4335 0deg 90deg, #fbbc05 90deg 180deg, #34a853 180deg 270deg, #4285f4 270deg 360deg);
+      color:#fff;font-size:13px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.45)
+    }
+    .auth-guest-btn{
+      width:100%;margin-top:10px;padding:10px;border-radius:14px;
+      background:rgba(255,255,255,.08);border:1px solid var(--border);
+      color:var(--muted);font-size:12px;font-weight:700
+    }
+
     #app{max-width:480px;margin:0 auto;min-height:100vh;position:relative;background:transparent;box-shadow:0 0 60px rgba(0,0,0,.45)}
 
     /* الشريط العلوي 3D */
@@ -139,12 +190,12 @@
     .section-head h2,.title{margin:0;font-size:15px;font-weight:800}
     .list{display:flex;flex-direction:column;gap:9px}
 
-    /* شبكة الغرف الخارجية المربعة مثل الصورة */
+    /* شبكة الغرف الخارجية المربعة الموحدة (اسم الغرفة فقط) */
     .rooms-grid{
       display:grid;grid-template-columns:repeat(2,1fr);gap:10px
     }
     .room-sq-card{
-      display:flex;flex-direction:column;border-radius:16px;overflow:hidden;
+      display:flex;flex-direction:column;aspect-ratio:1 / 1;border-radius:18px;overflow:hidden;
       background:linear-gradient(145deg,var(--glass-2),var(--glass-3));
       border:1px solid var(--border);
       box-shadow:var(--shadow-3d);cursor:pointer;
@@ -153,31 +204,14 @@
     .room-sq-card:hover{border-color:var(--border-hi);transform:translateY(-2px)}
     .room-sq-card:active{transform:scale(.97)}
     .room-sq-media{
-      position:relative;width:100%;aspect-ratio:1 / 1;overflow:hidden;
-      display:grid;place-items:center;font-size:44px;
-      border-bottom:1px solid rgba(255,255,255,.12)
+      position:relative;flex:1;width:100%;min-height:0;overflow:hidden;
+      display:grid;place-items:center;font-size:44px
     }
     .room-sq-media img{width:100%;height:100%;object-fit:cover;display:block}
-    .room-sq-top-pill{
-      position:absolute;top:7px;right:7px;padding:2px 7px;border-radius:999px;
-      background:rgba(10,7,20,.68);backdrop-filter:blur(6px);
-      border:1px solid rgba(255,255,255,.22);color:#fde68a;
-      font-size:10px;font-weight:800;line-height:1.35
-    }
-    .room-sq-bottom-pill{
-      position:absolute;bottom:7px;left:7px;padding:2px 7px;border-radius:999px;
-      background:rgba(10,7,20,.72);backdrop-filter:blur(6px);
-      border:1px solid rgba(255,255,255,.2);color:#fff;
-      font-size:10px;font-weight:800;line-height:1.35;display:inline-flex;align-items:center;gap:3px
-    }
-    .room-sq-body{padding:8px 9px 9px;display:flex;flex-direction:column;gap:3px}
-    .room-sq-title{
-      font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-      display:flex;align-items:center;gap:4px
-    }
-    .room-sq-sub{
-      font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-      display:flex;align-items:center;justify-content:space-between;gap:4px
+    .room-sq-name-only{
+      padding:9px 10px;text-align:center;font-size:13.5px;font-weight:800;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      background:rgba(12,8,26,.55);border-top:1px solid rgba(255,255,255,.12)
     }
 
     .row{
@@ -187,12 +221,6 @@
       box-shadow:var(--shadow-3d)
     }
     .row:hover{border-color:var(--border-hi);transform:translateY(-1px)}
-    .roomcover{
-      width:54px;height:54px;border-radius:15px;display:grid;place-items:center;font-size:24px;flex-shrink:0;overflow:hidden;
-      border:1px solid rgba(255,255,255,.28);
-      box-shadow:0 10px 20px rgba(0,0,0,.38), inset 0 2px 4px rgba(255,255,255,.35)
-    }
-    .roomcover img{width:100%;height:100%;object-fit:cover;display:block}
     .avatar{
       width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));
       display:grid;place-items:center;font-weight:800;font-size:15px;flex-shrink:0;position:relative;overflow:hidden;
@@ -378,21 +406,21 @@
 
     /* مربع يمين الغرفة المكبّر (صورة + اسم روم + ID الحساب) بدون كلمة صورة */
     .room-right-card{
-      display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:16px;
-      background:linear-gradient(145deg,rgba(255,255,255,.15),rgba(255,255,255,.06));
-      border:1px solid var(--border-hi);flex:1.25;min-width:0;
-      box-shadow:0 8px 20px rgba(0,0,0,.36)
+      display:flex;align-items:center;gap:10px;padding:7px 11px;border-radius:17px;
+      background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.06));
+      border:1px solid var(--border-hi);flex:1.35;min-width:0;
+      box-shadow:0 10px 22px rgba(0,0,0,.4)
     }
     .room-top-thumb-wrap{
-      position:relative;width:48px;height:48px;border-radius:14px;overflow:hidden;
+      position:relative;width:54px;height:54px;border-radius:15px;overflow:hidden;
       background:linear-gradient(135deg,var(--acc),var(--acc2));
       border:1.5px solid rgba(255,255,255,.38);display:grid;place-items:center;
-      font-size:22px;flex-shrink:0;cursor:pointer;
+      font-size:24px;flex-shrink:0;cursor:pointer;
       box-shadow:0 6px 14px rgba(0,0,0,.35)
     }
     .room-top-thumb-wrap img{width:100%;height:100%;object-fit:cover;display:block}
     .room-right-meta{flex:1;min-width:0}
-    .room-right-title{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
+    .room-right-title{font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
     .room-right-id{font-size:11px;color:#e9d5ff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 
     .room-presence-btn{
@@ -435,7 +463,7 @@
     }
     .music-mini .mtitle{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
 
-    /* شبكة المقاعد الدائرية 3D */
+    /* شبكة المقاعد الدائرية 3D الموحدة */
     .seats-stage{
       position:relative;padding:12px 10px 10px;
       background:radial-gradient(ellipse at 50% 42%, rgba(124,58,237,.22), rgba(10,6,22,.42) 72%);
@@ -446,7 +474,7 @@
     .seat:active{transform:scale(.94)}
 
     .seat-orb{
-      position:relative;width:58px;height:58px;border-radius:50%;
+      position:relative;width:60px;height:60px;border-radius:50%;
       display:grid;place-items:center;
       background:radial-gradient(circle at 30% 25%, rgba(255,255,255,.22), rgba(124,58,237,.18) 58%, rgba(12,8,26,.82) 100%);
       border:1.5px solid rgba(255,255,255,.24);
@@ -509,11 +537,11 @@
       border:1.5px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.45);z-index:3
     }
     .seat-meta-pill{
-      max-width:92px;padding:2px 7px;border-radius:999px;
+      width:86px;padding:2px 6px;border-radius:999px;
       background:rgba(12,8,26,.62);border:1px solid rgba(255,255,255,.12);
       text-align:center;backdrop-filter:blur(6px)
     }
-    .seatname{font-size:10.5px;font-weight:700;max-width:82px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
+    .seatname{font-size:10.5px;font-weight:700;max-width:78px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;margin:0 auto}
     .seatsub{font-size:9px;color:var(--muted);line-height:1.2}
 
     /* شريط دخول الأعضاء المدمج أعلى الشات (3 ثوانٍ) */
@@ -671,7 +699,7 @@
       border:1px solid rgba(251,191,36,.5);font-size:11px;font-weight:800;color:#fde68a
     }
 
-    /* شريط اختيار مستلمي الهدية */
+    /* شريط اختيار مستلمي الهدايا (الأعضاء الجالسون فقط) */
     .gift-targets-bar{display:flex;gap:7px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}
     .gift-targets-bar::-webkit-scrollbar{display:none}
     .gt-chip{
@@ -735,7 +763,7 @@
     .switchrow input{width:18px;height:18px}
 
     .toast{
-      position:fixed;top:64px;left:50%;transform:translate(-50%,-16px);z-index:60;
+      position:fixed;top:64px;left:50%;transform:translate(-50%,-16px);z-index:90;
       background:linear-gradient(135deg,rgba(26,18,52,.94),rgba(124,58,237,.45));
       backdrop-filter:blur(14px);
       color:#fff;border:1px solid var(--border-hi);padding:9px 16px;border-radius:999px;
@@ -746,6 +774,25 @@
   </style>
 </head>
 <body>
+<!-- واجهة تسجيل الدخول بجوجل -->
+<section class="auth-gate" id="auth-gate">
+  <div class="auth-card">
+    <div class="auth-logo-3d">🎙️</div>
+    <h1 class="auth-title">REAL VOICE</h1>
+    <p class="auth-sub">سجّل دخولك بحساب Google لبدء الدردشة الصوتية، إرسال الهدايا، وبناء ملفك الشخصي.</p>
+    <div class="auth-perks">
+      <div class="auth-perk"><span>🔊</span>صوت مباشر</div>
+      <div class="auth-perk"><span>🎁</span>هدايا وتفاعل</div>
+      <div class="auth-perk"><span>👑</span>مستويات VIP</div>
+    </div>
+    <button class="google-signin-btn" id="google-login-btn" type="button">
+      <span class="g-badge">G</span>
+      <span>تسجيل الدخول عبر Google</span>
+    </button>
+    <button class="auth-guest-btn" id="guest-login-btn" type="button">متابعة كضيف على هذا الجهاز</button>
+  </div>
+</section>
+
 <div id="app">
   <header class="topbar">
     <div class="brand"><div class="logo">🎙️</div><span>REAL VOICE</span></div>
@@ -759,7 +806,7 @@
   </header>
 
   <main class="page active" id="page-home">
-    <div class="searchbox"><span class="ic">🔍</span><input id="search-input" type="search" placeholder="ابحث عن غرفة أو مستخدم بالاسم أو الـ ID أو الصورة..." /></div>
+    <div class="searchbox"><span class="ic">🔍</span><input id="search-input" type="search" placeholder="ابحث عن غرفة أو مستخدم بالاسم أو الـ ID..." /></div>
     <div class="banner">
       <div><h3>مرحباً بك في REAL VOICE</h3><p>أنشئ غرفتك الصوتية أو انضم للأصدقاء الآن</p></div>
       <button class="btn sm" id="banner-create" type="button">+ غرفة</button>
@@ -894,7 +941,7 @@
     <div class="room-top">
       <button class="iconbtn" id="room-back" type="button" title="خروج">→</button>
 
-      <!-- مربع يمين الغرفة المكبّر: صورة + اسم روم + ID الحساب -->
+      <!-- مربع يمين الغرفة المكبّر (صورة + اسم روم + ID الحساب) بدون كلمة صورة -->
       <div class="room-right-card" id="room-right-card">
         <div class="room-top-thumb-wrap" id="room-top-thumb" title="تغيير صورة الغرفة">
           <span id="room-top-thumb-inner">🎙️</span>
@@ -906,6 +953,7 @@
         </div>
       </div>
 
+      <button class="chip" id="room-rename-quick" type="button" title="تغيير اسم الغرفة">✏️ اسم</button>
       <button class="room-presence-btn" id="room-presence-btn" type="button" title="المتواجدون في الغرفة">
         <span>🎧</span>
         <span id="room-online-count">0</span>
