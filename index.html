@@ -70,26 +70,19 @@
     }
     .auth-title{margin:0;font-size:22px;font-weight:800;letter-spacing:.3px}
     .auth-sub{margin:6px 0 18px;font-size:12.5px;color:var(--muted);line-height:1.7}
-    .auth-perks{
-      display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px
-    }
-    .auth-perk{
-      padding:9px 6px;border-radius:14px;background:rgba(255,255,255,.07);
-      border:1px solid var(--border);font-size:11px;font-weight:700
-    }
+    .auth-perks{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+    .auth-perk{padding:9px 6px;border-radius:14px;background:rgba(255,255,255,.07);border:1px solid var(--border);font-size:11px;font-weight:700}
     .auth-perk span{display:block;font-size:18px;margin-bottom:2px}
     .google-signin-btn{
       width:100%;padding:12px 16px;border-radius:15px;
       background:#ffffff;color:#181425;font-size:14px;font-weight:800;
       display:flex;align-items:center;justify-content:center;gap:10px;
-      box-shadow:0 12px 28px rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.85);
-      transition:transform .16s,box-shadow .16s
+      box-shadow:0 12px 28px rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.85)
     }
-    .google-signin-btn:active{transform:scale(.97)}
     .g-badge{
       width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
       background:conic-gradient(#ea4335 0deg 90deg, #fbbc05 90deg 180deg, #34a853 180deg 270deg, #4285f4 270deg 360deg);
-      color:#fff;font-size:13px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.45)
+      color:#fff;font-size:13px;font-weight:800
     }
     .auth-guest-btn{
       width:100%;margin-top:10px;padding:10px;border-radius:14px;
@@ -99,7 +92,7 @@
 
     #app{max-width:480px;margin:0 auto;min-height:100vh;position:relative;background:transparent;box-shadow:0 0 60px rgba(0,0,0,.45)}
 
-    /* الشريط العلوي 3D */
+    /* الشريط العلوي بدون عملات في الواجهة الرئيسية */
     .topbar{
       position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:8px;
       padding:10px 14px;
@@ -109,40 +102,33 @@
       border-bottom:1px solid var(--border);
       box-shadow:0 10px 24px rgba(0,0,0,.32)
     }
-    body.light-theme .topbar{
-      background:linear-gradient(180deg,rgba(255,255,255,.88),rgba(244,242,252,.78))
-    }
-    .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:17px;letter-spacing:.3px}
+    body.light-theme .topbar{background:linear-gradient(180deg,rgba(255,255,255,.88),rgba(244,242,252,.78))}
+    .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;letter-spacing:.2px;min-width:0}
     .brand .logo{
-      width:34px;height:34px;border-radius:11px;display:grid;place-items:center;
+      width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex-shrink:0;
       background:linear-gradient(135deg,var(--acc),var(--acc2));
-      box-shadow:var(--shadow-float);
-      border:1px solid var(--border-hi)
+      box-shadow:var(--shadow-float);border:1px solid var(--border-hi)
     }
-    .top-actions{display:flex;align-items:center;gap:6px}
+    .brand-title-full{white-space:normal;line-height:1.25}
+    .top-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
     .chip{
       display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;
       background:linear-gradient(145deg,var(--glass-2),var(--glass-3));
       border:1px solid var(--border);font-size:12px;font-weight:700;
-      box-shadow:0 6px 14px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.22);
-      transition:transform .16s
+      box-shadow:0 6px 14px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.22)
     }
-    .chip:active{transform:scale(.95)}
     .iconbtn{
       position:relative;width:36px;height:36px;border-radius:12px;display:grid;place-items:center;
       background:linear-gradient(145deg,var(--glass-2),var(--glass-3));
       border:1px solid var(--border);font-size:16px;
-      box-shadow:0 6px 14px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.22);
-      transition:transform .16s
+      box-shadow:0 6px 14px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.22)
     }
-    .iconbtn:active{transform:scale(.93)}
-    .badge{position:absolute;top:-4px;left:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--bad);color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;box-shadow:0 3px 8px rgba(239,68,68,.55)}
+    .badge{position:absolute;top:-4px;left:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--bad);color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center}
     .av-mini{
       width:34px;height:34px;border-radius:50%;
       background:linear-gradient(135deg,var(--acc),var(--acc2));
       display:grid;place-items:center;font-weight:800;font-size:13px;overflow:hidden;
-      border:2px solid var(--border-hi);
-      box-shadow:0 6px 14px rgba(124,58,237,.35)
+      border:2px solid var(--border-hi)
     }
     .av-mini img{width:100%;height:100%;object-fit:cover;display:block}
 
@@ -155,245 +141,138 @@
     .tab{
       flex:0 0 auto;padding:7px 13px;border-radius:999px;
       background:linear-gradient(145deg,var(--glass-1),var(--glass-3));
-      border:1px solid var(--border);color:var(--muted);font-size:12.5px;font-weight:700;
-      box-shadow:0 5px 12px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.15);
-      transition:all .18s
+      border:1px solid var(--border);color:var(--muted);font-size:12.5px;font-weight:700
     }
-    .tab.active{
-      background:linear-gradient(135deg,var(--acc),var(--acc2));
-      color:#fff;border-color:var(--border-hi);
-      box-shadow:var(--shadow-float);transform:translateY(-1px)
-    }
+    .tab.active{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border-color:var(--border-hi);box-shadow:var(--shadow-float)}
 
-    /* البحث والبانر والبطاقات */
+    /* مكان البنرات في الواجهة الرئيسية */
+    .banners-slot{
+      width:100%;min-height:112px;border-radius:18px;margin-bottom:12px;
+      background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(236,72,153,.14)),var(--glass-1);
+      border:1.5px dashed var(--border-hi);
+      display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;
+      box-shadow:var(--shadow-3d)
+    }
+    .banners-slot img{width:100%;height:132px;object-fit:cover;display:block}
+    .banners-placeholder{padding:14px;text-align:center;color:var(--muted);font-size:12.5px;font-weight:700}
+
+    /* البحث والبطاقات */
     .searchbox{position:relative;margin-bottom:10px}
     .searchbox input{
       width:100%;padding:11px 38px 11px 14px;border-radius:15px;
       background:linear-gradient(145deg,var(--glass-2),var(--glass-3));
-      backdrop-filter:blur(14px);
-      border:1px solid var(--border);font-size:13.5px;outline:none;
-      box-shadow:inset 0 2px 6px rgba(0,0,0,.28), 0 6px 16px rgba(0,0,0,.2);
-      transition:border-color .18s,box-shadow .18s
+      border:1px solid var(--border);font-size:13.5px;outline:none
     }
-    .searchbox input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(124,58,237,.22), inset 0 2px 6px rgba(0,0,0,.25)}
     .searchbox .ic{position:absolute;right:12px;top:50%;transform:translateY(-50%);opacity:.7}
-    .banner{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px;border-radius:18px;margin-bottom:12px;
-      background:linear-gradient(135deg,rgba(124,58,237,.34),rgba(236,72,153,.24)),var(--glass-1);
-      backdrop-filter:blur(16px);
-      border:1px solid var(--border-hi);
-      box-shadow:var(--shadow-float)
-    }
-    .banner h3{margin:0 0 3px;font-size:15px}
-    .banner p{margin:0;font-size:12px;color:var(--muted)}
     .section-head{display:flex;align-items:center;justify-content:space-between;margin:8px 0 8px}
     .section-head h2,.title{margin:0;font-size:15px;font-weight:800}
     .list{display:flex;flex-direction:column;gap:9px}
 
-    /* شبكة الغرف الخارجية المربعة الموحدة (اسم الغرفة فقط) */
-    .rooms-grid{
-      display:grid;grid-template-columns:repeat(2,1fr);gap:10px
-    }
+    /* شبكة الغرف الخارجية — اسم الغرفة ظاهر وكامل */
+    .rooms-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
     .room-sq-card{
-      display:flex;flex-direction:column;aspect-ratio:1 / 1;border-radius:18px;overflow:hidden;
+      display:flex;flex-direction:column;min-height:165px;border-radius:18px;overflow:hidden;
       background:linear-gradient(145deg,var(--glass-2),var(--glass-3));
-      border:1px solid var(--border);
-      box-shadow:var(--shadow-3d);cursor:pointer;
-      transition:transform .18s,border-color .18s,box-shadow .18s
+      border:1px solid var(--border);box-shadow:var(--shadow-3d);cursor:pointer
     }
-    .room-sq-card:hover{border-color:var(--border-hi);transform:translateY(-2px)}
-    .room-sq-card:active{transform:scale(.97)}
     .room-sq-media{
-      position:relative;flex:1;width:100%;min-height:0;overflow:hidden;
-      display:grid;place-items:center;font-size:44px
+      position:relative;flex:1;width:100%;min-height:112px;overflow:hidden;
+      display:grid;place-items:center;font-size:40px
     }
     .room-sq-media img{width:100%;height:100%;object-fit:cover;display:block}
-    .room-sq-name-only{
-      padding:9px 10px;text-align:center;font-size:13.5px;font-weight:800;
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-      background:rgba(12,8,26,.55);border-top:1px solid rgba(255,255,255,.12)
+    .room-sq-name-full{
+      padding:8px 8px;text-align:center;font-size:13px;font-weight:800;line-height:1.35;
+      white-space:normal;word-break:break-word;
+      background:rgba(12,8,26,.68);border-top:1px solid rgba(255,255,255,.12);color:#fff
     }
 
     .row{
       display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:17px;
       background:linear-gradient(145deg,var(--glass-2),var(--glass-3));
-      border:1px solid var(--border);
-      box-shadow:var(--shadow-3d)
+      border:1px solid var(--border);box-shadow:var(--shadow-3d)
     }
-    .row:hover{border-color:var(--border-hi);transform:translateY(-1px)}
     .avatar{
       width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));
       display:grid;place-items:center;font-weight:800;font-size:15px;flex-shrink:0;position:relative;overflow:hidden;
-      border:2px solid var(--border-hi);
-      box-shadow:0 8px 18px rgba(0,0,0,.35)
+      border:2px solid var(--border-hi)
     }
     .avatar img{width:100%;height:100%;object-fit:cover;display:block}
     .avatar.sm{width:38px;height:38px;font-size:13px}
-    .avatar.md{width:60px;height:60px;font-size:20px}
     .avatar.lg{width:76px;height:76px;font-size:26px}
     .dot{position:absolute;bottom:1px;right:1px;width:11px;height:11px;border-radius:50%;background:#6b7280;border:2px solid var(--bg)}
-    .dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+    .dot.on{background:var(--ok)}
     .info{flex:1;min-width:0}
     .name{font-weight:700;font-size:14px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
     .meta{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
     .tag{font-size:10px;padding:2px 7px;border-radius:999px;background:rgba(124,58,237,.22);color:#e9d5ff;font-weight:700;border:1px solid rgba(196,181,253,.25)}
-    body.light-theme .tag{color:#5b21b6}
     .tag.vip{background:rgba(245,158,11,.22);color:#fde68a;border-color:rgba(251,191,36,.35)}
-    body.light-theme .tag.vip{color:#92400e}
     .tag.verified{background:rgba(34,197,94,.2);color:#86efac;border-color:rgba(74,222,128,.35)}
-    body.light-theme .tag.verified{color:#166534}
 
-    /* شارات المستويات المتدرجة (Lv.1 - Lv.100) + الثروة + الجاذبية */
     .lvl-badge{
       display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:999px;
-      font-size:10px;font-weight:800;line-height:1.45;border:1px solid rgba(255,255,255,.28);
-      box-shadow:0 3px 8px rgba(0,0,0,.28);white-space:nowrap
+      font-size:10px;font-weight:800;border:1px solid rgba(255,255,255,.28);white-space:nowrap;
+      background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff
     }
-    .lvl-t1{background:linear-gradient(135deg,#78716c,#a8a29e);color:#fff}
-    .lvl-t2{background:linear-gradient(135deg,#eab308,#facc15);color:#1f1600}
-    .lvl-t3{background:linear-gradient(135deg,#2563eb,#38bdf8);color:#fff}
-    .lvl-t4{background:linear-gradient(135deg,#7c3aed,#c084fc);color:#fff}
-    .lvl-t5{background:linear-gradient(135deg,#d97706,#fbbf24);color:#1a1100}
-    .lvl-t6{background:linear-gradient(135deg,#dc2626,#fb7185);color:#fff}
-    .lvl-t7{background:linear-gradient(135deg,#0891b2,#34d399);color:#041c18}
-    .lvl-t8{background:linear-gradient(135deg,#0284c7,#a5f3fc);color:#052233}
-    .lvl-t9{background:linear-gradient(135deg,#4f46e5,#ec4899);color:#fff}
-    .lvl-t100{background:linear-gradient(135deg,#f59e0b,#ec4899,#6366f1);color:#fff;border-color:#fde047}
+    .wealth-badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(251,191,36,.38)}
+    .charm-badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(236,72,153,.2);color:#f9a8d4;border:1px solid rgba(244,114,182,.38)}
 
-    .wealth-badge{
-      display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:999px;
-      font-size:10px;font-weight:800;background:rgba(245,158,11,.2);color:#fcd34d;
-      border:1px solid rgba(251,191,36,.38)
-    }
-    body.light-theme .wealth-badge{color:#92400e;background:rgba(245,158,11,.16)}
-    .charm-badge{
-      display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:999px;
-      font-size:10px;font-weight:800;background:rgba(236,72,153,.2);color:#f9a8d4;
-      border:1px solid rgba(244,114,182,.38)
-    }
-    body.light-theme .charm-badge{color:#9d174d;background:rgba(236,72,153,.15)}
-
-    /* أزرار 3D */
     .btn{
       padding:8px 14px;border-radius:12px;
       background:linear-gradient(135deg,var(--acc),var(--acc2));
       color:#fff;font-weight:700;font-size:12.5px;display:inline-flex;align-items:center;justify-content:center;gap:5px;
-      border:1px solid rgba(255,255,255,.26);
-      box-shadow:var(--shadow-float);
-      transition:transform .16s,box-shadow .16s
+      border:1px solid rgba(255,255,255,.26);box-shadow:var(--shadow-float)
     }
-    .btn:active{transform:scale(.95)}
     .btn.sm{padding:6px 10px;font-size:11.5px;border-radius:10px}
-    .btn.ghost{
-      background:linear-gradient(145deg,var(--glass-2),var(--glass-3));
-      color:var(--txt);border:1px solid var(--border);
-      box-shadow:0 6px 14px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.18)
-    }
-    .btn.red{background:linear-gradient(135deg,#dc2626,#ef4444);box-shadow:0 10px 22px rgba(239,68,68,.35)}
-    .btn.gold{background:linear-gradient(135deg,#d97706,#f59e0b);color:#140e00;box-shadow:0 10px 22px rgba(245,158,11,.35)}
+    .btn.ghost{background:linear-gradient(145deg,var(--glass-2),var(--glass-3));color:var(--txt);border:1px solid var(--border);box-shadow:none}
+    .btn.red{background:linear-gradient(135deg,#dc2626,#ef4444)}
+    .btn.gold{background:linear-gradient(135deg,#d97706,#f59e0b);color:#140e00}
     .btn.block{width:100%;padding:11px;font-size:14px;margin-top:8px}
-
-    /* زر نسخ الـ ID */
-    .copy-id-btn{
-      display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:999px;
-      border:1px solid var(--border);background:var(--glass-2);color:var(--txt);
-      font-size:10px;font-weight:800;cursor:pointer;flex-shrink:0;
-      transition:transform .14s,background .16s
-    }
-    .copy-id-btn:active{transform:scale(.92)}
+    .copy-id-btn{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:999px;border:1px solid var(--border);background:var(--glass-2);color:var(--txt);font-size:10px;font-weight:800}
 
     .fab{
       position:fixed;bottom:76px;left:20px;z-index:15;width:54px;height:54px;border-radius:18px;
-      background:linear-gradient(135deg,var(--acc),var(--acc2));
-      color:#fff;font-size:26px;font-weight:700;display:grid;place-items:center;
-      border:1px solid var(--border-hi);
-      box-shadow:var(--shadow-float);
-      transition:transform .2s
+      background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;font-size:26px;font-weight:700;
+      display:grid;place-items:center;border:1px solid var(--border-hi);box-shadow:var(--shadow-float)
     }
-    .fab:active{transform:scale(.92)}
     .empty{text-align:center;padding:36px 18px;color:var(--muted);font-size:13.5px;line-height:1.8}
 
-    /* الشريط السفلي 3D */
+    /* الشريط السفلي */
     .nav{
       position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:20;
       display:grid;grid-template-columns:repeat(5,1fr);
       background:linear-gradient(180deg,rgba(20,13,42,.86),rgba(10,6,22,.94));
-      backdrop-filter:blur(18px) saturate(150%);
-      -webkit-backdrop-filter:blur(18px) saturate(150%);
-      border-top:1px solid var(--border);padding:5px 0 7px;
-      box-shadow:0 -10px 26px rgba(0,0,0,.42)
+      backdrop-filter:blur(18px) saturate(150%);border-top:1px solid var(--border);padding:5px 0 7px
     }
-    body.light-theme .nav{
-      background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(244,242,252,.96))
-    }
-    .navbtn{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);font-size:10.5px;font-weight:700;padding:4px 0;border-radius:12px;transition:color .18s,transform .18s}
-    .navbtn span:first-child{font-size:19px;transition:transform .2s}
-    .navbtn.active{color:#fff;text-shadow:0 0 12px rgba(236,72,153,.55)}
-    body.light-theme .navbtn.active{color:var(--acc);text-shadow:none}
-    .navbtn.active span:first-child{transform:translateY(-2px) scale(1.1)}
+    body.light-theme .nav{background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(244,242,252,.96))}
+    .navbtn{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);font-size:10.5px;font-weight:700;padding:4px 0}
+    .navbtn span:first-child{font-size:19px}
+    .navbtn.active{color:#fff}
+    body.light-theme .navbtn.active{color:var(--acc)}
     .navbtn .badge{top:0;right:calc(50% - 20px);left:auto}
 
-    /* الملف الشخصي الاحترافي 3D */
+    /* الملف الشخصي المنظم بدون زحمة */
     .pf-hero-card{border-radius:22px;overflow:hidden;margin-bottom:10px;border:1px solid var(--border);background:linear-gradient(145deg,var(--glass-2),var(--glass-3));box-shadow:var(--shadow-3d)}
-    .pf-cover{
-      height:96px;position:relative;
-      background:linear-gradient(135deg,#7c3aed,#db2777,#0891b2);
-      background-size:cover;background-position:center;
-      border-bottom:1px solid var(--border)
+    .pf-cover{height:88px;background:linear-gradient(135deg,#7c3aed,#db2777,#0891b2);background-size:cover;background-position:center;border-bottom:1px solid var(--border)}
+    .pf-body{padding:0 14px 16px}
+    .pf-head{display:flex;gap:12px;align-items:flex-end;margin-top:-32px;margin-bottom:12px}
+    .pf-id-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;background:var(--card2);border:1px solid var(--border);font-size:11px;font-weight:700;color:var(--muted);margin-top:4px}
+    .pf-levels-clean{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+    .pf-level-box{padding:10px 12px;border-radius:14px;background:var(--card);border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:800}
+    .pf-social-clean{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+    .pf-stat-clean{padding:12px 8px;border-radius:15px;background:var(--card);border:1px solid var(--border);text-align:center;box-shadow:var(--shadow-3d)}
+    .pf-stat-clean b{display:block;font-size:17px}
+    .pf-stat-clean span{font-size:11.5px;color:var(--muted)}
+    .wallet-card-clean{
+      padding:14px 16px;border-radius:16px;
+      background:linear-gradient(135deg,rgba(124,58,237,.22),rgba(245,158,11,.16));
+      border:1px solid var(--border-hi);
+      display:flex;justify-content:space-between;align-items:center;
+      font-weight:800;box-shadow:var(--shadow-3d)
     }
-    .pf-cover-btn{
-      position:absolute;top:8px;left:8px;padding:4px 9px;border-radius:999px;
-      background:rgba(10,8,20,.65);color:#fff;font-size:10.5px;font-weight:700;
-      border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(8px)
-    }
-    .pf-body{padding:0 14px 14px}
-    .pf-head{display:flex;gap:12px;align-items:flex-end;margin-top:-32px;margin-bottom:10px}
-    .pf-av-wrap{position:relative;cursor:pointer;border-radius:50%;flex-shrink:0}
-    .pf-av-badge{
-      position:absolute;bottom:0;right:0;width:22px;height:22px;border-radius:50%;
-      background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;
-      font-size:11px;display:grid;place-items:center;border:2px solid var(--bg);
-      box-shadow:0 4px 10px rgba(0,0,0,.4)
-    }
-    .pf-id-chip{
-      display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;
-      background:var(--card2);border:1px solid var(--border);font-size:11px;font-weight:700;color:var(--muted);margin-top:4px
-    }
-    .pf-quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
-    .pf-quick-actions .btn{padding:7px 6px;font-size:11px;border-radius:11px}
+    .wallet-card-clean .w-coins{font-size:15px;color:#fcd34d}
+    body.light-theme .wallet-card-clean .w-coins{color:#92400e}
 
-    .xpbar{height:8px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden;margin:6px 0;box-shadow:inset 0 2px 4px rgba(0,0,0,.35)}
-    body.light-theme .xpbar{background:rgba(24,18,52,.1)}
-    .xpbar>i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:999px;transition:width .3s}
-
-    .pf-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
-    .stat{
-      background:linear-gradient(145deg,var(--glass-2),var(--glass-3));
-      border:1px solid var(--border);border-radius:15px;padding:10px 6px;text-align:center;
-      box-shadow:var(--shadow-3d)
-    }
-    .stat b{display:block;font-size:15px}
-    .stat span{font-size:10.5px;color:var(--muted)}
-    .ach-list{display:flex;flex-wrap:wrap;gap:6px}
-    .ach-list span{font-size:11px;padding:5px 9px;border-radius:999px;background:rgba(34,197,94,.16);border:1px solid rgba(34,197,94,.32)}
-    .ach-list span.off{opacity:.4;background:var(--card);border-color:var(--border)}
-
-    .task-item{
-      display:flex;align-items:center;justify-content:space-between;gap:8px;
-      padding:8px 10px;border-radius:12px;background:var(--card);border:1px solid var(--border);font-size:12px;margin-bottom:6px
-    }
-    .showcase-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
-    .show-item{
-      background:var(--card);border:1px solid var(--border);border-radius:13px;padding:8px;text-align:center;font-size:11px
-    }
-    .show-item .ic{font-size:22px;line-height:1.2}
-    .vip-card-box{
-      background:linear-gradient(135deg,rgba(245,158,11,.18),rgba(124,58,237,.18)),var(--glass-1);
-      border:1px solid rgba(251,191,36,.35);border-radius:16px;padding:12px;margin-bottom:10px
-    }
-    .frame.vip-frame{padding:2px;border-radius:50%;background:linear-gradient(135deg,#fbbf24,#ec4899,#7c3aed);box-shadow:0 0 16px rgba(251,191,36,.5)}
-
-    /* غرفة الدردشة الصوتية 3D المحدثة */
+    /* غرفة الدردشة الصوتية — اسم الروم كامل واسم المستخدم كامل على المقعد */
     .room-view{
       position:fixed;inset:0;z-index:30;max-width:480px;margin:0 auto;display:none;flex-direction:column;
       background:linear-gradient(175deg,#170e2e,#090612 68%)
@@ -401,353 +280,151 @@
     .room-view.open{display:flex;animation:fadeIn .2s ease}
     .room-top{
       display:flex;align-items:center;justify-content:space-between;gap:6px;padding:8px 10px;
-      background:rgba(10,6,22,.68);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)
+      background:rgba(10,6,22,.72);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)
     }
-
-    /* مربع يمين الغرفة المكبّر (صورة + اسم روم + ID الحساب) بدون كلمة صورة */
     .room-right-card{
-      display:flex;align-items:center;gap:10px;padding:7px 11px;border-radius:17px;
+      display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:16px;
       background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.06));
-      border:1px solid var(--border-hi);flex:1.35;min-width:0;
-      box-shadow:0 10px 22px rgba(0,0,0,.4)
+      border:1px solid var(--border-hi);flex:1.4;min-width:0
     }
     .room-top-thumb-wrap{
-      position:relative;width:54px;height:54px;border-radius:15px;overflow:hidden;
+      position:relative;width:46px;height:46px;border-radius:13px;overflow:hidden;
       background:linear-gradient(135deg,var(--acc),var(--acc2));
       border:1.5px solid rgba(255,255,255,.38);display:grid;place-items:center;
-      font-size:24px;flex-shrink:0;cursor:pointer;
-      box-shadow:0 6px 14px rgba(0,0,0,.35)
+      font-size:20px;flex-shrink:0;cursor:pointer
     }
     .room-top-thumb-wrap img{width:100%;height:100%;object-fit:cover;display:block}
     .room-right-meta{flex:1;min-width:0}
-    .room-right-title{font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
-    .room-right-id{font-size:11px;color:#e9d5ff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+    .room-right-title{
+      font-weight:800;font-size:13.5px;line-height:1.3;
+      white-space:normal;word-break:break-word;color:#fff
+    }
+    .room-right-id{font-size:10.5px;color:#e9d5ff;font-weight:700;margin-top:2px}
 
     .room-presence-btn{
-      display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;
-      background:rgba(255,255,255,.09);border:1px solid var(--border);font-size:11px;font-weight:800;
-      box-shadow:0 4px 12px rgba(0,0,0,.28);transition:transform .15s;flex-shrink:0
+      display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border-radius:999px;
+      background:rgba(255,255,255,.09);border:1px solid var(--border);font-size:11px;font-weight:800;flex-shrink:0
     }
-    .room-presence-btn:active{transform:scale(.94)}
-    .room-avatars-strip{display:inline-flex;align-items:center;margin-right:2px}
-    .room-mini-av{
-      width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(255,255,255,.65);
-      background:linear-gradient(135deg,var(--acc),var(--acc2));
-      display:inline-grid;place-items:center;font-size:8.5px;font-weight:800;color:#fff;
-      overflow:hidden;margin-right:-6px;box-shadow:0 2px 6px rgba(0,0,0,.4)
-    }
-    .room-mini-av:first-child{margin-right:0}
-    .room-mini-av img{width:100%;height:100%;object-fit:cover;display:block}
-    .room-mini-more{
-      display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 4px;border-radius:999px;
-      background:rgba(236,72,153,.35);border:1px solid rgba(255,255,255,.35);
-      font-size:9px;font-weight:800;color:#fff;margin-right:4px
-    }
-
     .voice-status-bar{
       display:flex;align-items:center;justify-content:space-between;gap:8px;
       padding:6px 12px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.08);font-size:11px
     }
     .vdot{width:8px;height:8px;border-radius:50%;background:#9ca3af;display:inline-block;margin-left:5px}
-    .vdot.live{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+    .vdot.live{background:var(--ok)}
     .audio-unlock-bar{
       padding:8px 12px;background:rgba(245,158,11,.22);border-bottom:1px solid rgba(245,158,11,.45);
       display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:700
     }
     .pinned{background:rgba(245,158,11,.16);border-bottom:1px solid rgba(245,158,11,.3);padding:7px 14px;font-size:12px;color:#fde68a}
-
-    /* مشغل الموسيقى المبسط داخل الغرفة */
     .music-mini{
       display:flex;align-items:center;justify-content:space-between;gap:8px;
       padding:7px 12px;background:rgba(124,58,237,.18);border-bottom:1px solid rgba(255,255,255,.12);font-size:12px
     }
     .music-mini .mtitle{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
 
-    /* شبكة المقاعد الدائرية 3D الموحدة */
     .seats-stage{
       position:relative;padding:12px 10px 10px;
       background:radial-gradient(ellipse at 50% 42%, rgba(124,58,237,.22), rgba(10,6,22,.42) 72%);
       border-bottom:1px solid var(--border)
     }
-    .seats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 8px;position:relative;z-index:2}
-    .seat{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;position:relative;transition:transform .2s cubic-bezier(.22,1,.36,1)}
-    .seat:active{transform:scale(.94)}
-
+    .seats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 8px}
+    .seat{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;position:relative}
     .seat-orb{
-      position:relative;width:60px;height:60px;border-radius:50%;
-      display:grid;place-items:center;
+      position:relative;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;
       background:radial-gradient(circle at 30% 25%, rgba(255,255,255,.22), rgba(124,58,237,.18) 58%, rgba(12,8,26,.82) 100%);
-      border:1.5px solid rgba(255,255,255,.24);
-      box-shadow:0 12px 22px rgba(0,0,0,.52), inset 0 2px 5px rgba(255,255,255,.28);
-      transition:transform .2s,box-shadow .2s,border-color .2s
+      border:1.5px solid rgba(255,255,255,.24);box-shadow:0 12px 22px rgba(0,0,0,.52)
     }
-    .seat.occ .seat-orb{
-      background:radial-gradient(circle at 30% 25%, rgba(255,255,255,.26), rgba(124,58,237,.35) 60%, rgba(18,10,38,.88) 100%);
-      border-color:rgba(196,181,253,.55);
-      box-shadow:0 14px 26px rgba(124,58,237,.36), 0 6px 14px rgba(0,0,0,.5), inset 0 2px 5px rgba(255,255,255,.35)
-    }
-    .seat.vip .seat-orb{
-      border-color:#fbbf24;
-      box-shadow:0 12px 24px rgba(245,158,11,.34), inset 0 2px 6px rgba(254,240,138,.45)
-    }
-    .seat.locked .seat-orb{
-      opacity:.55;
-      background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.08), rgba(15,12,28,.85));
-      border-style:dashed
-    }
+    .seat.occ .seat-orb{border-color:rgba(196,181,253,.55)}
+    .seat.locked .seat-orb{opacity:.55;border-style:dashed}
     .seatav{
-      width:48px;height:48px;border-radius:50%;
+      width:46px;height:46px;border-radius:50%;
       background:linear-gradient(135deg,rgba(124,58,237,.45),rgba(236,72,153,.35));
-      display:grid;place-items:center;font-size:16px;font-weight:800;overflow:hidden;
+      display:grid;place-items:center;font-size:15px;font-weight:800;overflow:hidden;
       border:1.5px solid rgba(255,255,255,.32);color:#fff
     }
     .seatav img{width:100%;height:100%;object-fit:cover;display:block}
     .seat-num-badge{
       position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;padding:0 4px;border-radius:999px;
-      background:rgba(14,10,30,.88);border:1px solid rgba(255,255,255,.28);
-      color:#e9d5ff;font-size:9.5px;font-weight:800;display:grid;place-items:center;z-index:3
+      background:rgba(14,10,30,.88);border:1px solid rgba(255,255,255,.28);color:#e9d5ff;font-size:9.5px;font-weight:800;display:grid;place-items:center
     }
-    .seat.occ .seat-num-badge{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border-color:#fff}
+    .seat.speak .seat-orb{border-color:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.35),0 0 22px rgba(74,222,128,.75)}
+    .seat.gift-hit .seat-orb{border-color:#fde047;box-shadow:0 0 0 4px rgba(250,204,21,.45),0 0 28px rgba(236,72,153,.85)}
+    .mutedmark{position:absolute;bottom:-2px;left:-2px;background:#ef4444;color:#fff;border-radius:50%;width:19px;height:19px;font-size:10px;display:grid;place-items:center;border:1.5px solid #fff}
 
-    /* حلقة التحدث الصوتية النشطة */
-    .seat.speak .seat-orb{
-      border-color:#4ade80;
-      box-shadow:0 0 0 3px rgba(74,222,128,.35), 0 0 22px rgba(74,222,128,.75), 0 12px 24px rgba(0,0,0,.5);
-      animation:pulseSpeak 1.15s infinite ease-in-out
-    }
-    @keyframes pulseSpeak{
-      0%,100%{transform:scale(1)}
-      50%{transform:scale(1.06)}
-    }
-
-    /* توهج استقبال الهدية على المقعد المستهدف */
-    .seat.gift-hit .seat-orb{
-      border-color:#fde047;
-      box-shadow:0 0 0 4px rgba(250,204,21,.45), 0 0 28px rgba(236,72,153,.85);
-      animation:seatGiftBounce .65s ease 2
-    }
-    @keyframes seatGiftBounce{
-      0%,100%{transform:scale(1)}
-      50%{transform:scale(1.14)}
-    }
-
-    .mutedmark{
-      position:absolute;bottom:-2px;left:-2px;background:#ef4444;color:#fff;
-      border-radius:50%;width:19px;height:19px;font-size:10px;display:grid;place-items:center;
-      border:1.5px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.45);z-index:3
-    }
+    /* اسم المستخدم كامل على المقعد دون قص */
     .seat-meta-pill{
-      width:86px;padding:2px 6px;border-radius:999px;
-      background:rgba(12,8,26,.62);border:1px solid rgba(255,255,255,.12);
-      text-align:center;backdrop-filter:blur(6px)
+      width:100%;max-width:118px;padding:3px 6px;border-radius:12px;
+      background:rgba(12,8,26,.68);border:1px solid rgba(255,255,255,.14);text-align:center
     }
-    .seatname{font-size:10.5px;font-weight:700;max-width:78px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;margin:0 auto}
-    .seatsub{font-size:9px;color:var(--muted);line-height:1.2}
+    .seatname-full{
+      font-size:10.5px;font-weight:800;line-height:1.3;
+      white-space:normal;word-break:break-word;color:#fff;margin:0 auto
+    }
+    .seatsub{font-size:9px;color:var(--muted);line-height:1.25;margin-top:2px}
 
-    /* شريط دخول الأعضاء المدمج أعلى الشات (3 ثوانٍ) */
-    .entry-banner-wrap{
-      position:sticky;top:4px;z-index:8;display:flex;flex-direction:column;gap:5px;
-      pointer-events:none;margin-bottom:4px
-    }
+    .entry-banner-wrap{position:sticky;top:4px;z-index:8;display:flex;flex-direction:column;gap:5px;pointer-events:none;margin-bottom:4px}
     .entry-ribbon{
-      align-self:flex-start;display:inline-flex;align-items:center;gap:7px;
-      padding:5px 12px;border-radius:999px;
+      align-self:flex-start;display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;
       background:linear-gradient(135deg,rgba(124,58,237,.88),rgba(236,72,153,.85));
-      border:1px solid rgba(255,255,255,.38);color:#fff;font-size:11.5px;font-weight:800;
-      box-shadow:0 8px 20px rgba(0,0,0,.4);
-      animation:entrySlideIn .28s ease, entryFadeOut .45s ease 2.55s forwards
+      border:1px solid rgba(255,255,255,.38);color:#fff;font-size:11.5px;font-weight:800
     }
-    .entry-ribbon-av{
-      width:20px;height:20px;border-radius:50%;overflow:hidden;display:inline-grid;place-items:center;
-      background:rgba(0,0,0,.28);font-size:10px;border:1px solid rgba(255,255,255,.5)
-    }
-    .entry-ribbon-av img{width:100%;height:100%;object-fit:cover;display:block}
-    @keyframes entrySlideIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
-    @keyframes entryFadeOut{to{opacity:0;transform:translateY(-6px)}}
-
-    /* سؤال الغرفة التفاعلي */
-    .quiz-box{
-      margin:6px 12px 0;padding:9px 11px;border-radius:14px;
-      background:rgba(56,189,248,.14);border:1px solid rgba(56,189,248,.35);font-size:12px
-    }
-    .quiz-opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
-
     .chat{flex:1;overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:7px;position:relative}
     .msg{
       max-width:82%;padding:8px 12px;border-radius:16px;
       background:linear-gradient(145deg,rgba(255,255,255,.13),rgba(255,255,255,.06));
-      backdrop-filter:blur(10px);
-      border:1px solid rgba(255,255,255,.14);
-      font-size:13px;line-height:1.5;word-wrap:break-word;align-self:flex-start;
-      box-shadow:0 6px 14px rgba(0,0,0,.25)
+      border:1px solid rgba(255,255,255,.14);font-size:13px;line-height:1.5;word-wrap:break-word;align-self:flex-start
     }
-    .msg.me{
-      align-self:flex-end;
-      background:linear-gradient(135deg,rgba(124,58,237,.58),rgba(236,72,153,.42));
-      border-color:rgba(255,255,255,.28)
-    }
+    .msg.me{align-self:flex-end;background:linear-gradient(135deg,rgba(124,58,237,.58),rgba(236,72,153,.42))}
     .msg .who{font-size:10.5px;font-weight:700;color:#e9d5ff;margin-bottom:2px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
     .msg .tm{font-size:9.5px;color:var(--muted);margin-top:3px;text-align:left}
-    .msg.sys{
-      align-self:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
-      color:#e2dcf5;font-size:11px;padding:4px 12px;border-radius:999px
-    }
+    .msg.sys{align-self:center;background:rgba(255,255,255,.08);color:#e2dcf5;font-size:11px;padding:4px 12px;border-radius:999px}
 
     .room-bar{
       display:flex;align-items:center;gap:6px;padding:8px 10px;
       background:rgba(12,8,26,.76);backdrop-filter:blur(16px);border-top:1px solid var(--border)
     }
-    .room-bar input{
-      flex:1;min-width:0;padding:9px 12px;border-radius:999px;
-      background:rgba(255,255,255,.1);border:1px solid var(--border);font-size:13px;outline:none
-    }
-    .room-bar input:focus{border-color:var(--acc)}
+    .room-bar input{flex:1;min-width:0;padding:9px 12px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid var(--border);font-size:13px;outline:none}
     .round{
       width:38px;height:38px;border-radius:50%;
       background:linear-gradient(145deg,var(--glass-2),var(--glass-3));
-      border:1px solid var(--border);display:grid;place-items:center;font-size:16px;flex-shrink:0;
-      box-shadow:0 6px 14px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.22);
-      transition:transform .15s,background .18s,box-shadow .18s
+      border:1px solid var(--border);display:grid;place-items:center;font-size:16px;flex-shrink:0
     }
-    .round:active{transform:scale(.92)}
-    .round.mic-on{
-      background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border-color:#86efac;
-      box-shadow:0 0 16px rgba(34,197,94,.55)
-    }
-    .round.mic-off{
-      background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border-color:#fca5a5;
-      box-shadow:0 0 14px rgba(239,68,68,.45)
-    }
-    .round.mic-idle{
-      background:linear-gradient(135deg,rgba(124,58,237,.55),rgba(236,72,153,.45));color:#fff;
-      border-color:rgba(255,255,255,.32)
-    }
-    .round.spk-on{
-      background:linear-gradient(135deg,rgba(56,189,248,.42),rgba(124,58,237,.42));
-      border-color:rgba(125,211,252,.55);color:#fff
-    }
-    .round.spk-muted{
-      background:linear-gradient(135deg,rgba(239,68,68,.55),rgba(153,27,27,.65));
-      border-color:rgba(252,165,165,.5);color:#fff
-    }
+    .round.mic-on{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff}
+    .round.mic-off{background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff}
+    .round.spk-muted{background:linear-gradient(135deg,rgba(239,68,68,.55),rgba(153,27,27,.65));color:#fff}
 
-    /* فقاعة الغرفة الدائرية القابلة للسحب */
     .floating-room-orb{
-      position:fixed;left:22px;bottom:145px;z-index:50;
-      width:68px;height:68px;border-radius:50%;
-      background:linear-gradient(135deg,var(--acc),var(--acc2));
-      border:2px solid #fff;
-      box-shadow:0 16px 32px rgba(124,58,237,.55), 0 6px 16px rgba(0,0,0,.55);
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      color:#fff;font-weight:800;cursor:grab;touch-action:none;
-      transition:box-shadow .2s,transform .15s
+      position:fixed;left:22px;bottom:145px;z-index:50;width:68px;height:68px;border-radius:50%;
+      background:linear-gradient(135deg,var(--acc),var(--acc2));border:2px solid #fff;
+      box-shadow:0 16px 32px rgba(124,58,237,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;
+      color:#fff;font-weight:800;cursor:grab;touch-action:none
     }
-    .floating-room-orb:active{cursor:grabbing;transform:scale(1.04)}
-    .floating-room-orb .orb-avatar{
-      width:44px;height:44px;border-radius:50%;overflow:hidden;
-      display:grid;place-items:center;background:rgba(0,0,0,.25);font-size:18px;
-      border:1.5px solid rgba(255,255,255,.65)
-    }
+    .floating-room-orb .orb-avatar{width:42px;height:42px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:rgba(0,0,0,.25);font-size:18px}
     .floating-room-orb .orb-avatar img{width:100%;height:100%;object-fit:cover;display:block}
-    .floating-room-orb .orb-label{
-      font-size:9.5px;line-height:1.15;margin-top:2px;max-width:62px;
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(0,0,0,.7)
-    }
+    .floating-room-orb .orb-label{font-size:9.5px;max-width:62px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-    /* حركة طيران الهدية باتجاه المقعد المستهدف */
     .gift-projectile{
-      position:fixed;z-index:55;pointer-events:none;
-      display:flex;flex-direction:column;align-items:center;gap:2px;
+      position:fixed;z-index:55;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:2px;
       font-size:42px;transform:translate(-50%,-50%) scale(.85);
-      transition:left .75s cubic-bezier(.22,1,.36,1), top .75s cubic-bezier(.22,1,.36,1), transform .75s cubic-bezier(.22,1,.36,1), opacity .45s ease;
-      filter:drop-shadow(0 10px 20px rgba(0,0,0,.55))
+      transition:left .75s cubic-bezier(.22,1,.36,1),top .75s cubic-bezier(.22,1,.36,1),transform .75s cubic-bezier(.22,1,.36,1),opacity .45s ease
     }
-    .gift-projectile small{
-      font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;
-      background:rgba(12,8,26,.85);color:#fff;border:1px solid rgba(255,255,255,.28);white-space:nowrap
-    }
+    .gift-projectile small{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(12,8,26,.85);color:#fff;white-space:nowrap}
 
-    /* نافذة البروفايل الخفيفة داخل الغرفة */
-    .room-mini-profile{display:flex;flex-direction:column;gap:10px}
-    .rmp-header{
-      display:flex;align-items:center;gap:12px;padding:11px;border-radius:16px;
-      background:linear-gradient(145deg,var(--glass-2),var(--glass-3));border:1px solid var(--border)
-    }
-    .rmp-info{flex:1;min-width:0}
-    .rmp-name{font-size:15px;font-weight:800;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-    .rmp-sub{font-size:11px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-    .seat-status-pills{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
-    .seat-pill{
-      font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;
-      background:rgba(255,255,255,.1);border:1px solid var(--border);color:var(--txt)
-    }
-    .seat-pill.live{background:rgba(34,197,94,.22);border-color:rgba(74,222,128,.5);color:#86efac}
-    .seat-pill.muted{background:rgba(239,68,68,.22);border-color:rgba(248,113,113,.5);color:#fca5a5}
-    .rmp-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
-    .rmp-metric{
-      padding:8px 6px;border-radius:13px;text-align:center;
-      background:var(--card);border:1px solid var(--border)
-    }
-    .rmp-metric b{display:block;font-size:13.5px}
-    .rmp-metric span{font-size:10px;color:var(--muted)}
-    .rmp-prog-row{font-size:11px;color:var(--muted)}
-    .rmp-prog-row .bar{height:6px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:4px}
-    .rmp-prog-row .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:999px}
-    .celeb-banner{
-      display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
-      background:linear-gradient(135deg,rgba(245,158,11,.28),rgba(236,72,153,.28));
-      border:1px solid rgba(251,191,36,.5);font-size:11px;font-weight:800;color:#fde68a
-    }
-
-    /* شريط اختيار مستلمي الهدايا (الأعضاء الجالسون فقط) */
-    .gift-targets-bar{display:flex;gap:7px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}
-    .gift-targets-bar::-webkit-scrollbar{display:none}
-    .gt-chip{
-      flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;
-      background:var(--card);border:1px solid var(--border);font-size:11.5px;font-weight:700
-    }
-    .gt-chip.sel{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border-color:#fff}
-    .gt-chip-av{
-      width:22px;height:22px;border-radius:50%;overflow:hidden;display:grid;place-items:center;
-      background:rgba(255,255,255,.15);font-size:11px;font-weight:800
-    }
-    .gt-chip-av img{width:100%;height:100%;object-fit:cover;display:block}
-
-    /* قائمة الأغاني داخل نافذة الموسيقى */
-    .track-row{
-      display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:13px;
-      background:var(--card);border:1px solid var(--border);margin-bottom:7px;cursor:pointer
-    }
-    .track-row.playing{border-color:var(--acc2);background:rgba(124,58,237,.2)}
-    .track-row .info{flex:1;min-width:0}
-    .track-row .name{font-size:12.5px;font-weight:700}
-    .track-row .meta{font-size:10.5px;color:var(--muted)}
-
-    /* النوافذ السفلية */
     .scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.62);backdrop-filter:blur(4px);display:none}
     .scrim.open{display:block}
     .sheet{
       position:fixed;bottom:0;left:50%;transform:translate(-50%,100%);width:100%;max-width:480px;max-height:86vh;
       overflow-y:auto;z-index:45;
       background:linear-gradient(165deg,rgba(28,18,56,.96),rgba(13,9,28,.98));
-      backdrop-filter:blur(22px);
-      border-radius:24px 24px 0 0;
-      border-top:1px solid var(--border-hi);
-      padding:10px 16px 26px;
-      transition:transform .25s cubic-bezier(.22,1,.36,1);
-      box-shadow:0 -16px 40px rgba(0,0,0,.65)
+      backdrop-filter:blur(22px);border-radius:24px 24px 0 0;border-top:1px solid var(--border-hi);
+      padding:10px 16px 26px;transition:transform .25s cubic-bezier(.22,1,.36,1)
     }
-    body.light-theme .sheet{
-      background:linear-gradient(165deg,rgba(255,255,255,.98),rgba(242,239,252,.98))
-    }
+    body.light-theme .sheet{background:linear-gradient(165deg,rgba(255,255,255,.98),rgba(242,239,252,.98))}
     .sheet.open{transform:translate(-50%,0)}
     .sheet-handle{width:40px;height:4px;border-radius:999px;background:rgba(255,255,255,.25);margin:0 auto 12px}
-    body.light-theme .sheet-handle{background:rgba(24,18,52,.2)}
     .sheet h3{margin:4px 0 12px;font-size:16px;text-align:center}
     .sheet label{display:block;font-size:12px;color:var(--muted);margin:9px 0 4px}
-    .sheet input,.sheet select,.sheet textarea{
-      width:100%;padding:10px 12px;border-radius:12px;background:var(--card2);border:1px solid var(--border);font-size:13.5px;outline:none
-    }
+    .sheet input,.sheet select,.sheet textarea{width:100%;padding:10px 12px;border-radius:12px;background:var(--card2);border:1px solid var(--border);font-size:13.5px;outline:none}
     .actlist{display:flex;flex-direction:column;gap:7px}
     .actlist button{width:100%;padding:12px;border-radius:13px;background:var(--card2);border:1px solid var(--border);font-size:13.5px;font-weight:700;text-align:right}
     .actlist button.danger{color:#fca5a5;border-color:rgba(239,68,68,.35)}
@@ -757,18 +434,21 @@
     .gift .e{font-size:26px}
     .gift small{display:block;font-size:11px;margin-top:2px}
     .gift .p{font-size:10.5px;color:#fcd34d;font-weight:700}
-    body.light-theme .gift .p{color:#92400e}
     .social-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
     .switchrow{display:flex;align-items:center;justify-content:space-between;padding:11px 4px;border-bottom:1px solid var(--border);font-size:13.5px}
     .switchrow input{width:18px;height:18px}
+    .task-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:12px;background:var(--card);border:1px solid var(--border);font-size:12px;margin-bottom:6px}
+    .track-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:13px;background:var(--card);border:1px solid var(--border);margin-bottom:7px;cursor:pointer}
+    .track-row.playing{border-color:var(--acc2);background:rgba(124,58,237,.2)}
+    .gt-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--card);border:1px solid var(--border);font-size:11.5px;font-weight:700}
+    .gt-chip.sel{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border-color:#fff}
+    .gift-targets-bar{display:flex;gap:7px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}
 
     .toast{
       position:fixed;top:64px;left:50%;transform:translate(-50%,-16px);z-index:90;
       background:linear-gradient(135deg,rgba(26,18,52,.94),rgba(124,58,237,.45));
-      backdrop-filter:blur(14px);
-      color:#fff;border:1px solid var(--border-hi);padding:9px 16px;border-radius:999px;
-      font-size:12.5px;font-weight:700;opacity:0;pointer-events:none;transition:.22s;white-space:nowrap;
-      box-shadow:var(--shadow-float)
+      backdrop-filter:blur(14px);color:#fff;border:1px solid var(--border-hi);padding:9px 16px;border-radius:999px;
+      font-size:12.5px;font-weight:700;opacity:0;pointer-events:none;transition:.22s;white-space:nowrap
     }
     .toast.show{opacity:1;transform:translate(-50%,0)}
   </style>
@@ -794,23 +474,25 @@
 </section>
 
 <div id="app">
+  <!-- الشريط العلوي بدون علامة عملات في الواجهة الرئيسية -->
   <header class="topbar">
-    <div class="brand"><div class="logo">🎙️</div><span>REAL VOICE</span></div>
+    <div class="brand"><div class="logo">🎙️</div><span class="brand-title-full">REAL VOICE</span></div>
     <div class="top-actions">
       <button class="chip" id="theme-toggle-btn" type="button" title="تبديل الوضع الليلي والنهاري">☀️</button>
-      <div class="chip">🪙 <span id="coins-top">0</span></div>
-      <div class="chip">⭐ <span id="level-top">1</span></div>
       <button class="iconbtn" id="notif-btn" type="button" title="الإشعارات">🔔<span class="badge hidden" id="notif-badge">0</span></button>
       <button class="av-mini" id="avatar-top" type="button" title="الملف الشخصي">RV</button>
     </div>
   </header>
 
   <main class="page active" id="page-home">
+    <!-- مكان البنرات في الواجهة الرئيسية (تضاف لاحقاً) -->
+    <section class="banners-slot" id="home-banners-slot">
+      <div class="banners-placeholder" id="home-banners-placeholder">
+        🖼️ مكان البنرات — سيتم إضافتها لاحقاً
+      </div>
+    </section>
+
     <div class="searchbox"><span class="ic">🔍</span><input id="search-input" type="search" placeholder="ابحث عن غرفة أو مستخدم بالاسم أو الـ ID..." /></div>
-    <div class="banner">
-      <div><h3>مرحباً بك في REAL VOICE</h3><p>أنشئ غرفتك الصوتية أو انضم للأصدقاء الآن</p></div>
-      <button class="btn sm" id="banner-create" type="button">+ غرفة</button>
-    </div>
     <div class="tabs" id="home-tabs">
       <button class="tab active" data-filter="all" type="button">الكل</button>
       <button class="tab" data-filter="popular" type="button">الأكثر نشاطاً</button>
@@ -844,23 +526,17 @@
   </main>
 
   <main class="page" id="page-messages">
-    <h2 class="title" style="margin-bottom:10px">الرسائل الخاصة</h2>
+    <h2 class="title" style="margin-bottom:10px">الرسائل الخاصة (للأصدقاء فقط)</h2>
     <div id="dm-list" class="list"></div>
   </main>
 
+  <!-- الملف الشخصي المنظم بدون زحمة -->
   <main class="page" id="page-profile">
     <div class="pf-hero-card">
-      <div class="pf-cover" id="pf-cover">
-        <button class="pf-cover-btn" id="pf-cover-btn" type="button">🖼️ تغيير الغلاف</button>
-        <input id="pf-cover-input" type="file" accept="image/*" class="hidden" />
-      </div>
+      <div class="pf-cover" id="pf-cover"></div>
       <div class="pf-body">
         <div class="pf-head">
-          <div class="pf-av-wrap frame" id="pf-photo-trigger" title="تغيير صورة الحساب">
-            <div class="avatar lg" id="pf-avatar">RV</div>
-            <span class="pf-av-badge">📷</span>
-          </div>
-          <input id="pf-photo-input" type="file" accept="image/*" class="hidden" />
+          <div class="avatar lg" id="pf-avatar">RV</div>
           <div style="flex:1;min-width:0;padding-top:34px">
             <div class="name" id="pf-name">مستخدم</div>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px">
@@ -868,64 +544,40 @@
               <button class="copy-id-btn" id="pf-copy-id" type="button">📋 نسخ</button>
             </div>
           </div>
+          <button class="btn sm" id="pf-settings-btn" type="button">⚙️ الإعدادات</button>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px" id="pf-badges"></div>
-        <div style="display:flex;justify-content:space-between;font-size:12px"><span>المستوى <b id="pf-level">1</b></span><span id="pf-xp">0 / 100 XP</span></div>
-        <div class="xpbar"><i id="pf-bar" style="width:0%"></i></div>
 
-        <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-top:6px"><span id="pf-wealth-title">🪙 الثروة</span><span id="pf-wealth-next">0</span></div>
-        <div class="xpbar"><i id="pf-wealth-bar" style="width:0%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></i></div>
+        <!-- مستوى الجاذبية والثروة بالخارج -->
+        <div class="pf-levels-clean">
+          <div class="pf-level-box">
+            <span>✨ مستوى الجاذبية</span>
+            <strong id="pf-charm-level">Lv.1</strong>
+          </div>
+          <div class="pf-level-box">
+            <span>👑 مستوى الثروة</span>
+            <strong id="pf-wealth-level">Lv.1</strong>
+          </div>
+        </div>
 
-        <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-top:4px"><span id="pf-charm-title">✨ الجاذبية</span><span id="pf-charm-next">0</span></div>
-        <div class="xpbar"><i id="pf-charm-bar" style="width:0%;background:linear-gradient(90deg,#ec4899,#f472b6)"></i></div>
+        <!-- عدد الأصدقاء ومين متبعني بالخارج -->
+        <div class="pf-social-clean">
+          <div class="pf-stat-clean">
+            <b id="pf-friends-count">0</b>
+            <span>عدد الأصدقاء</span>
+          </div>
+          <div class="pf-stat-clean">
+            <b id="pf-followers-count">0</b>
+            <span>من يتابعني</span>
+          </div>
+        </div>
 
-        <div class="pf-quick-actions">
-          <button class="btn" id="pf-edit" type="button">✏️ تعديل</button>
-          <button class="btn gold" id="pf-vip-btn" type="button">👑 VIP</button>
-          <button class="btn ghost" id="pf-share-btn" type="button">🔗 دعوة</button>
-          <button class="btn ghost" id="pf-settings" type="button">⚙️</button>
+        <!-- المحفظة وتعرض عدد العملات في حساب المستخدم -->
+        <div class="wallet-card-clean" id="pf-wallet-box">
+          <span>💼 المحفظة</span>
+          <span class="w-coins"><span id="pf-wallet-coins">0</span> عملة</span>
         </div>
       </div>
     </div>
-
-    <div class="tabs" id="pf-subtabs">
-      <button class="tab active" data-pftab="overview" type="button">نظرة عامة</button>
-      <button class="tab" data-pftab="gifts" type="button">الهدايا والمقتنيات</button>
-      <button class="tab" data-pftab="vip" type="button">عضوية VIP</button>
-    </div>
-
-    <div id="pf-section-overview">
-      <div class="pf-stats">
-        <div class="stat"><b id="pf-followers">0</b><span>المتابعون</span></div>
-        <div class="stat"><b id="pf-following">0</b><span>أتابعهم</span></div>
-        <div class="stat"><b id="pf-friends">0</b><span>الأصدقاء</span></div>
-        <div class="stat"><b id="pf-wealth-val">0</b><span>الثروة</span></div>
-        <div class="stat"><b id="pf-charm-val">0</b><span>الجاذبية</span></div>
-        <div class="stat"><b id="pf-time-cnt">0 د</b><span>وقت الغرف</span></div>
-        <div class="stat"><b id="pf-coins">0</b><span>العملات</span></div>
-        <div class="stat"><b id="pf-gifts">0</b><span>الهدايا</span></div>
-        <div class="stat"><b id="pf-xp-total">0</b><span>نقاط XP</span></div>
-      </div>
-      <div class="row glass" style="flex-direction:column;align-items:stretch;gap:4px;margin-bottom:10px">
-        <div class="name">نبذة تعريفية</div>
-        <div class="small" id="pf-bio" style="line-height:1.6"></div>
-        <div class="small" id="pf-meta"></div>
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <button class="btn" id="pf-daily" style="flex:1" type="button">🎁 مكافأة اليوم (100)</button>
-        <button class="btn ghost" id="pf-topup" type="button">+ شحن 500</button>
-        <button class="btn ghost" id="pf-leader" type="button">🏆 المتصدرون</button>
-      </div>
-      <div class="glass" style="padding:12px;border-radius:16px;margin-bottom:10px">
-        <div class="name" style="margin-bottom:8px">🎯 المهام اليومية</div>
-        <div id="pf-tasks"></div>
-      </div>
-      <h2 class="title" style="margin-bottom:8px">الإنجازات</h2>
-      <div class="ach-list" id="pf-ach"></div>
-    </div>
-
-    <div id="pf-section-gifts" class="hidden"></div>
-    <div id="pf-section-vip" class="hidden"></div>
   </main>
 
   <nav class="nav">
@@ -936,12 +588,11 @@
     <button class="navbtn" data-page="profile" type="button"><span>👤</span><span>حسابي</span></button>
   </nav>
 
-  <!-- غرفة الدردشة الصوتية 3D -->
+  <!-- غرفة الدردشة الصوتية — اسم الروم ظاهر وكامل فوق وداخل الغرفة -->
   <section class="room-view" id="room-view">
     <div class="room-top">
       <button class="iconbtn" id="room-back" type="button" title="خروج">→</button>
 
-      <!-- مربع يمين الغرفة المكبّر (صورة + اسم روم + ID الحساب) بدون كلمة صورة -->
       <div class="room-right-card" id="room-right-card">
         <div class="room-top-thumb-wrap" id="room-top-thumb" title="تغيير صورة الغرفة">
           <span id="room-top-thumb-inner">🎙️</span>
@@ -955,9 +606,7 @@
 
       <button class="chip" id="room-rename-quick" type="button" title="تغيير اسم الغرفة">✏️ اسم</button>
       <button class="room-presence-btn" id="room-presence-btn" type="button" title="المتواجدون في الغرفة">
-        <span>🎧</span>
-        <span id="room-online-count">0</span>
-        <span class="room-avatars-strip" id="room-avatars-strip"></span>
+        <span>🎧</span><span id="room-online-count">0</span>
       </button>
       <button class="iconbtn" id="room-music" type="button" title="الموسيقى">🎵</button>
       <button class="iconbtn" id="room-menu" type="button" title="خيارات">⋮</button>
@@ -986,8 +635,6 @@
       <div class="seats" id="room-seats"></div>
     </div>
 
-    <div class="quiz-box hidden" id="quiz-box"></div>
-
     <div class="chat" id="room-chat">
       <div class="entry-banner-wrap" id="entry-banner-wrap"></div>
     </div>
@@ -1002,7 +649,7 @@
     </div>
   </section>
 
-  <!-- محادثة خاصة -->
+  <!-- محادثة خاصة (للأصدقاء فقط) -->
   <section class="room-view" id="chat-view">
     <div class="room-top">
       <button class="iconbtn" id="chat-back" type="button">→</button>
@@ -1014,7 +661,7 @@
     <div class="room-bar">
       <button class="round" id="chat-emoji" type="button">😀</button>
       <button class="round" id="chat-voice" type="button" title="رسالة صوتية">🎙️</button>
-      <input id="chat-input" type="text" maxlength="300" placeholder="اكتب رسالة خاصة..." />
+      <input id="chat-input" type="text" maxlength="300" placeholder="اكتب رسالة خاصة لصديق..." />
       <button class="round" id="chat-send" type="button">➤</button>
     </div>
   </section>
