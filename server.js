@@ -24,11 +24,10 @@ app.get('/rtc-token', (req, res) => {
     return res.status(400).json({ error: 'channelName is required' });
   }
 
-  const uid = Number.isInteger(Number(req.query.uid)) ? Number(req.query.uid) : 0;
+  const rawUid = req.query.uid !== undefined && req.query.uid !== '' ? Number(req.query.uid) : 0;
+  const uid = Number.isInteger(rawUid) && rawUid >= 0 ? rawUid : 0;
   const role = req.query.role === 'subscriber' ? RtcRole.SUBSCRIBER : RtcRole.PUBLISHER;
   const expireSeconds = Math.min(Math.max(Number(req.query.expire) || 3600, 60), 86400);
-  const currentTimestamp = Math.floor(Date.now() / 1000);
-  const privilegeExpiredTs = currentTimestamp + expireSeconds;
 
   const token = RtcTokenBuilder.buildTokenWithUid(
     APP_ID,
@@ -36,8 +35,8 @@ app.get('/rtc-token', (req, res) => {
     channelName,
     uid,
     role,
-    privilegeExpiredTs,
-    privilegeExpiredTs
+    expireSeconds,
+    expireSeconds
   );
 
   res.json({
@@ -45,7 +44,7 @@ app.get('/rtc-token', (req, res) => {
     appId: APP_ID,
     channelName,
     uid,
-    expireAt: privilegeExpiredTs
+    expiresIn: expireSeconds
   });
 });
 
