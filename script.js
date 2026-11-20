@@ -1,4 +1,4 @@
-/* REAL VOICE — نسخة محسّنة وسلسة (الواجهة + Firebase Realtime + Agora RTC + مشغل موسيقى مشترك + صورة من المعرض) */
+/* REAL VOICE — نسخة محسّنة وسلسة (منع تكرار الحسابات + شريط صور المتواجدين + استجابة فورية + Agora + موسيقى) */
 (function (global) {
   "use strict";
 
@@ -14,7 +14,8 @@
   var TOKEN_URL = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";
 
   var CONFIG = {
-    storageKey: "rv_state_v2",
+    storageKey: "rv_state_v3",
+    fixedUidKey: "rv_fixed_uid_v1",
     startCoins: 1000,
     xpPerLevel: 100,
     badWords: ["شتيمة", "قذر", "حقير", "غبي", "كلب", "حمار"]
@@ -97,6 +98,18 @@
     return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
   }
   function uid() { return "u" + Math.random().toString(36).slice(2, 9); }
+
+  function getOrCreateFixedUid() {
+    try {
+      var saved = localStorage.getItem(CONFIG.fixedUidKey);
+      if (saved && saved.trim()) return saved.trim();
+      var fresh = "rv_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem(CONFIG.fixedUidKey, fresh);
+      return fresh;
+    } catch (e) {
+      return "rv_" + Math.random().toString(36).slice(2, 10);
+    }
+  }
 
   var toastTimer = null;
   function toast(msg) {
@@ -212,47 +225,51 @@
 
   function setupAgoraClient() {
     if (voice.client || !global.AgoraRTC) return;
-    voice.client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-    voice.client.enableAudioVolumeIndicator();
+    try {
+      voice.client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+      voice.client.enableAudioVolumeIndicator();
 
-    voice.client.on("user-published", async function (user, mediaType) {
-      try {
-        await voice.client.subscribe(user, mediaType);
-        if (mediaType === "audio" && user.audioTrack) {
-          user.audioTrack.play();
-        }
-      } catch (e) {
-        console.warn("Subscribe error", e);
-      }
-    });
-
-    voice.client.on("user-unpublished", function (user) {
-      if (user && user.audioTrack) {
-        try { user.audioTrack.stop(); } catch (e) { /* */ }
-      }
-      if (user) delete voice.speakingNums[user.uid];
-      updateSpeakingIndicators();
-      applyMusicDucking();
-    });
-
-    voice.client.on("user-left", function (user) {
-      if (user) delete voice.speakingNums[user.uid];
-      updateSpeakingIndicators();
-      applyMusicDucking();
-    });
-
-    voice.client.on("volume-indicator", function (volumes) {
-      var active = {};
-      (volumes || []).forEach(function (v) {
-        if (v.level > 8) {
-          var key = v.uid === 0 ? voice.uidNum : v.uid;
-          active[key] = true;
+      voice.client.on("user-published", async function (user, mediaType) {
+        try {
+          await voice.client.subscribe(user, mediaType);
+          if (mediaType === "audio" && user.audioTrack) {
+            user.audioTrack.play();
+          }
+        } catch (e) {
+          console.warn("Subscribe error", e);
         }
       });
-      voice.speakingNums = active;
-      updateSpeakingIndicators();
-      applyMusicDucking();
-    });
+
+      voice.client.on("user-unpublished", function (user) {
+        if (user && user.audioTrack) {
+          try { user.audioTrack.stop(); } catch (e) { /* */ }
+        }
+        if (user) delete voice.speakingNums[user.uid];
+        updateSpeakingIndicators();
+        applyMusicDucking();
+      });
+
+      voice.client.on("user-left", function (user) {
+        if (user) delete voice.speakingNums[user.uid];
+        updateSpeakingIndicators();
+        applyMusicDucking();
+      });
+
+      voice.client.on("volume-indicator", function (volumes) {
+        var active = {};
+        (volumes || []).forEach(function (v) {
+          if (v.level > 8) {
+            var key = v.uid === 0 ? voice.uidNum : v.uid;
+            active[key] = true;
+          }
+        });
+        voice.speakingNums = active;
+        updateSpeakingIndicators();
+        applyMusicDucking();
+      });
+    } catch (e) {
+      console.warn("Agora setup error", e);
+    }
   }
 
   async function fetchRtcToken(channelName, uidNum, roleName) {
@@ -261,12 +278,18 @@
     url.searchParams.set("uid", String(uidNum));
     url.searchParams.set("role", roleName);
 
-    var res = await fetch(url.toString(), { method: "GET" });
-    var data = await res.json();
-    if (!res.ok || !data.token || !data.appId) {
-      throw new Error(data.error || "فشل جلب التوكن من السيرفر");
+    var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var tid = ctrl ? setTimeout(function () { ctrl.abort(); }, 7000) : null;
+    try {
+      var res = await fetch(url.toString(), { method: "GET", signal: ctrl ? ctrl.signal : undefined });
+      var data = await res.json();
+      if (!res.ok || !data.token || !data.appId) {
+        throw new Error(data.error || "فشل جلب التوكن من السيرفر");
+      }
+      return data;
+    } finally {
+      if (tid) clearTimeout(tid);
     }
-    return data;
   }
 
   async function stopLocalMic() {
@@ -334,7 +357,7 @@
 
     if (isDj && !m.paused && m.url.indexOf("blob:") !== 0) {
       if (voice.role !== "publisher") {
-        await joinVoiceChannel(UI.roomId, "publisher");
+        joinVoiceChannel(UI.roomId, "publisher");
       }
       if (global.AgoraRTC && typeof AgoraRTC.createBufferSourceAudioTrack === "function" && voice.client && voice.client.connectionState === "CONNECTED") {
         try {
@@ -715,13 +738,11 @@
   }
 
   async function joinVoiceChannel(channelName, desiredRole) {
-    if (!global.AgoraRTC) {
-      toast("مكتبة الصوت غير محمّلة");
-      return false;
-    }
+    if (!global.AgoraRTC) return false;
     if (voice.joining || voice.leaving) return false;
 
     setupAgoraClient();
+    if (!voice.client) return false;
     voice.joining = true;
 
     try {
@@ -754,7 +775,6 @@
       return true;
     } catch (err) {
       console.warn("Agora join error:", err);
-      toast("تعذر الاتصال بالصوت: " + (err && err.message ? err.message : "خطأ شبكة"));
       return false;
     } finally {
       voice.joining = false;
@@ -897,10 +917,11 @@
   }
 
   function freshState() {
-    var randNum = Math.floor(10000 + Math.random() * 89999);
+    var fixedId = getOrCreateFixedUid();
+    var num = hashNum(fixedId);
     return {
       me: {
-        id: "RV-" + randNum, num: randNum, name: "مستخدم جديد", photo: "",
+        id: fixedId, num: num, name: "مستخدم جديد", photo: "",
         bio: "مرحباً! أنا جديد في REAL VOICE 👋", coins: CONFIG.startCoins, xp: 0, vip: 0,
         followers: 0, following: 0, visits: 0, joined: now(), country: "🌍 غير محدد",
         gifts: 0, sent: 0, msgCount: 0, ach: {},
@@ -934,12 +955,14 @@
   }
 
   function loadLocal() {
+    var fixedId = getOrCreateFixedUid();
     try {
       var raw = localStorage.getItem(CONFIG.storageKey);
       if (raw) {
         S = JSON.parse(raw);
         if (S && S.me && S.rooms) {
-          if (!S.me.num) S.me.num = hashNum(S.me.id);
+          S.me.id = fixedId;
+          if (!S.me.num) S.me.num = hashNum(fixedId);
           if (S.me.photo == null) S.me.photo = "";
           if (!S.unread) S.unread = {};
           if (!S.dms) S.dms = {};
@@ -958,14 +981,14 @@
   }
 
   function saveMeCloud() {
-    if (!cloud.on || !cloud.fbUser) return;
+    if (!cloud.on || !S || !S.me) return;
     cloud.db.ref("users/" + S.me.id).update({
       id: S.me.id, num: S.me.num, name: S.me.name, photo: S.me.photo || "", bio: S.me.bio,
       coins: S.me.coins, xp: S.me.xp, vip: S.me.vip,
       followers: S.me.followers, visits: S.me.visits, country: S.me.country,
       gifts: S.me.gifts, sent: S.me.sent, msgCount: S.me.msgCount, ach: S.me.ach,
       daily: S.me.daily || 0, tasks: S.me.tasks || {}, invites: S.me.invites || 0,
-      level: level()
+      level: level(), online: true
     }).catch(function () { /* */ });
   }
 
@@ -977,19 +1000,28 @@
   function normalizeRoom(id, r) {
     r = r || {};
     var n = Number(r.seatCount) || 9, seats = [];
+    var seenSeatUids = {};
     for (var i = 0; i < n; i++) {
       var s = (r.seats && r.seats[i]) || {};
+      var seatUid = s.uid || null;
+      if (seatUid) {
+        if (seenSeatUids[seatUid]) seatUid = null;
+        else seenSeatUids[seatUid] = true;
+      }
       seats.push({
-        uid: s.uid || null,
+        uid: seatUid,
         locked: !!s.locked,
         muted: !!s.muted,
         vip: s.vip != null ? !!s.vip : i === 0
       });
     }
+    var rawListeners = Object.keys(r.listeners || {}).filter(function (uidKey) {
+      return !seenSeatUids[uidKey];
+    });
     return {
       id: id, name: r.name || "غرفة", desc: r.desc || "", cat: r.cat || "chat",
       owner: r.owner || "", mods: Object.keys(r.mods || {}),
-      seats: seats, listeners: Object.keys(r.listeners || {}),
+      seats: seats, listeners: rawListeners,
       bans: Object.keys(r.bans || {}), pass: r.pass || "",
       priv: !!r.priv, locked: !!r.locked, pinned: r.pinned || "",
       created: r.created || 0, color: r.color || 0, icon: r.icon || 0,
@@ -1044,119 +1076,118 @@
     return new Promise(function (resolve) {
       var resolved = false;
       function finish() { if (!resolved) { resolved = true; resolve(); } }
+      var safetyTimer = setTimeout(finish, 3000);
 
-      cloud.auth.onAuthStateChanged(function (fbUser) {
-        if (!fbUser) return;
-        cloud.fbUser = fbUser;
-        var myId = fbUser.uid;
-        var myNum = hashNum(myId);
-        var uRef = cloud.db.ref("users/" + myId);
+      var myId = getOrCreateFixedUid();
+      var myNum = hashNum(myId);
+      S.me.id = myId;
+      S.me.num = myNum;
 
-        uRef.once("value").then(function (snap) {
-          var p = snap.val();
-          if (p && p.num) {
-            S.me = Object.assign(S.me, p, { id: myId, num: p.num });
-          } else {
-            S.me.id = myId;
-            S.me.num = myNum;
-            S.me.joined = now();
-            uRef.set(Object.assign({}, S.me, { online: true, level: level() }));
-          }
-          ensureDailyTasks();
+      var uRef = cloud.db.ref("users/" + myId);
+      uRef.once("value").then(function (snap) {
+        var p = snap.val();
+        if (p && p.id) {
+          S.me = Object.assign({}, S.me, p, { id: myId, num: p.num || myNum });
+        } else {
+          uRef.set(Object.assign({}, S.me, { online: true, level: level() }));
+        }
+        ensureDailyTasks();
 
-          var params = new URLSearchParams(location.search);
-          var refUid = params.get("ref");
-          if (refUid && refUid !== S.me.id && !S.me._invitedBy) {
-            S.me._invitedBy = refUid;
-            cloud.db.ref("users/" + refUid + "/invites").transaction(function (c) { return (c || 0) + 1; });
-          }
+        var params = new URLSearchParams(location.search);
+        var refUid = params.get("ref");
+        if (refUid && refUid !== S.me.id && !S.me._invitedBy) {
+          S.me._invitedBy = refUid;
+          cloud.db.ref("users/" + refUid + "/invites").transaction(function (c) { return (c || 0) + 1; });
+        }
 
-          trackListener("app", cloud.db.ref(".info/connected"), "value", function (cs) {
-            if (cs.val() !== true) return;
-            uRef.child("online").onDisconnect().set(false);
-            uRef.child("lastSeen").onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
-            uRef.update({ online: true });
+        trackListener("app", cloud.db.ref(".info/connected"), "value", function (cs) {
+          if (cs.val() !== true) return;
+          uRef.child("online").onDisconnect().set(false);
+          uRef.child("lastSeen").onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
+          uRef.update({ online: true });
+        });
+
+        trackListener("app", cloud.db.ref("users"), "value", function (usnap) {
+          var val = usnap.val() || {};
+          cloud.usersMap = val;
+          var list = [];
+          Object.keys(val).forEach(function (k) {
+            if (k !== S.me.id) list.push(Object.assign({ id: k }, val[k]));
           });
+          S.users = list;
+          renderTop();
+          if (UI.page === "home" && UI.query.trim()) renderHome();
+          if (UI.page === "friends") renderFriends();
+          if (UI.page === "messages") renderMessages();
+          if (UI.roomId) renderRoom();
+        });
 
-          trackListener("app", cloud.db.ref("users"), "value", function (usnap) {
-            var val = usnap.val() || {};
-            cloud.usersMap = val;
-            var list = [];
-            Object.keys(val).forEach(function (k) {
-              if (k !== S.me.id) list.push(Object.assign({ id: k }, val[k]));
-            });
-            S.users = list;
-            renderTop();
-            if (UI.page === "home" && UI.query.trim()) renderHome();
-            if (UI.page === "friends") renderFriends();
-            if (UI.page === "messages") renderMessages();
-            if (UI.roomId) renderRoom();
+        trackListener("app", cloud.db.ref("rooms"), "value", function (rsnap) {
+          var val = rsnap.val() || {};
+          var list = [];
+          Object.keys(val).forEach(function (rid) {
+            list.push(normalizeRoom(rid, val[rid]));
           });
+          S.rooms = list;
 
-          trackListener("app", cloud.db.ref("rooms"), "value", function (rsnap) {
-            var val = rsnap.val() || {};
-            var list = [];
-            Object.keys(val).forEach(function (rid) {
-              list.push(normalizeRoom(rid, val[rid]));
-            });
-            S.rooms = list;
-
-            if (UI.roomId) {
-              var cur = getRoom(UI.roomId);
-              if (!cur) {
-                toast("تم إغلاق الغرفة من المالك");
-                leaveRoom(false);
-              } else if (cur.bans.indexOf(S.me.id) >= 0) {
-                toast("تم حظرك من هذه الغرفة 🚫");
-                leaveRoom(false);
-              } else {
-                syncMicHardwareState();
-                renderRoom();
-              }
+          if (UI.roomId) {
+            var cur = getRoom(UI.roomId);
+            if (!cur) {
+              toast("تم إغلاق الغرفة من المالك");
+              leaveRoom(false);
+            } else if (cur.bans.indexOf(S.me.id) >= 0) {
+              toast("تم حظرك من هذه الغرفة 🚫");
+              leaveRoom(false);
+            } else {
+              syncMicHardwareState();
+              renderRoom();
             }
-            if (UI.page === "home") renderHome();
-            else if (UI.page === "rooms") renderRooms();
-            else if (UI.page === "friends") renderFriends();
-          });
+          }
+          if (UI.page === "home") renderHome();
+          else if (UI.page === "rooms") renderRooms();
+          else if (UI.page === "friends") renderFriends();
+        });
 
-          trackListener("app", cloud.db.ref("social/" + S.me.id), "value", function (ssnap) {
-            var sv = ssnap.val() || {};
-            S.friends = Object.keys(sv.friends || {});
-            S.requests = Object.keys(sv.requests || {});
-            S.sentReq = Object.keys(sv.sentReq || {});
-            S.follows = Object.keys(sv.follows || {});
-            S.blocked = Object.keys(sv.blocked || {});
-            renderTop();
-            if (UI.page === "friends") renderFriends();
-            if (UI.page === "profile") renderProfile();
-          });
+        trackListener("app", cloud.db.ref("social/" + S.me.id), "value", function (ssnap) {
+          var sv = ssnap.val() || {};
+          S.friends = Object.keys(sv.friends || {});
+          S.requests = Object.keys(sv.requests || {});
+          S.sentReq = Object.keys(sv.sentReq || {});
+          S.follows = Object.keys(sv.follows || {});
+          S.blocked = Object.keys(sv.blocked || {});
+          renderTop();
+          if (UI.page === "friends") renderFriends();
+          if (UI.page === "profile") renderProfile();
+        });
 
-          trackListener("app", cloud.db.ref("notifications/" + S.me.id).limitToLast(50), "value", function (nsnap) {
-            var nv = nsnap.val() || {};
-            var arr = Object.keys(nv).map(function (k) {
-              return Object.assign({ id: k }, nv[k]);
-            }).sort(function (a, b) { return b.t - a.t; });
-            S.notifs = arr;
-            renderTop();
-          });
+        trackListener("app", cloud.db.ref("notifications/" + S.me.id).limitToLast(50), "value", function (nsnap) {
+          var nv = nsnap.val() || {};
+          var arr = Object.keys(nv).map(function (k) {
+            return Object.assign({ id: k }, nv[k]);
+          }).sort(function (a, b) { return b.t - a.t; });
+          S.notifs = arr;
+          renderTop();
+        });
 
-          attachDmInboxListener(myId);
+        attachDmInboxListener(myId);
 
-          saveLocal();
-          finish();
-        }).catch(function () { finish(); });
-      });
-
-      cloud.auth.signInAnonymously().catch(function (err) {
-        console.warn("Anonymous auth failed, using local mode:", err);
-        cloud.on = false;
+        saveLocal();
+        clearTimeout(safetyTimer);
+        finish();
+      }).catch(function () {
+        clearTimeout(safetyTimer);
         finish();
       });
+
+      if (cloud.auth) {
+        cloud.auth.signInAnonymously().catch(function () { /* نعتمد على الهوية الثابتة */ });
+      }
     });
   }
 
   /* ========= 6. دوال البيانات المساعدة ========= */
   function getUser(id) {
+    if (!id) return { id: "", num: 0, name: "مستخدم", photo: "", online: false, bio: "", vip: 0, level: 1 };
     if (id === S.me.id) {
       return {
         id: S.me.id, num: S.me.num, name: S.me.name, photo: S.me.photo || "", online: true,
@@ -1198,7 +1229,7 @@
     triggerBrowserNotif("REAL VOICE " + icon, text);
 
     if (cloud.on && cloud.db) {
-      cloud.db.ref("notifications/" + uidTarget).push({ icon: icon, text: text, t: serverTs(), read: false });
+      cloud.db.ref("notifications/" + uidTarget).push({ icon: icon, text: text, t: serverTs(), read: false }).catch(function () { /* */ });
       return;
     }
     if (uidTarget === S.me.id) {
@@ -1208,9 +1239,10 @@
   }
 
   function pushRoomMsg(room, msgObj) {
+    if (!room) return;
     var payload = Object.assign({}, msgObj, { t: serverTs() });
     if (cloud.on && cloud.db) {
-      cloud.db.ref("roomMessages/" + room.id).push(payload);
+      cloud.db.ref("roomMessages/" + room.id).push(payload).catch(function () { /* */ });
     } else {
       room.msgs.push(Object.assign({}, msgObj, { t: now() }));
       if (room.msgs.length > 150) room.msgs.shift();
@@ -1218,10 +1250,27 @@
     }
   }
 
+  function getRoomParticipantIds(room) {
+    var seen = {};
+    var ids = [];
+    if (!room) return ids;
+    (room.seats || []).forEach(function (s) {
+      if (s && s.uid && !seen[s.uid]) {
+        seen[s.uid] = true;
+        ids.push(s.uid);
+      }
+    });
+    (room.listeners || []).forEach(function (uidItem) {
+      if (uidItem && !seen[uidItem]) {
+        seen[uidItem] = true;
+        ids.push(uidItem);
+      }
+    });
+    return ids;
+  }
+
   function count(room) {
-    var n = room.listeners.length;
-    room.seats.forEach(function (s) { if (s.uid) n++; });
-    return n;
+    return getRoomParticipantIds(room).length;
   }
 
   function seatIndexOf(room, id) {
@@ -1443,8 +1492,14 @@
   }
 
   /* ========= 8. النوافذ السفلية ========= */
-  function openSheet(html) { $("sheet").innerHTML = html; $("scrim").classList.add("open"); }
-  function closeSheet() { $("scrim").classList.remove("open"); }
+  function openSheet(html) {
+    $("sheet").innerHTML = html;
+    $("scrim").classList.add("open");
+  }
+  function closeSheet() {
+    $("scrim").classList.remove("open");
+    $("sheet").onclick = null;
+  }
 
   function actionList(title, items) {
     var html = "<h3>" + esc(title) + '</h3><div class="actlist">';
@@ -1571,7 +1626,7 @@
     box.innerHTML = '<div><b>🧠 سؤال الغرفة:</b> ' + esc(q.q) + '</div><div class="quiz-opts">' + optsHtml + "</div>";
   }
 
-  async function enterRoom(id, skipPass) {
+  function enterRoom(id, skipPass) {
     var room = getRoom(id);
     if (!room) { toast("الغرفة غير موجودة"); return; }
     if (room.bans.indexOf(S.me.id) >= 0) { toast("أنت محظور من هذه الغرفة 🚫"); return; }
@@ -1587,7 +1642,7 @@
     }
 
     if (UI.roomId && UI.roomId !== id) {
-      await leaveRoom(true);
+      leaveRoom(true);
     }
 
     cleanup("room");
@@ -1601,12 +1656,11 @@
     renderQuizBox();
 
     if (!inRoom(room, S.me.id)) {
+      if (room.listeners.indexOf(S.me.id) < 0) room.listeners.push(S.me.id);
       if (cloud.on && cloud.db) {
         var lRef = cloud.db.ref("rooms/" + id + "/listeners/" + S.me.id);
         lRef.onDisconnect().remove();
-        lRef.set(true);
-      } else {
-        room.listeners.push(S.me.id);
+        lRef.set(true).catch(function () { /* */ });
       }
       pushRoomMsg(room, { sys: true, text: S.me.name + " دخل الغرفة 👋" });
       S.me.visits++;
@@ -1650,7 +1704,7 @@
         }
       });
 
-      trackListener("room", cloud.db.ref("rooms/" + id + "/music"), "value", async function (musSnap) {
+      trackListener("room", cloud.db.ref("rooms/" + id + "/music"), "value", function (musSnap) {
         var prevDj = musicState.data && musicState.data.djUid;
         var m = musSnap.val() || null;
         musicState.data = m;
@@ -1659,7 +1713,7 @@
         if (prevDj && (!m || !m.djUid) && UI.roomId === id) {
           pushRoomMsg(room, { sys: true, text: "DJ غادر، اختر DJ جديد" });
         }
-        await syncRoomMusicForEveryone(m);
+        syncRoomMusicForEveryone(m);
       });
 
       trackListener("room", cloud.db.ref("rooms/" + id + "/queue"), "value", function (qSnap) {
@@ -1694,10 +1748,10 @@
     }
 
     var initialRole = seatIndexOf(room, S.me.id) >= 0 ? "publisher" : "subscriber";
-    await joinVoiceChannel(id, initialRole);
+    joinVoiceChannel(id, initialRole);
   }
 
-  async function leaveRoom(silent) {
+  function leaveRoom(silent) {
     cleanup("room");
     var rid = UI.roomId;
     var room = getRoom(rid);
@@ -1721,7 +1775,7 @@
           ups["rooms/" + rid + "/music/djUid"] = null;
           ups["rooms/" + rid + "/music/paused"] = true;
         }
-        try { await cloud.db.ref().update(ups); } catch (e) { /* */ }
+        cloud.db.ref().update(ups).catch(function () { /* */ });
       }
       pushRoomMsg(room, { sys: true, text: S.me.name + " غادر الغرفة" });
     }
@@ -1732,17 +1786,44 @@
     saveLocal();
     $("room-view").classList.remove("open");
 
-    await leaveVoiceChannel();
+    leaveVoiceChannel();
     if (!silent) renderAll();
   }
 
-  /* ========= 11. رسم الغرفة والمقاعد والدردشة ========= */
+  /* ========= 11. رسم الغرفة وشريط الصور العلوي والمقاعد والدردشة ========= */
+  function renderRoomPresenceStrip(room) {
+    var ids = getRoomParticipantIds(room);
+    var cntEl = $("room-online-count");
+    var stripEl = $("room-avatars-strip");
+    if (cntEl) cntEl.textContent = String(ids.length);
+    if (!stripEl) return;
+
+    var maxShow = 4;
+    var shown = ids.slice(0, maxShow);
+    var extra = ids.length - shown.length;
+
+    var html = shown.map(function (uidItem) {
+      var u = getUser(uidItem);
+      var inner = u.photo
+        ? '<img src="' + esc(u.photo) + '" alt="' + esc(u.name || "") + '" />'
+        : esc(initials(u.name));
+      return '<span class="room-mini-av" title="' + esc(u.name) + '">' + inner + "</span>";
+    }).join("");
+
+    if (extra > 0) {
+      html += '<span class="room-mini-more">+' + extra + "</span>";
+    }
+    stripEl.innerHTML = html;
+  }
+
   function renderRoom() {
     var room = getRoom(UI.roomId);
     if (!room) return;
     var mySeat = seatIndexOf(room, S.me.id);
     $("room-title").textContent = (room.pass ? "🔒 " : "") + room.name;
-    $("room-sub").textContent = "ID: " + room.id + " • 🎧 " + count(room) + " • " + (CATEGORIES[room.cat] || "");
+    $("room-sub-meta").textContent = "ID: " + room.id + " • " + (CATEGORIES[room.cat] || "");
+    renderRoomPresenceStrip(room);
+
     var pin = $("room-pinned");
     pin.classList.toggle("hidden", !room.pinned);
     pin.textContent = "📌 " + room.pinned;
@@ -1826,7 +1907,7 @@
         fromName: S.me.name,
         targetName: targetName || room.name,
         t: serverTs()
-      });
+      }).catch(function () { /* */ });
     }
   }
 
@@ -1965,9 +2046,9 @@
     if (s.uid === S.me.id) {
       items.push({
         label: "⬇️ مغادرة المقعد",
-        fn: async function () {
+        fn: function () {
           UI.micMuted = false;
-          await stopLocalMic();
+          stopLocalMic();
           room.seats[i].uid = null;
           room.seats[i].muted = false;
           if (room.listeners.indexOf(S.me.id) < 0) room.listeners.push(S.me.id);
@@ -1976,12 +2057,12 @@
             ups["rooms/" + room.id + "/seats/" + i + "/uid"] = null;
             ups["rooms/" + room.id + "/seats/" + i + "/muted"] = false;
             ups["rooms/" + room.id + "/listeners/" + S.me.id] = true;
-            try { await cloud.db.ref().update(ups); } catch (e) { /* */ }
+            cloud.db.ref().update(ups).catch(function () { /* */ });
           } else {
             saveLocal();
           }
           if (!(musicState.data && musicState.data.djUid === S.me.id && !musicState.data.paused)) {
-            await joinVoiceChannel(room.id, "subscriber");
+            joinVoiceChannel(room.id, "subscriber");
           }
           renderRoom();
           toast("تم النزول من المايك ⬇️");
@@ -1998,7 +2079,7 @@
       });
       items.push({
         label: "⬇️ إنزال من المقعد",
-        fn: async function () {
+        fn: function () {
           var kickedUid = s.uid;
           room.seats[i].uid = null;
           room.seats[i].muted = false;
@@ -2008,7 +2089,7 @@
             ups["rooms/" + room.id + "/seats/" + i + "/uid"] = null;
             ups["rooms/" + room.id + "/seats/" + i + "/muted"] = false;
             ups["rooms/" + room.id + "/listeners/" + kickedUid] = true;
-            try { await cloud.db.ref().update(ups); } catch (e) { /* */ }
+            cloud.db.ref().update(ups).catch(function () { /* */ });
           } else {
             saveLocal();
           }
@@ -2018,7 +2099,7 @@
       });
       items.push({
         label: s.locked ? "🔓 فتح المقعد" : "🔒 قفل المقعد بعد الإنزال",
-        fn: async function () {
+        fn: function () {
           var kickedUid = s.uid;
           room.seats[i].uid = null;
           room.seats[i].locked = true;
@@ -2028,7 +2109,7 @@
             ups["rooms/" + room.id + "/seats/" + i + "/uid"] = null;
             ups["rooms/" + room.id + "/seats/" + i + "/locked"] = true;
             ups["rooms/" + room.id + "/listeners/" + kickedUid] = true;
-            try { await cloud.db.ref().update(ups); } catch (e) { /* */ }
+            cloud.db.ref().update(ups).catch(function () { /* */ });
           } else {
             saveLocal();
           }
@@ -2064,29 +2145,21 @@
     actionList(u.name, items);
   }
 
-  async function takeSeat(room, i) {
+  function takeSeat(room, i) {
     var cur = seatIndexOf(room, S.me.id);
+    if (cur >= 0) room.seats[cur].uid = null;
+    room.listeners = room.listeners.filter(function (x) { return x !== S.me.id; });
+    room.seats[i].uid = S.me.id;
+    room.seats[i].muted = false;
+
     if (cloud.on && cloud.db) {
-      var ref = cloud.db.ref("rooms/" + room.id + "/seats/" + i);
-      var res = await ref.transaction(function (c) {
-        if (c && c.uid && c.uid !== S.me.id) return;
-        if (c && c.locked) return;
-        return Object.assign({}, c || {}, { uid: S.me.id, muted: false });
-      });
-      if (!res.committed) {
-        toast("المقعد مشغول الآن");
-        return;
-      }
       var ups = {};
+      ups["rooms/" + room.id + "/seats/" + i + "/uid"] = S.me.id;
+      ups["rooms/" + room.id + "/seats/" + i + "/muted"] = false;
       ups["rooms/" + room.id + "/listeners/" + S.me.id] = null;
       ups["rooms/" + room.id + "/micQueue/" + S.me.id] = null;
       if (cur >= 0 && cur !== i) ups["rooms/" + room.id + "/seats/" + cur + "/uid"] = null;
-      await cloud.db.ref().update(ups);
-    } else {
-      if (cur >= 0) room.seats[cur].uid = null;
-      room.listeners = room.listeners.filter(function (x) { return x !== S.me.id; });
-      room.seats[i].uid = S.me.id;
-      room.seats[i].muted = false;
+      cloud.db.ref().update(ups).catch(function () { /* */ });
     }
 
     UI.micMuted = false;
@@ -2096,9 +2169,9 @@
     save(); renderRoom(); renderTop();
 
     if (voice.client && voice.client.connectionState === "CONNECTED") {
-      await publishLocalMic();
+      publishLocalMic();
     } else {
-      await joinVoiceChannel(room.id, "publisher");
+      joinVoiceChannel(room.id, "publisher");
     }
   }
 
@@ -2311,7 +2384,7 @@
             }
             UI.roomId = null;
             $("room-view").classList.remove("open");
-            await leaveVoiceChannel();
+            leaveVoiceChannel();
             saveLocal(); renderAll();
             toast("تم حذف الغرفة");
           });
@@ -2356,7 +2429,10 @@
     html += '<div class="small" style="margin:6px 0">🎤 المتحدثون (' + sp.length + ")</div>" + (sp.map(function (s) { return row(s.uid, "متحدث"); }).join("") || '<div class="small">لا أحد</div>');
     html += '<div class="small" style="margin:10px 0 6px">🎧 المستمعون (' + room.listeners.length + ")</div>" + (room.listeners.map(function (id) { return row(id, "مستمع"); }).join("") || '<div class="small">لا أحد</div>');
     openSheet(html);
-    $("sheet").onclick = null;
+    $("sheet").onclick = function (e) {
+      var p = e.target.closest("[data-profile]");
+      if (p) { closeSheet(); openProfile(p.getAttribute("data-profile")); }
+    };
   }
 
   function inviteFriend(room) {
@@ -2928,6 +3004,10 @@
     };
 
     $("room-back").onclick = function () { leaveRoom(false); };
+    $("room-presence-btn").onclick = function () {
+      var r = getRoom(UI.roomId);
+      if (r) showMembers(r);
+    };
     $("room-music").onclick = openMusicSheet;
     $("room-hand").onclick = openHandQueueSheet;
     $("room-sticker").onclick = openStickersSheet;
