@@ -112,8 +112,8 @@
     }
     .iconbtn {
       position: relative;
-      width: 36px;
-      height: 36px;
+      width: 35px;
+      height: 35px;
       border-radius: 12px;
       border: 1px solid var(--border);
       background: linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
@@ -427,7 +427,6 @@
       pointer-events: auto;
     }
 
-    /* طبقة تظليل ذكية فوق خلفية الغرفة لتنظيم التباين وإبراز المقاعد */
     #room-view::before {
       content: "";
       position: absolute;
@@ -448,9 +447,9 @@
     .ohead {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 10px 12px;
-      background: rgba(10, 7, 22, 0.78);
+      gap: 5px;
+      padding: 9px 10px;
+      background: rgba(10, 7, 22, 0.82);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.14);
@@ -461,7 +460,7 @@
     .ohead .info { flex: 1; min-width: 0; }
     .ohead .title-r {
       font-weight: 900;
-      font-size: 14px;
+      font-size: 13.5px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -470,23 +469,25 @@
     .ohead .sub-r {
       display: flex;
       align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-      font-size: 11px;
+      gap: 5px;
+      flex-wrap: nowrap;
+      font-size: 10.5px;
       color: #cbd5e1;
       margin-top: 3px;
+      overflow: hidden;
     }
 
     .room-presence {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       background: rgba(255, 255, 255, 0.11);
       border: 1px solid rgba(255, 255, 255, 0.2);
-      padding: 2px 8px 2px 5px;
+      padding: 2px 7px 2px 4px;
       border-radius: 999px;
       cursor: pointer;
       color: #f8fafc;
+      flex-shrink: 0;
     }
     .room-avatars-strip {
       display: inline-flex;
@@ -494,8 +495,8 @@
       flex-direction: row-reverse;
     }
     .room-mini-av {
-      width: 21px;
-      height: 21px;
+      width: 19px;
+      height: 19px;
       border-radius: 50%;
       overflow: hidden;
       border: 1.5px solid #150d2b;
@@ -516,7 +517,7 @@
       font-size: 9px;
       font-weight: 800;
       padding: 0 5px;
-      height: 21px;
+      height: 19px;
       border-radius: 999px;
       display: inline-flex;
       align-items: center;
@@ -525,11 +526,25 @@
       border: 1.5px solid #150d2b;
     }
 
-    .pinned, .music-mini, .quiz-box {
+    .pinned, .music-mini, .quiz-box, .audio-unlock-bar {
       position: relative;
       z-index: 5;
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
+    }
+
+    .audio-unlock-bar {
+      margin: 8px 12px 0;
+      padding: 8px 12px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(239, 68, 68, 0.35));
+      border: 1px solid rgba(251, 191, 36, 0.55);
+      color: #fef3c7;
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
     }
 
     .pinned {
@@ -576,13 +591,13 @@
     .quiz-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
 
     /* ==========================================================
-       مسرح المقاعد الدائرية 3D (Circular 3D Stage & Seats)
+       مسرح المقاعد الدائرية 3D
        ========================================================== */
     .stage-wrap {
       position: relative;
       z-index: 5;
-      margin: 10px 10px 4px;
-      padding: 12px 8px 10px;
+      margin: 8px 10px 4px;
+      padding: 10px 8px 8px;
       border-radius: 24px;
       background: radial-gradient(ellipse at top, rgba(139, 92, 246, 0.22), rgba(10, 7, 24, 0.52) 75%);
       border: 1px solid rgba(255, 255, 255, 0.14);
@@ -618,7 +633,7 @@
     .seats {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 12px 6px;
+      gap: 10px 6px;
       padding: 2px 4px;
       justify-items: center;
       align-items: start;
@@ -636,18 +651,13 @@
       transform-style: preserve-3d;
       transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
     }
-    .seat:hover {
-      transform: translateY(-2px) scale(1.03);
-    }
-    .seat:active {
-      transform: scale(0.94);
-    }
+    .seat:hover { transform: translateY(-2px) scale(1.03); }
+    .seat:active { transform: scale(0.94); }
 
-    /* المقعد الدائري ثلاثي الأبعاد */
     .seat-orb {
       position: relative;
-      width: 62px;
-      height: 62px;
+      width: 60px;
+      height: 60px;
       border-radius: 50%;
       padding: 3px;
       background: linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.04));
@@ -661,7 +671,6 @@
       transition: all 0.22s ease;
     }
 
-    /* حلقة 3D سفلية تعطي إحساس المنصة الدائرية */
     .seat-orb::after {
       content: "";
       position: absolute;
@@ -691,14 +700,11 @@
       background: linear-gradient(135deg, var(--acc), var(--acc2), var(--cyan));
     }
 
-    .seat.locked {
-      opacity: 0.72;
-    }
+    .seat.locked { opacity: 0.72; }
     .seat.locked .seat-orb {
       background: linear-gradient(145deg, rgba(148, 163, 184, 0.22), rgba(15, 23, 42, 0.7));
     }
 
-    /* نبض 3D متوهج عند الكلام */
     @keyframes speakingPulse3D {
       0% {
         box-shadow:
@@ -788,7 +794,7 @@
     }
 
     .seat-meta-pill {
-      margin-top: 6px;
+      margin-top: 5px;
       padding: 2px 8px;
       border-radius: 999px;
       background: rgba(10, 7, 22, 0.78);
@@ -926,13 +932,15 @@
     .micbtn.on { background: linear-gradient(135deg, #22c55e, #16a34a); }
     .micbtn.off { background: linear-gradient(135deg, #ef4444, #b91c1c); }
 
-    /* Bottom Sheet */
+    /* ==========================================================
+       Bottom Sheet & Scrim (إصلاح نهائي لمنع الشاشة الشفافة المعلقة)
+       ========================================================== */
     .scrim {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.68);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
       z-index: 60;
       opacity: 0;
       visibility: hidden;
@@ -955,17 +963,17 @@
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       background: linear-gradient(180deg, #191033, #0f0921);
-      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      border-top: 1px solid rgba(255, 255, 255, 0.22);
       border-radius: 24px 24px 0 0;
       padding: 16px 14px 26px;
-      z-index: 70;
+      z-index: 75;
       transform: translateY(100%);
-      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+      transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
       visibility: hidden;
       pointer-events: none;
-      box-shadow: 0 -12px 35px rgba(0,0,0,0.65);
+      box-shadow: 0 -12px 35px rgba(0,0,0,0.7);
     }
-    .scrim.open .sheet {
+    .sheet.open {
       transform: translateY(0);
       visibility: visible;
       pointer-events: auto;
@@ -1227,10 +1235,13 @@
             </div>
           </div>
         </div>
-        <button class="iconbtn" id="room-bg-quick" type="button" title="خلفية الغرفة">🖼️</button>
         <button class="iconbtn" id="room-hand" type="button" title="رفع اليد / طابور المايك">✋</button>
         <button class="iconbtn" id="room-music" type="button" title="مشغل الموسيقى">🎵</button>
         <button class="iconbtn" id="room-menu" type="button" title="خيارات">⋮</button>
+      </div>
+
+      <div class="audio-unlock-bar hidden" id="audio-unlock-bar">
+        🔊 اضغط هنا لتفعيل صوت الغرفة وسماع المتحدثين
       </div>
 
       <div class="pinned hidden" id="room-pinned"></div>
