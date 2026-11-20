@@ -1,8 +1,7 @@
-/* REAL VOICE — نسخة 3D احترافية + مستويات (1-100) + ثروة وجاذبية + لوحة متصدرين (100) + نظام User ID (0001000) + دخول Google */
+/* REAL VOICE — نسخة منظمة: بروفايل مرتب + إعدادات شاملة + خاص للأصدقاء فقط + أسماء كاملة للروم والمقاعد */
 (function (global) {
   "use strict";
 
-  /* ========= 1. الإعدادات المركزية والقواعد المستقلة ========= */
   var FIREBASE_CONFIG = {
     apiKey: "AIzaSyDyx4MBxvRM0L5FrrjVOfVePlKRSxGpMg4",
     authDomain: "real-voice-aec71.firebaseapp.com",
@@ -14,50 +13,15 @@
   var TOKEN_URL = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";
 
   var CONFIG = {
-    storageKey: "rv_state_v5",
+    storageKey: "rv_state_v6",
     fixedUidKey: "rv_fixed_uid_v1",
     authSessionKey: "rv_auth_logged_v1",
     startCoins: 1000,
     maxLevel: 100,
     xpPerLevel: 100,
     initialSpecialIdNumber: 1000,
-    badWords: ["شتيمة", "قذر", "حقير", "غبي", "كلب", "حمار"],
-    economyRules: {
-      defaultCharmMultiplier: 1,
-      defaultWealthMultiplier: 1,
-      defaultXpPerGift: 6,
-      giftOverrides: {
-        heart:   { charmPerCoin: 1,    wealthPerCoin: 1,    xpBonus: 4 },
-        rose:    { charmPerCoin: 1,    wealthPerCoin: 1,    xpBonus: 6 },
-        crown:   { charmPerCoin: 1.1,  wealthPerCoin: 1,    xpBonus: 15 },
-        car:     { charmPerCoin: 1.15, wealthPerCoin: 1,    xpBonus: 25 },
-        rocket:  { charmPerCoin: 1.2,  wealthPerCoin: 1.1,  xpBonus: 40 },
-        diamond: { charmPerCoin: 1.25, wealthPerCoin: 1.1,  xpBonus: 60 },
-        vip:     { charmPerCoin: 1.3,  wealthPerCoin: 1.2,  xpBonus: 100 },
-        castle:  { charmPerCoin: 1.5,  wealthPerCoin: 1.25, xpBonus: 180 }
-      }
-    }
+    badWords: ["شتيمة", "قذر", "حقير", "غبي", "كلب", "حمار"]
   };
-
-  var CHARM_RANKS = [
-    { min: 0,      name: "مبتدئ",       icon: "🌱" },
-    { min: 100,    name: "محبوب",       icon: "🌸" },
-    { min: 500,    name: "جذاب",        icon: "✨" },
-    { min: 1500,   name: "نجم",         icon: "🌟" },
-    { min: 4000,   name: "مشهور",       icon: "🎭" },
-    { min: 10000,  name: "ساحر",        icon: "🔮" },
-    { min: 25000,  name: "أسطوري",      icon: "🔥" },
-    { min: 60000,  name: "ملك الجاذبية", icon: "👑" }
-  ];
-
-  var WEALTH_RANKS = [
-    { min: 0,      name: "بداية الثروة", icon: "🪙" },
-    { min: 250,    name: "مقتنٍ",        icon: "💰" },
-    { min: 1000,   name: "ثرِي",         icon: "💵" },
-    { min: 3500,   name: "أرستقراطي",   icon: "🏦" },
-    { min: 12000,  name: "إمبراطور",     icon: "💎" },
-    { min: 35000,  name: "أسطورة المال", icon: "👑" }
-  ];
 
   var GIFTS = [
     { id: "heart", e: "❤️", n: "قلب", p: 10 },
@@ -69,61 +33,23 @@
     { id: "vip", e: "🦁", n: "أسد VIP", p: 1500 },
     { id: "castle", e: "🏰", n: "قصر متحرك", p: 3000 }
   ];
+
   var EMOJIS = ["😀", "😂", "😍", "🔥", "👏", "❤️", "😎", "🎉", "🙏", "😢", "👍", "💎"];
   var CATEGORIES = { chat: "دردشة", games: "ألعاب", vip: "VIP", music: "موسيقى", friends: "أصدقاء" };
   var COVERS = ["#7c3aed", "#2563eb", "#db2777", "#0891b2", "#ea580c", "#16a34a"];
   var COVER_ICONS = ["🎙️", "🎮", "🎵", "👑", "☕", "🌙"];
-  var ACHIEVEMENTS = [
-    { id: "first", t: "🎙️ أول دخول" },
-    { id: "chatter", t: "💬 أرسلت 5 رسائل" },
-    { id: "giver", t: "🎁 أرسلت هدية" },
-    { id: "host", t: "🏠 أنشأت غرفة" },
-    { id: "social", t: "👥 أضفت صديقاً" },
-    { id: "lvl3", t: "⭐ وصلت المستوى 3" }
-  ];
-
-  var VIP_TIERS = [
-    { level: 1, title: "VIP فضي", cost: 300, days: 30, perks: ["إطار VIP مميز", "أولوية في الغرف", "شارة VIP 1"] },
-    { level: 2, title: "VIP ذهبي", cost: 700, days: 30, perks: ["هالة ذهبية 3D", "مزايا إضافية للملف", "شارة VIP 2"] },
-    { level: 3, title: "VIP ماسي", cost: 1500, days: 30, perks: ["دخول ملكي مميز", "مقتنيات VIP حصرية", "شارة VIP 3"] }
-  ];
 
   var DEFAULT_TRACKS = [
     { id: "t1", title: "Night Chill Beat", artist: "موسيقى هادئة", cover: "🎵", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
     { id: "t2", title: "Acoustic Vibes", artist: "جيتار ليلي", cover: "🎸", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
-    { id: "t3", title: "Midnight Lounge", artist: "سهرة رايقة", cover: "🌙", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
-    { id: "t4", title: "Energy Pulse", artist: "إيقاع حماسي", cover: "⚡", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" }
+    { id: "t3", title: "Midnight Lounge", artist: "سهرة رايقة", cover: "🌙", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" }
   ];
 
   var STICKERS = [
     { id: "s1", e: "🥳", n: "حفلة" }, { id: "s2", e: "🎤", n: "غناء" }, { id: "s3", e: "👑", n: "ملكي" },
-    { id: "s4", e: "🔥", n: "نار" }, { id: "s5", e: "💖", n: "حب" }, { id: "s6", e: "😂", n: "ضحك" },
-    { id: "s7", e: "🎮", n: "جيمر" }, { id: "s8", e: "☕", n: "قهوة" }, { id: "s9", e: "🌙", n: "سهرة" },
-    { id: "s10", e: "👏", n: "تصفيق" }, { id: "s11", e: "💎", n: "ألماس" }, { id: "s12", e: "🚀", n: "انطلاق" }
+    { id: "s4", e: "🔥", n: "نار" }, { id: "s5", e: "💖", n: "حب" }, { id: "s6", e: "😂", n: "ضحك" }
   ];
 
-  var ROOM_THEMES = [
-    { id: "default", name: "بنفسجي ليلي 3D", bg: "linear-gradient(175deg, #170e2e, #090612 68%)", accent: "#ec4899" },
-    { id: "ocean", name: "أزرق المحيط", bg: "linear-gradient(175deg, #082f49, #061322 70%)", accent: "#22d3ee" },
-    { id: "rose", name: "وردي نيون", bg: "linear-gradient(175deg, #4a0d2e, #120610 70%)", accent: "#f472b6" },
-    { id: "emerald", name: "زمردي VIP", bg: "linear-gradient(175deg, #064e3b, #051410 70%)", accent: "#34d399" }
-  ];
-
-  var TRUTH_OR_DARE = [
-    "صراحة: ما أكثر شيء تحبه في غرف الدردشة الصوتية؟",
-    "صراحة: ما آخر أغنية سمعتها اليوم؟",
-    "تحدٍ: غنّي مقطعاً قصيراً لمدة 10 ثوانٍ على المايك!",
-    "تحدٍ: صف يومك في 3 كلمات فقط في الشات!"
-  ];
-
-  var QUIZ_BANK = [
-    { q: "ما هي عاصمة مصر؟", opts: ["الإسكندرية", "القاهرة", "الجيزة", "أسوان"], ans: 1 },
-    { q: "كم عدد كواكب المجموعة الشمسية؟", opts: ["7", "8", "9", "10"], ans: 1 },
-    { q: "ما هو أسرع حيوان بري؟", opts: ["الفهد", "الأسد", "الحصان", "الذئب"], ans: 0 },
-    { q: "في أي قارة تقع البرازيل؟", opts: ["أوروبا", "أفريقيا", "أمريكا الجنوبية", "آسيا"], ans: 2 }
-  ];
-
-  /* ========= 2. أدوات مساعدة + نظام specialId (0001000+) ========= */
   function $(id) { return document.getElementById(id); }
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -144,57 +70,20 @@
     return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
   }
   function uid() { return "u" + Math.random().toString(36).slice(2, 9); }
-
   function formatSpecialId(numVal) {
     var n = Math.max(0, Math.floor(Number(numVal || 0)));
     var str = String(n);
     while (str.length < 7) str = "0" + str;
-    if (str.length > 7) str = str.slice(-7);
-    return str;
+    return str.length > 7 ? str.slice(-7) : str;
   }
-
   function normalizeSpecialId(val, fallbackNum) {
-    if (typeof val === "string" && /^\d{7}$/.test(val.trim())) {
-      return val.trim();
-    }
-    if (typeof val === "string" && /^\d+$/.test(val.trim())) {
-      return formatSpecialId(Number(val.trim()));
-    }
-    if (typeof val === "number" && isFinite(val) && val >= 0) {
-      return formatSpecialId(val);
-    }
-    if (typeof fallbackNum === "number" && isFinite(fallbackNum) && fallbackNum >= 0) {
-      return formatSpecialId(fallbackNum);
-    }
+    if (typeof val === "string" && /^\d{7}$/.test(val.trim())) return val.trim();
+    if (typeof val === "string" && /^\d+$/.test(val.trim())) return formatSpecialId(Number(val.trim()));
+    if (typeof val === "number" && isFinite(val) && val >= 0) return formatSpecialId(val);
+    if (typeof fallbackNum === "number" && isFinite(fallbackNum) && fallbackNum >= 0) return formatSpecialId(fallbackNum);
     return "0001000";
   }
-
-  function displayUserId(u) {
-    if (!u) return "0001000";
-    return normalizeSpecialId(u.specialId, u.num);
-  }
-
-  function copyBtnHTML(val, label) {
-    return '<button class="copy-id-btn" type="button" data-copyval="' + esc(val || "") + '" title="نسخ الرقم">' + esc(label || "📋 نسخ") + "</button>";
-  }
-
-  function copyText(txt, msg) {
-    var val = String(txt || "");
-    function fallback() {
-      var ta = document.createElement("textarea");
-      ta.value = val;
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand("copy"); toast(msg || "تم النسخ 📋"); } catch (e) { toast(val); }
-      document.body.removeChild(ta);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(val).then(function () { toast(msg || "تم النسخ 📋"); }, fallback);
-    } else {
-      fallback();
-    }
-  }
-
+  function displayUserId(u) { return !u ? "0001000" : normalizeSpecialId(u.specialId, u.num); }
   function getOrCreateFixedUid() {
     try {
       var saved = localStorage.getItem(CONFIG.fixedUidKey);
@@ -202,9 +91,7 @@
       var fresh = "rv_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
       localStorage.setItem(CONFIG.fixedUidKey, fresh);
       return fresh;
-    } catch (e) {
-      return "rv_" + Math.random().toString(36).slice(2, 10);
-    }
+    } catch (e) { return "rv_" + Math.random().toString(36).slice(2, 10); }
   }
 
   var toastTimer = null;
@@ -228,47 +115,28 @@
       function (m, url, word) { return url ? m : (BAD_SET[normWord(word)] ? "***" : m); }
     );
   }
-
   function hashNum(str) {
-    var s = String(str || "rv");
-    var h = 5381;
+    var s = String(str || "rv"), h = 5381;
     for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
     return (Math.abs(h) % 2147483646) + 1;
   }
-
-  function dmThreadId(a, b) {
-    return [String(a), String(b)].sort().join("__");
-  }
+  function dmThreadId(a, b) { return [String(a), String(b)].sort().join("__"); }
 
   function readImageFileAsDataUrl(file, maxSize, quality) {
-    maxSize = maxSize || 320;
-    quality = quality || 0.72;
+    maxSize = maxSize || 320; quality = quality || 0.72;
     return new Promise(function (resolve, reject) {
-      if (!file || !file.type || file.type.indexOf("image/") !== 0) {
-        reject(new Error("اختر ملف صورة صحيح"));
-        return;
-      }
+      if (!file || !file.type || file.type.indexOf("image/") !== 0) { reject(new Error("اختر ملف صورة صحيح")); return; }
       var reader = new FileReader();
       reader.onload = function () {
         var img = new Image();
         img.onload = function () {
-          var w = img.width || maxSize;
-          var h = img.height || maxSize;
-          if (w > h) {
-            if (w > maxSize) { h = Math.round((h * maxSize) / w); w = maxSize; }
-          } else {
-            if (h > maxSize) { w = Math.round((w * maxSize) / h); h = maxSize; }
-          }
+          var w = img.width || maxSize, h = img.height || maxSize;
+          if (w > h) { if (w > maxSize) { h = Math.round((h * maxSize) / w); w = maxSize; } }
+          else { if (h > maxSize) { w = Math.round((w * maxSize) / h); h = maxSize; } }
           var canvas = document.createElement("canvas");
-          canvas.width = Math.max(1, w);
-          canvas.height = Math.max(1, h);
-          var ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          try {
-            resolve(canvas.toDataURL("image/jpeg", quality));
-          } catch (e) {
-            resolve(String(reader.result || ""));
-          }
+          canvas.width = Math.max(1, w); canvas.height = Math.max(1, h);
+          canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+          try { resolve(canvas.toDataURL("image/jpeg", quality)); } catch (e) { resolve(String(reader.result || "")); }
         };
         img.onerror = function () { resolve(String(reader.result || "")); };
         img.src = String(reader.result || "");
@@ -278,701 +146,165 @@
     });
   }
 
-  /* ========= 3. دوال المستويات (1 - 100) والثروة والجاذبية ========= */
   function computeLevelFromXp(xp) {
-    var safeXp = Math.max(0, Number(xp || 0));
-    var lv = Math.floor(safeXp / CONFIG.xpPerLevel) + 1;
-    if (lv < 1) lv = 1;
-    if (lv > CONFIG.maxLevel) lv = CONFIG.maxLevel;
-    return lv;
+    var lv = Math.floor(Math.max(0, Number(xp || 0)) / CONFIG.xpPerLevel) + 1;
+    return Math.max(1, Math.min(CONFIG.maxLevel, lv));
+  }
+  function getCharmLevel(charm) {
+    var lv = Math.floor(Math.max(0, Number(charm || 0)) / 100) + 1;
+    return Math.max(1, Math.min(CONFIG.maxLevel, lv));
+  }
+  function getWealthLevel(wealth) {
+    var lv = Math.floor(Math.max(0, Number(wealth || 0)) / 100) + 1;
+    return Math.max(1, Math.min(CONFIG.maxLevel, lv));
   }
 
-  function getLevelTierMeta(lv) {
-    var n = Math.max(1, Math.min(CONFIG.maxLevel, Number(lv || 1)));
-    if (n === 100) return { cls: "lvl-t100", label: "Lv.100 أسطوري", icon: "👑" };
-    if (n >= 90) return { cls: "lvl-t9", label: "Lv." + n + " ملكي", icon: "💠" };
-    if (n >= 80) return { cls: "lvl-t8", label: "Lv." + n + " ماسي", icon: "💎" };
-    if (n >= 70) return { cls: "lvl-t7", label: "Lv." + n + " كريستال", icon: "🔮" };
-    if (n >= 60) return { cls: "lvl-t6", label: "Lv." + n + " أحمر", icon: "🔥" };
-    if (n >= 50) return { cls: "lvl-t5", label: "Lv." + n + " ذهبي ملكي", icon: "🏅" };
-    if (n >= 40) return { cls: "lvl-t4", label: "Lv." + n + " بنفسجي", icon: "💜" };
-    if (n >= 30) return { cls: "lvl-t3", label: "Lv." + n + " أزرق", icon: "🔷" };
-    if (n >= 20) return { cls: "lvl-t2", label: "Lv." + n + " ذهبي", icon: "🥇" };
-    if (n >= 10) return { cls: "lvl-t1", label: "Lv." + n + " فضي", icon: "🥈" };
-    return { cls: "lvl-t1", label: "Lv." + n + " برونزي", icon: "🥉" };
-  }
-
-  function levelBadgeHTML(lv) {
-    var meta = getLevelTierMeta(lv);
-    return '<span class="lvl-badge ' + meta.cls + '">' + meta.icon + " " + esc(meta.label) + "</span>";
-  }
-
-  function getWealthRankMeta(wealth) {
-    var val = Math.max(0, Number(wealth || 0));
-    var current = WEALTH_RANKS[0];
-    var next = null;
-    for (var i = 0; i < WEALTH_RANKS.length; i++) {
-      if (val >= WEALTH_RANKS[i].min) {
-        current = WEALTH_RANKS[i];
-        next = WEALTH_RANKS[i + 1] || null;
-      }
-    }
-    var pct = 100;
-    var progText = "الحد الأقصى (" + val + ")";
-    if (next) {
-      var span = Math.max(1, next.min - current.min);
-      pct = Math.max(0, Math.min(100, ((val - current.min) / span) * 100));
-      progText = val + " / " + next.min;
-    }
-    return { rank: current, next: next, pct: pct, progText: progText, value: val };
-  }
-
-  function wealthBadgeHTML(wealth) {
-    var w = getWealthRankMeta(wealth);
-    return '<span class="wealth-badge">' + w.rank.icon + " " + esc(w.rank.name) + " • " + w.value + "</span>";
-  }
-
-  function getCharmRankMeta(charm) {
-    var val = Math.max(0, Number(charm || 0));
-    var current = CHARM_RANKS[0];
-    var next = null;
-    for (var i = 0; i < CHARM_RANKS.length; i++) {
-      if (val >= CHARM_RANKS[i].min) {
-        current = CHARM_RANKS[i];
-        next = CHARM_RANKS[i + 1] || null;
-      }
-    }
-    var pct = 100;
-    var progText = "الحد الأقصى (" + val + ")";
-    if (next) {
-      var span = Math.max(1, next.min - current.min);
-      pct = Math.max(0, Math.min(100, ((val - current.min) / span) * 100));
-      progText = val + " / " + next.min;
-    }
-    return { rank: current, next: next, pct: pct, progText: progText, value: val };
-  }
-
-  function charmBadgeHTML(charm) {
-    var c = getCharmRankMeta(charm);
-    return '<span class="charm-badge">' + c.rank.icon + " " + esc(c.rank.name) + " • " + c.value + "</span>";
-  }
-
-  function getGiftEconomyRule(gift) {
-    var ov = (CONFIG.economyRules.giftOverrides && gift && CONFIG.economyRules.giftOverrides[gift.id]) || {};
-    var price = Math.max(1, Number(gift && gift.p || 0));
-    var charmPerCoin = typeof ov.charmPerCoin === "number" ? ov.charmPerCoin : CONFIG.economyRules.defaultCharmMultiplier;
-    var wealthPerCoin = typeof ov.wealthPerCoin === "number" ? ov.wealthPerCoin : CONFIG.economyRules.defaultWealthMultiplier;
-    var xpBonus = typeof ov.xpBonus === "number" ? ov.xpBonus : CONFIG.economyRules.defaultXpPerGift;
-    return {
-      charmGain: Math.max(1, Math.round(price * charmPerCoin)),
-      wealthGain: Math.max(1, Math.round(price * wealthPerCoin)),
-      xpGain: Math.max(1, xpBonus)
-    };
-  }
-
-  /* ========= 4. إدارة المستمعين والمؤقتات ========= */
-  var registry = {};
-  function trackListener(scope, ref, ev, fn) {
-    try {
-      ref.on(ev, fn);
-      (registry[scope] = registry[scope] || []).push({ ref: ref, ev: ev, fn: fn });
-    } catch (e) { /* تجاهل */ }
-  }
-  function trackTimer(scope, id, kind) {
-    (registry[scope] = registry[scope] || []).push({ timer: id, kind: kind || "timeout" });
-    return id;
-  }
-  function cleanup(scope) {
-    (registry[scope] || []).forEach(function (r) {
-      try {
-        if (r.ref) r.ref.off(r.ev, r.fn);
-        else if (r.kind === "interval") clearInterval(r.timer);
-        else clearTimeout(r.timer);
-      } catch (e) { /* تجاهل */ }
-    });
-    registry[scope] = [];
-  }
-
-  /* ========= 5. محرك الصوت (Agora RTC) + كتم صوت الغرفة + المشغل المبسط ========= */
-  var voice = {
-    client: null,
-    localTrack: null,
-    channel: null,
-    role: null,
-    uidNum: 0,
-    joining: false,
-    leaving: false,
-    speakingNums: {},
-    autoplayBlocked: false,
-    boundSeatRef: null
-  };
-
-  var musicState = {
-    data: null,
-    queue: [],
-    bufferTrack: null,
-    roomAudio: null,
-    roomXpEarned: 0,
-    syncing: false
-  };
+  /* ========= الصوت (Agora RTC) ========= */
+  var voice = { client: null, localTrack: null, channel: null, role: null, uidNum: 0, joining: false, leaving: false, speakingNums: {} };
+  var musicState = { data: null, bufferTrack: null, roomAudio: null, syncing: false };
 
   function setVoiceStatusUI(connected, label) {
-    var dot = $("voice-status-dot");
-    var txt = $("voice-status-text");
+    var dot = $("voice-status-dot"), txt = $("voice-status-text");
     if (dot) dot.classList.toggle("live", !!connected);
     if (txt) txt.textContent = label || (connected ? "الصوت المباشر متصل 🔊" : "جاري ربط الصوت...");
   }
-
   function showAudioUnlockBar(show) {
-    voice.autoplayBlocked = !!show;
     var bar = $("audio-unlock-bar");
     if (bar) bar.classList.toggle("hidden", !show);
   }
-
   function applyRoomSpeakerMuteState() {
     var muted = !!UI.roomSpeakerMuted;
     if (voice.client && Array.isArray(voice.client.remoteUsers)) {
       voice.client.remoteUsers.forEach(function (u) {
-        if (u && u.audioTrack) {
-          try {
-            u.audioTrack.setVolume(muted ? 0 : 100);
-          } catch (e) { /* */ }
-        }
+        if (u && u.audioTrack) { try { u.audioTrack.setVolume(muted ? 0 : 100); } catch (e) { /* */ } }
       });
     }
-    if (musicState.roomAudio) {
-      try { musicState.roomAudio.muted = muted; } catch (e) { /* */ }
-    }
+    if (musicState.roomAudio) { try { musicState.roomAudio.muted = muted; } catch (e) { /* */ } }
     var spkBtn = $("room-speaker-btn");
     if (spkBtn) {
       spkBtn.classList.toggle("spk-muted", muted);
-      spkBtn.classList.toggle("spk-on", !muted);
       spkBtn.textContent = muted ? "🔇" : "🔊";
-      spkBtn.title = muted ? "فك كتم صوت الغرفة" : "كتم صوت الغرفة";
     }
   }
-
   async function subscribeAndPlayRemoteUser(user, mediaType) {
     if (!voice.client || !user) return;
     try {
       await voice.client.subscribe(user, mediaType);
       if (mediaType === "audio" && user.audioTrack) {
         user.audioTrack.setVolume(UI.roomSpeakerMuted ? 0 : 100);
-        try {
-          user.audioTrack.play();
-          showAudioUnlockBar(false);
-        } catch (playErr) {
-          showAudioUnlockBar(true);
-        }
+        try { user.audioTrack.play(); showAudioUnlockBar(false); } catch (e) { showAudioUnlockBar(true); }
       }
     } catch (e) { /* */ }
   }
-
   function resumeAllRemoteAudioTracks() {
     if (!voice.client || !Array.isArray(voice.client.remoteUsers)) return;
-    var anyPlayed = false;
     voice.client.remoteUsers.forEach(function (u) {
       if (u && u.hasAudio) {
         if (u.audioTrack) {
-          try {
-            u.audioTrack.setVolume(UI.roomSpeakerMuted ? 0 : 100);
-            u.audioTrack.play();
-            anyPlayed = true;
-          } catch (e) { /* */ }
-        } else {
-          subscribeAndPlayRemoteUser(u, "audio");
-        }
+          try { u.audioTrack.setVolume(UI.roomSpeakerMuted ? 0 : 100); u.audioTrack.play(); showAudioUnlockBar(false); } catch (e) { /* */ }
+        } else { subscribeAndPlayRemoteUser(u, "audio"); }
       }
     });
-    if (anyPlayed) showAudioUnlockBar(false);
   }
-
   function setupAgoraClient() {
     if (voice.client || !global.AgoraRTC) return;
     try {
-      AgoraRTC.onAutoplayFailed = function () {
-        showAudioUnlockBar(true);
-      };
-
+      AgoraRTC.onAutoplayFailed = function () { showAudioUnlockBar(true); };
       voice.client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
       voice.client.enableAudioVolumeIndicator();
-
-      voice.client.on("user-published", async function (user, mediaType) {
-        await subscribeAndPlayRemoteUser(user, mediaType);
-      });
-
+      voice.client.on("user-published", async function (user, mediaType) { await subscribeAndPlayRemoteUser(user, mediaType); });
       voice.client.on("user-unpublished", function (user) {
-        if (user && user.audioTrack) {
-          try { user.audioTrack.stop(); } catch (e) { /* */ }
-        }
+        if (user && user.audioTrack) { try { user.audioTrack.stop(); } catch (e) { /* */ } }
         if (user) delete voice.speakingNums[user.uid];
         updateSpeakingIndicators();
-        applyMusicDucking();
       });
-
       voice.client.on("user-left", function (user) {
         if (user) delete voice.speakingNums[user.uid];
         updateSpeakingIndicators();
-        applyMusicDucking();
       });
-
       voice.client.on("volume-indicator", function (volumes) {
         var active = {};
-        (volumes || []).forEach(function (v) {
-          if (v.level > 6) {
-            var key = v.uid === 0 ? voice.uidNum : v.uid;
-            active[key] = true;
-          }
-        });
+        (volumes || []).forEach(function (v) { if (v.level > 6) active[v.uid === 0 ? voice.uidNum : v.uid] = true; });
         voice.speakingNums = active;
         updateSpeakingIndicators();
-        applyMusicDucking();
-      });
-
-      voice.client.on("connection-state-change", function (curState) {
-        if (curState === "CONNECTED") {
-          setVoiceStatusUI(true, "الصوت المباشر متصل 🔊");
-        } else if (curState === "RECONNECTING") {
-          setVoiceStatusUI(false, "إعادة الاتصال بالصوت...");
-        } else if (curState === "DISCONNECTED") {
-          setVoiceStatusUI(false, "غير متصل بالصوت");
-        }
       });
     } catch (e) { /* */ }
   }
-
   async function fetchRtcToken(channelName, uidNum, roleName) {
     var url = new URL(TOKEN_URL);
     url.searchParams.set("channelName", channelName);
     url.searchParams.set("uid", String(uidNum));
     url.searchParams.set("role", roleName);
-
-    var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
-    var tid = ctrl ? setTimeout(function () { ctrl.abort(); }, 6000) : null;
-    try {
-      var res = await fetch(url.toString(), { method: "GET", signal: ctrl ? ctrl.signal : undefined });
-      var data = await res.json();
-      if (!res.ok || !data.token || !data.appId) {
-        throw new Error(data.error || "فشل جلب التوكن");
-      }
-      return data;
-    } finally {
-      if (tid) clearTimeout(tid);
-    }
+    var res = await fetch(url.toString(), { method: "GET" });
+    var data = await res.json();
+    if (!res.ok || !data.token || !data.appId) throw new Error(data.error || "فشل جلب التوكن");
+    return data;
   }
-
   async function stopLocalMic() {
     if (voice.localTrack) {
-      try {
-        if (voice.client && voice.client.connectionState === "CONNECTED") {
-          await voice.client.unpublish([voice.localTrack]);
-        }
-      } catch (e) { /* */ }
-      try {
-        voice.localTrack.stop();
-        voice.localTrack.close();
-      } catch (e) { /* */ }
+      try { if (voice.client && voice.client.connectionState === "CONNECTED") await voice.client.unpublish([voice.localTrack]); } catch (e) { /* */ }
+      try { voice.localTrack.stop(); voice.localTrack.close(); } catch (e) { /* */ }
       voice.localTrack = null;
     }
   }
-
-  async function stopBufferTrackOnly() {
-    if (musicState.bufferTrack) {
-      try { musicState.bufferTrack.stopProcessAudioBuffer(); } catch (e0) { /* */ }
-      try {
-        if (voice.client && voice.client.connectionState === "CONNECTED") {
-          await voice.client.unpublish([musicState.bufferTrack]);
-        }
-      } catch (e1) { /* */ }
-      try {
-        musicState.bufferTrack.stop();
-        musicState.bufferTrack.close();
-      } catch (e2) { /* */ }
-      musicState.bufferTrack = null;
-    }
-  }
-
-  async function stopMusicBroadcast() {
-    await stopBufferTrackOnly();
-    if (musicState.roomAudio) {
-      try {
-        musicState.roomAudio.pause();
-        musicState.roomAudio.removeAttribute("src");
-        musicState.roomAudio.load();
-      } catch (e3) { /* */ }
-      musicState.roomAudio = null;
-    }
-  }
-
-  function applyMusicDucking() {
-    var m = musicState.data;
-    if (!m) return;
-    var baseVol = typeof m.volume === "number" ? m.volume : 0.7;
-    var someoneSpeaking = Object.keys(voice.speakingNums || {}).length > 0;
-    var targetVol = someoneSpeaking ? Math.max(0.14, baseVol * 0.25) : baseVol;
-
-    if (musicState.bufferTrack && typeof musicState.bufferTrack.setVolume === "function") {
-      try { musicState.bufferTrack.setVolume(Math.round(targetVol * 100)); } catch (e) { /* */ }
-    }
-    if (musicState.roomAudio) {
-      try {
-        musicState.roomAudio.muted = !!UI.roomSpeakerMuted;
-        musicState.roomAudio.volume = Math.min(1, Math.max(0, targetVol));
-      } catch (e) { /* */ }
-    }
-  }
-
-  async function syncRoomMusicForEveryone(m) {
-    if (musicState.syncing) return;
-    musicState.syncing = true;
+  async function publishLocalMic() {
+    if (!voice.client || voice.client.connectionState !== "CONNECTED") return false;
     try {
-      var activeRoomId = UI.roomId || UI.floatingRoomId;
-      if (!activeRoomId || !m || !m.url) {
-        await stopMusicBroadcast();
-        return;
-      }
-
-      var isDj = m.djUid === S.me.id;
-      var publishedViaAgora = false;
-
-      if (isDj && !m.paused && m.url.indexOf("blob:") !== 0) {
-        if (voice.role !== "publisher") {
-          await joinVoiceChannel(activeRoomId, "publisher");
-        }
-        if (global.AgoraRTC && typeof AgoraRTC.createBufferSourceAudioTrack === "function" && voice.client && voice.client.connectionState === "CONNECTED") {
-          try {
-            await stopBufferTrackOnly();
-            var bTrack = await AgoraRTC.createBufferSourceAudioTrack({ source: m.url });
-            musicState.bufferTrack = bTrack;
-            applyMusicDucking();
-            await voice.client.publish([bTrack]);
-            bTrack.startProcessAudioBuffer();
-            publishedViaAgora = true;
-          } catch (err) {
-            publishedViaAgora = false;
-          }
-        }
-      } else {
-        await stopBufferTrackOnly();
-      }
-
-      try {
-        if (!musicState.roomAudio) {
-          musicState.roomAudio = new Audio();
-          musicState.roomAudio.preload = "auto";
-        }
-        var audio = musicState.roomAudio;
-        audio.muted = !!UI.roomSpeakerMuted;
-        if (isDj && publishedViaAgora) {
-          audio.pause();
-          return;
-        }
-        if (audio.src !== m.url) {
-          audio.src = m.url;
-        }
-        applyMusicDucking();
-
-        if (m.paused) {
-          audio.pause();
-          return;
-        }
-
-        var started = typeof m.startedAt === "number" ? m.startedAt : Date.now();
-        var expectedSec = Math.max(0, (Date.now() - started) / 1000);
-        var applySeekAndPlay = function () {
-          if (audio.duration && isFinite(audio.duration) && audio.duration > 0) {
-            expectedSec = expectedSec % audio.duration;
-          }
-          if (Math.abs((audio.currentTime || 0) - expectedSec) > 1.5) {
-            try { audio.currentTime = expectedSec; } catch (eSeek) { /* */ }
-          }
-          audio.play().catch(function () { /* */ });
-        };
-
-        if (audio.readyState >= 1) {
-          applySeekAndPlay();
-        } else {
-          audio.onloadedmetadata = applySeekAndPlay;
-        }
-      } catch (eAudio) { /* */ }
-    } finally {
-      musicState.syncing = false;
-    }
+      if (!voice.localTrack) voice.localTrack = await AgoraRTC.createMicrophoneAudioTrack({ AEC: true, ANS: true, AGC: true });
+      var room = getRoom(UI.roomId || UI.floatingRoomId);
+      var mySeatIdx = room ? seatIndexOf(room, S.me.id) : -1;
+      var muted = UI.micMuted || (mySeatIdx >= 0 && room.seats[mySeatIdx].muted);
+      await voice.localTrack.setEnabled(!muted);
+      await voice.client.publish([voice.localTrack]);
+      resumeAllRemoteAudioTracks();
+      return true;
+    } catch (e) { toast("اسمح للمتصفح بالوصول للميكروفون 🎤"); return false; }
   }
-
-  function renderMusicMini() {
-    var mini = $("music-mini");
-    if (!mini) return;
-    var m = musicState.data;
-    if (!m || !m.url) {
-      mini.classList.add("hidden");
-      return;
-    }
-    mini.classList.remove("hidden");
-    var statusIcon = m.paused ? "⏸️" : "🎵";
-    $("music-mini-title").textContent = statusIcon + " " + (m.title || "أغنية");
-  }
-
-  async function startTrackNow(room, trackObj) {
+  async function syncMicHardwareState() {
+    var room = getRoom(UI.roomId || UI.floatingRoomId);
     if (!room) return;
-    var payload = {
-      djUid: S.me.id,
-      trackId: trackObj.id || uid(),
-      url: trackObj.url,
-      title: clean(trackObj.title || "أغنية"),
-      artist: clean(trackObj.artist || S.me.name),
-      cover: trackObj.cover || "🎵",
-      startedAt: Date.now(),
-      paused: false,
-      volume: 0.7,
-      duck: true
-    };
-    musicState.data = Object.assign({}, payload);
-    renderMusicMini();
-    await syncRoomMusicForEveryone(musicState.data);
-    if (cloud.on && cloud.db && payload.url.indexOf("blob:") !== 0) {
-      cloud.db.ref("rooms/" + room.id + "/music").set(Object.assign({}, payload, { startedAt: serverTs() })).catch(function () { /* */ });
-    }
-    toast("🎵 تم تشغيل: " + payload.title);
+    var mySeatIdx = seatIndexOf(room, S.me.id);
+    if (mySeatIdx < 0) { await stopLocalMic(); return; }
+    var muted = UI.micMuted || !!room.seats[mySeatIdx].muted;
+    if (!voice.localTrack && !muted) { await publishLocalMic(); return; }
+    if (voice.localTrack) { try { await voice.localTrack.setEnabled(!muted); } catch (e) { /* */ } }
   }
-
-  async function togglePlayPauseMusic(room) {
-    if (!room || !musicState.data || !musicState.data.url) return;
-    var nextPaused = !musicState.data.paused;
-    var upd = {
-      paused: nextPaused,
-      startedAt: nextPaused ? musicState.data.startedAt : Date.now()
-    };
-    musicState.data = Object.assign({}, musicState.data, upd);
-    renderMusicMini();
-    await syncRoomMusicForEveryone(musicState.data);
-    if (cloud.on && cloud.db && musicState.data.url.indexOf("blob:") !== 0) {
-      cloud.db.ref("rooms/" + room.id + "/music").update(Object.assign({}, upd, {
-        startedAt: nextPaused ? musicState.data.startedAt : serverTs()
-      })).catch(function () { /* */ });
-    }
-  }
-
-  async function skipMusicTrack(room) {
-    if (!room) return;
-    var curId = musicState.data && musicState.data.trackId;
-    var idx = -1;
-    for (var i = 0; i < DEFAULT_TRACKS.length; i++) {
-      if (DEFAULT_TRACKS[i].id === curId) { idx = i; break; }
-    }
-    var next = DEFAULT_TRACKS[(idx + 1) % DEFAULT_TRACKS.length];
-    await startTrackNow(room, next);
-  }
-
-  async function stopMusicCompletely(room) {
-    musicState.data = null;
-    await stopMusicBroadcast();
-    renderMusicMini();
-    if (room && cloud.on && cloud.db) {
-      cloud.db.ref("rooms/" + room.id + "/music").remove().catch(function () { /* */ });
-    }
-    toast("⏹️ تم إيقاف الموسيقى");
-  }
-
-  function openMusicSheet() {
-    var room = getRoom(UI.roomId);
-    if (!room) return;
-    var curId = musicState.data && musicState.data.trackId;
-
-    var tracksHtml = DEFAULT_TRACKS.map(function (t) {
-      var isPlaying = curId === t.id && musicState.data && !musicState.data.paused;
-      return '<div class="track-row ' + (isPlaying ? "playing" : "") + '" data-playtrack="' + t.id + '">' +
-        '<div style="font-size:22px">' + t.cover + "</div>" +
-        '<div class="info"><div class="name">' + esc(t.title) + '</div><div class="meta">' + esc(t.artist) + "</div></div>" +
-        '<button class="btn sm" type="button">' + (isPlaying ? "يعمل 🔊" : "▶ تشغيل") + "</button></div>";
-    }).join("");
-
-    var html = "<h3>🎵 تشغيل الموسيقى</h3>" +
-      '<div class="small" style="margin-bottom:8px">اضغط على أي أغنية لتشغيلها فوراً في الغرفة:</div>' +
-      tracksHtml +
-      '<div style="display:flex;gap:8px;margin-top:10px">' +
-      '<label class="btn ghost" style="flex:1;text-align:center;margin:0;cursor:pointer">📁 اختر من جهازك<input id="ms-file" type="file" accept="audio/*" class="hidden" /></label>' +
-      (musicState.data ? '<button class="btn red" id="ms-stop" type="button">⏹ إيقاف</button>' : "") +
-      "</div>";
-
-    openSheet(html);
-
-    $("sheet").querySelectorAll("[data-playtrack]").forEach(function (row) {
-      row.onclick = async function () {
-        var tid = row.getAttribute("data-playtrack");
-        var found = DEFAULT_TRACKS.filter(function (x) { return x.id === tid; })[0];
-        if (found) {
-          closeSheet();
-          await startTrackNow(room, found);
-        }
-      };
-    });
-
-    $("ms-file").onchange = async function () {
-      var f = this.files && this.files[0];
-      if (!f) return;
-      var blobUrl = URL.createObjectURL(f);
-      var cleanTitle = f.name.replace(/\.[^/.]+$/, "");
-      closeSheet();
-      await startTrackNow(room, { id: uid(), url: blobUrl, title: cleanTitle, artist: "من جهازي", cover: "🎧" });
-    };
-
-    if ($("ms-stop")) {
-      $("ms-stop").onclick = async function () {
-        closeSheet();
-        await stopMusicCompletely(room);
-      };
-    }
-  }
-
-  function clearSeatDisconnectBinding() {
-    if (voice.boundSeatRef) {
-      try { voice.boundSeatRef.onDisconnect().cancel(); } catch (e) { /* */ }
-      voice.boundSeatRef = null;
-    }
-  }
-
-  function bindSeatDisconnect(roomId, seatIdx) {
-    clearSeatDisconnectBinding();
-    if (!cloud.on || !cloud.db) return;
-    try {
-      var ref = cloud.db.ref("rooms/" + roomId + "/seats/" + seatIdx + "/uid");
-      ref.onDisconnect().set(null);
-      voice.boundSeatRef = ref;
-    } catch (e) { /* */ }
-  }
-
   async function joinVoiceChannel(channelName, desiredRole) {
-    if (!global.AgoraRTC) {
-      setVoiceStatusUI(false, "مكتبة الصوت غير متاحة");
-      return false;
-    }
-    if (voice.joining || voice.leaving) return false;
-
+    if (!global.AgoraRTC || voice.joining || voice.leaving) return false;
     setupAgoraClient();
     if (!voice.client) return false;
     voice.joining = true;
     setVoiceStatusUI(false, "جاري الاتصال بالصوت...");
-
     try {
       var targetUid = S.me.num || hashNum(S.me.id);
       voice.uidNum = targetUid;
-
-      if (voice.client.connectionState === "CONNECTED" && voice.channel === channelName) {
-        if (desiredRole === "publisher" && !voice.localTrack) {
-          await publishLocalMic();
-        } else if (desiredRole === "subscriber" && voice.localTrack) {
-          await stopLocalMic();
-        }
-        voice.role = desiredRole;
-        resumeAllRemoteAudioTracks();
-        setVoiceStatusUI(true, "الصوت المباشر متصل 🔊");
-        return true;
-      }
-
-      if (voice.client.connectionState !== "DISCONNECTED") {
-        await leaveVoiceChannel();
-      }
-
+      if (voice.client.connectionState !== "DISCONNECTED") await leaveVoiceChannel();
       var tokenData = await fetchRtcToken(channelName, targetUid, "publisher");
-      var joinUid = (tokenData.uid !== undefined && tokenData.uid !== null) ? tokenData.uid : targetUid;
-      await voice.client.join(tokenData.appId, channelName, tokenData.token, joinUid);
-
+      await voice.client.join(tokenData.appId, channelName, tokenData.token, tokenData.uid || targetUid);
       voice.channel = channelName;
       voice.role = desiredRole;
-
       if (Array.isArray(voice.client.remoteUsers)) {
         for (var i = 0; i < voice.client.remoteUsers.length; i++) {
-          var ru = voice.client.remoteUsers[i];
-          if (ru && ru.hasAudio) {
-            await subscribeAndPlayRemoteUser(ru, "audio");
-          }
+          if (voice.client.remoteUsers[i] && voice.client.remoteUsers[i].hasAudio) await subscribeAndPlayRemoteUser(voice.client.remoteUsers[i], "audio");
         }
       }
-
-      if (desiredRole === "publisher") {
-        await publishLocalMic();
-      }
-
+      if (desiredRole === "publisher") await publishLocalMic();
       setVoiceStatusUI(true, "الصوت المباشر متصل 🔊");
       return true;
-    } catch (err) {
-      setVoiceStatusUI(false, "تعذر ربط الصوت — تأكد من الشبكة");
-      return false;
-    } finally {
-      voice.joining = false;
-    }
+    } catch (e) { setVoiceStatusUI(false, "تعذر ربط الصوت"); return false; }
+    finally { voice.joining = false; }
   }
-
-  async function publishLocalMic() {
-    if (!voice.client || voice.client.connectionState !== "CONNECTED") return false;
-    try {
-      if (!voice.localTrack) {
-        voice.localTrack = await AgoraRTC.createMicrophoneAudioTrack({
-          AEC: true,
-          ANS: true,
-          AGC: true
-        });
-      }
-      var activeRoomId = UI.roomId || UI.floatingRoomId;
-      var room = getRoom(activeRoomId);
-      var mySeatIdx = room ? seatIndexOf(room, S.me.id) : -1;
-      var adminMuted = mySeatIdx >= 0 && room.seats[mySeatIdx].muted;
-      var effectiveMuted = UI.micMuted || adminMuted;
-
-      await voice.localTrack.setEnabled(!effectiveMuted);
-      await voice.client.publish([voice.localTrack]);
-      resumeAllRemoteAudioTracks();
-      return true;
-    } catch (err) {
-      toast("اسمح للمتصفح بالوصول للميكروفون ليسمعك الجميع 🎤");
-      return false;
-    }
-  }
-
-  async function syncMicHardwareState() {
-    var activeRoomId = UI.roomId || UI.floatingRoomId;
-    var room = getRoom(activeRoomId);
-    if (!room) return;
-    var mySeatIdx = seatIndexOf(room, S.me.id);
-    if (mySeatIdx < 0) {
-      clearSeatDisconnectBinding();
-      await stopLocalMic();
-      return;
-    }
-    var adminMuted = !!room.seats[mySeatIdx].muted;
-    var effectiveMuted = UI.micMuted || adminMuted;
-    if (!voice.localTrack && !effectiveMuted) {
-      await publishLocalMic();
-      return;
-    }
-    if (voice.localTrack) {
-      try {
-        await voice.localTrack.setEnabled(!effectiveMuted);
-      } catch (e) { /* */ }
-    }
-  }
-
   async function leaveVoiceChannel() {
     if (voice.leaving) return;
     voice.leaving = true;
-    clearSeatDisconnectBinding();
     showAudioUnlockBar(false);
     try {
-      await stopMusicBroadcast();
       await stopLocalMic();
-      if (voice.client && voice.client.connectionState !== "DISCONNECTED") {
-        await voice.client.leave();
-      }
-    } catch (e) { /* */ } finally {
-      voice.channel = null;
-      voice.role = null;
-      voice.speakingNums = {};
-      voice.leaving = false;
-      setVoiceStatusUI(false, "غير متصل");
-    }
+      if (musicState.roomAudio) { try { musicState.roomAudio.pause(); } catch (e) { /* */ } musicState.roomAudio = null; }
+      if (voice.client && voice.client.connectionState !== "DISCONNECTED") await voice.client.leave();
+    } catch (e) { /* */ }
+    finally { voice.channel = null; voice.role = null; voice.speakingNums = {}; voice.leaving = false; setVoiceStatusUI(false, "غير متصل"); }
   }
-
   function updateSpeakingIndicators() {
     var room = getRoom(UI.roomId);
     if (!room) return;
@@ -980,342 +312,246 @@
     room.seats.forEach(function (s, idx) {
       var el = seatEls[idx];
       if (!el) return;
-      if (!s.uid) {
-        el.classList.remove("speak");
-        return;
-      }
+      if (!s.uid) { el.classList.remove("speak"); return; }
       var u = getUser(s.uid);
-      var uNum = u.num || hashNum(s.uid);
-      var isMuted = s.muted || (s.uid === S.me.id && UI.micMuted);
-      var isSpeaking = !isMuted && !!voice.speakingNums[uNum];
-      el.classList.toggle("speak", isSpeaking);
-
-      if (UI.activeSeatProfileUid === s.uid && UI.activeSeatProfileIdx === idx) {
-        var spBadge = $("sp-live-speak-pill");
-        if (spBadge) {
-          spBadge.className = "seat-pill " + (isMuted ? "muted" : (isSpeaking ? "live" : ""));
-          spBadge.textContent = isMuted ? "🔇 مكتوم" : (isSpeaking ? "🎙️ يتحدث الآن" : "🎤 صامت");
-        }
-      }
+      var muted = s.muted || (s.uid === S.me.id && UI.micMuted);
+      el.classList.toggle("speak", !muted && !!voice.speakingNums[u.num || hashNum(s.uid)]);
     });
   }
 
-  /* ========= 6. الحالة والبيانات + نظام الترقيم (0001000+) + دخول Google ========= */
-  var cloud = { on: false, db: null, auth: null, fbUser: null, usersMap: {}, roomsMap: {}, roomMsgs: {}, seenFly: {}, seenReact: {}, seenJoin: {} };
+  /* ========= الحالة والمزامنة ========= */
+  var cloud = { on: false, db: null, auth: null, usersMap: {}, roomMsgs: {} };
   var S = null;
   var UI = {
-    page: "home", filter: "all", rfilter: "mine", ftab: "friends", pftab: "overview",
-    leaderTab: "wealth",
-    query: "", findQ: "",
-    roomId: null, floatingRoomId: null, dmId: null, micMuted: false, roomSpeakerMuted: false,
-    giftSel: "heart", giftTarget: "",
-    giftSending: false,
-    processedGiftIds: {},
-    theme: null, quiz: null,
-    celebratedProfiles: {},
-    activeSeatProfileUid: null,
-    activeSeatProfileIdx: -1,
-    idAssigning: false,
-    authReady: false,
-    authSigningIn: false
+    page: "home", filter: "all", rfilter: "mine", ftab: "friends",
+    query: "", findQ: "", roomId: null, floatingRoomId: null, dmId: null,
+    micMuted: false, roomSpeakerMuted: false, giftSel: "heart", giftTarget: "", giftSending: false,
+    authReady: false, authSigningIn: false
   };
+  var listenersMap = {};
 
-  function configReady() {
-    return FIREBASE_CONFIG.apiKey &&
-      FIREBASE_CONFIG.apiKey.indexOf("YOUR_") !== 0 &&
-      FIREBASE_CONFIG.databaseURL &&
-      FIREBASE_CONFIG.databaseURL.indexOf("YOUR_") < 0;
+  function onDb(key, ref, ev, fn) {
+    ref.on(ev, fn);
+    (listenersMap[key] = listenersMap[key] || []).push({ ref: ref, ev: ev, fn: fn });
   }
-
-  function initCloud() {
-    if (!global.firebase || !configReady()) return false;
-    try {
-      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-      cloud.db = firebase.database();
-      cloud.auth = firebase.auth();
-      cloud.on = true;
-    } catch (e) {
-      cloud.on = false;
-    }
-    return cloud.on;
-  }
-
-  function hasLocalSession() {
-    try {
-      return localStorage.getItem(CONFIG.authSessionKey) === "1";
-    } catch (e) {
-      return false;
-    }
-  }
-
-  function setLocalSession(logged) {
-    try {
-      if (logged) localStorage.setItem(CONFIG.authSessionKey, "1");
-      else localStorage.removeItem(CONFIG.authSessionKey);
-    } catch (e) { /* */ }
-  }
-
-  function showAuthGate(show) {
-    var gate = $("auth-gate");
-    if (!gate) return;
-    gate.classList.toggle("hidden", !show);
+  function offDb(key) {
+    (listenersMap[key] || []).forEach(function (x) { try { x.ref.off(x.ev, x.fn); } catch (e) { /* */ } });
+    listenersMap[key] = [];
   }
 
   function demoUsers() {
     return [
-      { id: "RV-1001", num: 1001, specialId: "0001001", name: "ليلى", photo: "", cover: "", online: true, bio: "أحب الموسيقى 🎵", vip: 2, vipExp: Date.now() + 20 * 86400000, verified: true, country: "🇪🇬 مصر", roomsJoined: 14, roomSeconds: 4200, level: 12, xp: 1140, wealth: 1850, charm: 2400, followers: 120, following: 45, friendsCount: 18, gifts: 32, receivedGifts: [], wealthLog: [], charmLog: [] },
-      { id: "RV-1002", num: 1002, specialId: "0001002", name: "أحمد", photo: "", cover: "", online: true, bio: "لاعب محترف 🎮", vip: 0, verified: false, country: "🇸🇦 السعودية", roomsJoined: 8, roomSeconds: 1900, level: 5, xp: 420, wealth: 620, charm: 310, followers: 40, following: 22, friendsCount: 9, gifts: 11, receivedGifts: [], wealthLog: [], charmLog: [] },
-      { id: "RV-1003", num: 1003, specialId: "0001003", name: "سارة", photo: "", cover: "", online: false, bio: "هنا للدردشة ☕", vip: 1, vipExp: Date.now() + 12 * 86400000, verified: true, country: "🇦🇪 الإمارات", roomsJoined: 11, roomSeconds: 3100, level: 8, xp: 750, wealth: 1200, charm: 1650, followers: 85, following: 30, friendsCount: 14, gifts: 21, receivedGifts: [], wealthLog: [], charmLog: [] },
-      { id: "RV-1004", num: 1004, specialId: "0001004", name: "خالد", photo: "", cover: "", online: true, bio: "صاحب غرف VIP 👑", vip: 3, vipExp: Date.now() + 28 * 86400000, verified: true, country: "🇰🇼 الكويت", roomsJoined: 25, roomSeconds: 9500, level: 24, xp: 2350, wealth: 14500, charm: 11200, followers: 340, following: 60, friendsCount: 42, gifts: 95, receivedGifts: [], wealthLog: [], charmLog: [] },
-      { id: "RV-1005", num: 1005, specialId: "0001005", name: "مريم", photo: "", cover: "", online: false, bio: "مرحباً بالجميع", vip: 0, verified: false, country: "🇯🇴 الأردن", roomsJoined: 4, roomSeconds: 900, level: 3, xp: 230, wealth: 180, charm: 90, followers: 15, following: 12, friendsCount: 5, gifts: 4, receivedGifts: [], wealthLog: [], charmLog: [] },
-      { id: "RV-1006", num: 1006, specialId: "0001006", name: "يوسف", photo: "", cover: "", online: true, bio: "تحدي الأسئلة 🧠", vip: 2, vipExp: Date.now() + 18 * 86400000, verified: true, country: "🇲🇦 المغرب", roomsJoined: 19, roomSeconds: 6100, level: 15, xp: 1420, wealth: 4300, charm: 5800, followers: 190, following: 51, friendsCount: 27, gifts: 48, receivedGifts: [], wealthLog: [], charmLog: [] }
+      { id: "RV-1001", num: 1001, specialId: "0001001", name: "ليلى", photo: "", online: true, bio: "أحب الموسيقى 🎵", vip: 2, verified: true, wealth: 1850, charm: 2400, followers: 120, following: 45, friendsCount: 18, gifts: 32, xp: 1140 },
+      { id: "RV-1002", num: 1002, specialId: "0001002", name: "أحمد", photo: "", online: true, bio: "لاعب محترف 🎮", vip: 0, verified: false, wealth: 620, charm: 310, followers: 40, following: 22, friendsCount: 9, gifts: 11, xp: 420 },
+      { id: "RV-1003", num: 1003, specialId: "0001003", name: "سارة", photo: "", online: false, bio: "هنا للدردشة ☕", vip: 1, verified: true, wealth: 1200, charm: 1650, followers: 85, following: 30, friendsCount: 14, gifts: 21, xp: 750 }
     ];
   }
-
-  function makeSeats(n, occ) {
-    var seats = [];
-    for (var i = 0; i < n; i++) {
-      seats.push({ uid: occ && occ[i] ? occ[i] : null, locked: false, muted: false, vip: i === 0 });
-    }
-    return seats;
+  function makeSeats(n) {
+    var arr = [];
+    for (var i = 0; i < n; i++) arr.push({ uid: null, locked: false, muted: false, vip: i === 0 });
+    return arr;
   }
-
   function demoRooms() {
     var t = now();
     return [
-      { id: "r1", name: "سهرة الأصدقاء", desc: "دردشة مفتوحة للجميع", cat: "friends", owner: "RV-1001", mods: [], seats: makeSeats(9, []), listeners: [], bans: [], priv: false, locked: false, pinned: "", created: t - 7200000, msgs: [], color: 0, icon: 0, roomPhoto: "", recvTop: {}, theme: ROOM_THEMES[0] },
-      { id: "r2", name: "تحدي الأسئلة", desc: "مسابقات وجوائز", cat: "games", owner: "RV-1006", mods: [], seats: makeSeats(6, []), listeners: [], bans: [], priv: false, locked: false, pinned: "مسابقة اليوم الساعة 9 مساءً", created: t - 3600000, msgs: [], color: 1, icon: 1, roomPhoto: "", recvTop: {}, theme: ROOM_THEMES[1] },
-      { id: "r3", name: "قصر الملوك", desc: "غرفة VIP حصرية", cat: "vip", owner: "RV-1004", mods: [], seats: makeSeats(12, []), listeners: [], bans: [], priv: false, locked: false, pinned: "", created: t - 86400000, msgs: [], color: 3, icon: 3, roomPhoto: "", recvTop: {}, theme: ROOM_THEMES[3] },
-      { id: "r4", name: "ليالي الطرب", desc: "أغاني وموسيقى", cat: "music", owner: "RV-1003", mods: [], seats: makeSeats(4, []), listeners: [], bans: [], priv: false, locked: false, pinned: "", created: t - 600000, msgs: [], color: 2, icon: 2, roomPhoto: "", recvTop: {}, theme: ROOM_THEMES[2] }
+      { id: "r1", name: "سهرة الأصدقاء", desc: "دردشة مفتوحة", cat: "friends", owner: "RV-1001", mods: [], seats: makeSeats(9), listeners: [], bans: [], priv: false, locked: false, pinned: "", created: t - 7200000, msgs: [], color: 0, icon: 0, roomPhoto: "" },
+      { id: "r2", name: "تحدي الأسئلة", desc: "مسابقات", cat: "games", owner: "RV-1002", mods: [], seats: makeSeats(6), listeners: [], bans: [], priv: false, locked: false, pinned: "", created: t - 3600000, msgs: [], color: 1, icon: 1, roomPhoto: "" },
+      { id: "r3", name: "ليالي الطرب", desc: "موسيقى", cat: "music", owner: "RV-1003", mods: [], seats: makeSeats(6), listeners: [], bans: [], priv: false, locked: false, pinned: "", created: t - 600000, msgs: [], color: 2, icon: 2, roomPhoto: "" }
     ];
   }
-
   function freshState() {
-    var fixedId = getOrCreateFixedUid();
-    var num = hashNum(fixedId);
+    var id = getOrCreateFixedUid();
     return {
       me: {
-        id: fixedId, num: num, specialId: "",
-        name: "مستخدم جديد", email: "", photo: "", cover: "",
-        bio: "مرحباً! أنا جديد في REAL VOICE 👋", coins: CONFIG.startCoins,
-        xp: 0, level: 1, wealth: 0, charm: 0,
-        vip: 0, vipExp: 0,
-        verified: false, followers: 0, following: 0, friendsCount: 0, visits: 0, joined: now(),
-        country: "🇪🇬 مصر", gifts: 0, sent: 0, msgCount: 0,
-        roomsJoined: 0, roomSeconds: 0,
-        receivedGifts: [], wealthLog: [], charmLog: [],
-        ach: {}, daily: 0, invites: 0,
+        id: id, num: hashNum(id), specialId: "", name: "مستخدم جديد", email: "", photo: "",
+        bio: "مرحباً بك في REAL VOICE", coins: CONFIG.startCoins, xp: 0, level: 1,
+        wealth: 0, charm: 0, vip: 0, verified: false, followers: 0, following: 0, friendsCount: 0,
+        gifts: 0, msgCount: 0, roomsJoined: 0, daily: 0, joined: now(),
         tasks: { dayKey: new Date().toDateString(), msg: false, friend: false, mic: false, room: false }
       },
-      users: demoUsers(),
-      rooms: demoRooms(),
+      users: demoUsers(), rooms: demoRooms(),
       friends: [], requests: [], sentReq: [], blocked: [], follows: [],
-      dms: {}, unread: {}, notifs: [], txs: [], giftsLog: [],
+      dms: {}, unread: {}, notifs: [],
+      banners: [], // تضاف لاحقاً
       settings: { notif: true, sound: true, lightTheme: false }
     };
   }
-
-  function applyThemeMode() {
-    var isLight = !!(S && S.settings && S.settings.lightTheme);
-    document.body.classList.toggle("light-theme", isLight);
-  }
-
-  function ensureDailyTasks() {
-    var today = new Date().toDateString();
-    if (!S.me.tasks || S.me.tasks.dayKey !== today) {
-      S.me.tasks = { dayKey: today, msg: false, friend: false, mic: false, room: false };
-    }
-  }
-
-  function completeTask(key, rewardCoins) {
-    ensureDailyTasks();
-    if (!S.me.tasks[key]) {
-      S.me.tasks[key] = true;
-      S.me.coins += (rewardCoins || 25);
-      addXP(10);
-      toast("مهمة مكتملة! +" + (rewardCoins || 25) + " عملة 🪙");
-      save();
-    }
-  }
-
+  function applyThemeMode() { document.body.classList.toggle("light-theme", !!(S && S.settings && S.settings.lightTheme)); }
   function loadLocal() {
     var fixedId = getOrCreateFixedUid();
     try {
       var raw = localStorage.getItem(CONFIG.storageKey);
       if (raw) {
-        var parsed = JSON.parse(raw);
-        if (parsed && parsed.me && Array.isArray(parsed.rooms)) {
-          S = parsed;
-          S.me.id = fixedId;
+        var p = JSON.parse(raw);
+        if (p && p.me && Array.isArray(p.rooms)) {
+          S = p; S.me.id = fixedId;
           if (!S.me.num) S.me.num = hashNum(fixedId);
-          if (S.me.specialId && /^\d{7}$/.test(String(S.me.specialId))) {
-            S.me.specialId = String(S.me.specialId);
-          } else {
-            S.me.specialId = "";
-          }
-          if (S.me.photo == null) S.me.photo = "";
-          if (S.me.cover == null) S.me.cover = "";
-          if (S.me.roomsJoined == null) S.me.roomsJoined = S.me.visits || 0;
-          if (S.me.roomSeconds == null) S.me.roomSeconds = 0;
-          if (S.me.wealth == null) S.me.wealth = 0;
-          if (S.me.charm == null) S.me.charm = 0;
-          if (S.me.xp == null) S.me.xp = 0;
-          S.me.level = computeLevelFromXp(S.me.xp);
-          if (!Array.isArray(S.me.receivedGifts)) S.me.receivedGifts = [];
-          if (!Array.isArray(S.me.wealthLog)) S.me.wealthLog = [];
-          if (!Array.isArray(S.me.charmLog)) S.me.charmLog = [];
-          if (!S.me.country) S.me.country = "🇪🇬 مصر";
-          if (!S.unread) S.unread = {};
-          if (!S.dms) S.dms = {};
-          if (!S.users) S.users = demoUsers();
+          if (!Array.isArray(S.banners)) S.banners = [];
           if (!S.friends) S.friends = [];
           if (!S.requests) S.requests = [];
           if (!S.sentReq) S.sentReq = [];
           if (!S.blocked) S.blocked = [];
           if (!S.follows) S.follows = [];
+          if (!S.dms) S.dms = {};
+          if (!S.unread) S.unread = {};
           if (!S.notifs) S.notifs = [];
-          if (!S.txs) S.txs = [];
-          if (!S.giftsLog) S.giftsLog = [];
           if (!S.settings) S.settings = { notif: true, sound: true, lightTheme: false };
-          ensureDailyTasks();
           applyThemeMode();
           return;
         }
       }
     } catch (e) { /* */ }
     S = freshState();
-    addNotif("🎉", "أهلاً بك في REAL VOICE! حصلت على " + CONFIG.startCoins + " عملة هدية.");
     applyThemeMode();
     saveLocal();
   }
-
-  function saveLocal() {
-    try { localStorage.setItem(CONFIG.storageKey, JSON.stringify(S)); } catch (e) { /* */ }
-  }
-
-  async function ensureSequentialSpecialId(userId, username) {
-    if (!userId) return "0001000";
-    if (S && S.me && S.me.id === userId && /^\d{7}$/.test(String(S.me.specialId || ""))) {
-      return String(S.me.specialId);
-    }
-    if (!cloud.on || !cloud.db) {
-      var localFallback = formatSpecialId(CONFIG.initialSpecialIdNumber);
-      if (S && S.me && S.me.id === userId) S.me.specialId = localFallback;
-      return localFallback;
-    }
-
-    if (UI.idAssigning) {
-      return S.me.specialId || "0001000";
-    }
-    UI.idAssigning = true;
-
-    try {
-      var userSpecRef = cloud.db.ref("users/" + userId + "/specialId");
-      var existingSnap = await userSpecRef.once("value");
-      var existingVal = existingSnap.val();
-      if (typeof existingVal === "string" && /^\d{7}$/.test(existingVal.trim())) {
-        var validId = existingVal.trim();
-        if (S && S.me && S.me.id === userId) S.me.specialId = validId;
-        return validId;
-      }
-
-      var counterRef = cloud.db.ref("system/userIdCounter/lastAssignedId");
-      var assignedId = null;
-
-      await counterRef.transaction(function (curr) {
-        if (curr === null || typeof curr !== "number" || !isFinite(curr) || curr < CONFIG.initialSpecialIdNumber) {
-          assignedId = formatSpecialId(CONFIG.initialSpecialIdNumber);
-          return CONFIG.initialSpecialIdNumber;
-        }
-        var nextNum = Math.floor(curr) + 1;
-        if (nextNum > 9999999) {
-          return;
-        }
-        assignedId = formatSpecialId(nextNum);
-        return nextNum;
-      });
-
-      if (!assignedId) {
-        return S.me.specialId || "0001000";
-      }
-
-      var indexRef = cloud.db.ref("specialIdIndex/" + assignedId);
-      var idxTx = await indexRef.transaction(function (ownerUid) {
-        if (!ownerUid || ownerUid === userId) {
-          return userId;
-        }
-        return;
-      });
-
-      if (idxTx.committed && idxTx.snapshot && idxTx.snapshot.val() === userId) {
-        await cloud.db.ref("users/" + userId).update({
-          specialId: assignedId,
-          username: clean(username || (S.me && S.me.name) || "مستخدم"),
-          createdAt: (S.me && S.me.joined) || Date.now()
-        });
-        if (S && S.me && S.me.id === userId) {
-          S.me.specialId = assignedId;
-          saveLocal();
-        }
-        return assignedId;
-      }
-
-      UI.idAssigning = false;
-      return await ensureSequentialSpecialId(userId, username);
-    } catch (e) {
-      return S.me.specialId || "";
-    } finally {
-      UI.idAssigning = false;
-    }
-  }
-
-  function saveMeCloud() {
-    if (!cloud.on || !cloud.db || !S || !S.me) return;
-    var curLv = level();
-    var payload = {
-      id: S.me.id, num: S.me.num,
-      name: S.me.name, username: S.me.name,
-      email: S.me.email || "",
-      photo: S.me.photo || "", cover: S.me.cover || "",
-      bio: S.me.bio, coins: S.me.coins,
-      xp: S.me.xp || 0, level: curLv,
-      wealth: Number(S.me.wealth || 0),
-      charm: Number(S.me.charm || 0),
-      vip: S.me.vip || 0, vipExp: S.me.vipExp || 0, verified: !!S.me.verified,
-      followers: S.me.followers || 0, following: S.follows.length || 0,
-      friendsCount: S.friends.length || 0,
-      visits: S.me.visits || 0, roomsJoined: S.me.roomsJoined || 0,
-      roomSeconds: S.me.roomSeconds || 0,
-      receivedGifts: (S.me.receivedGifts || []).slice(-30),
-      wealthLog: (S.me.wealthLog || []).slice(-25),
-      charmLog: (S.me.charmLog || []).slice(-25),
-      country: S.me.country, gifts: S.me.gifts || 0, sent: S.me.sent || 0,
-      msgCount: S.me.msgCount || 0, ach: S.me.ach || {},
-      daily: S.me.daily || 0, tasks: S.me.tasks || {}, invites: S.me.invites || 0,
-      online: true
-    };
-    if (/^\d{7}$/.test(String(S.me.specialId || ""))) {
-      payload.specialId = String(S.me.specialId);
-    }
-    cloud.db.ref("users/" + S.me.id).update(payload).catch(function () { /* */ });
-  }
-
+  function saveLocal() { try { localStorage.setItem(CONFIG.storageKey, JSON.stringify(S)); } catch (e) { /* */ } }
   function save() {
     saveLocal();
-    saveMeCloud();
+    if (cloud.on && cloud.db && S && S.me) {
+      cloud.db.ref("users/" + S.me.id).update({
+        id: S.me.id, num: S.me.num, specialId: S.me.specialId || "",
+        name: S.me.name, username: S.me.name, email: S.me.email || "", photo: S.me.photo || "",
+        bio: S.me.bio || "", coins: Number(S.me.coins || 0), xp: Number(S.me.xp || 0),
+        level: computeLevelFromXp(S.me.xp || 0), wealth: Number(S.me.wealth || 0),
+        charm: Number(S.me.charm || 0), vip: Number(S.me.vip || 0),
+        followers: Number(S.me.followers || 0), following: S.follows.length || 0,
+        friendsCount: S.friends.length || 0, online: true
+      }).catch(function () { /* */ });
+    }
   }
 
-  function applyGoogleProfileToMe(fbUser) {
-    if (!fbUser || !S || !S.me) return;
-    if (fbUser.displayName && (!S.me.name || S.me.name === "مستخدم جديد")) {
-      S.me.name = clean(fbUser.displayName);
+  function hasLocalSession() { try { return localStorage.getItem(CONFIG.authSessionKey) === "1"; } catch (e) { return false; } }
+  function setLocalSession(v) { try { if (v) localStorage.setItem(CONFIG.authSessionKey, "1"); else localStorage.removeItem(CONFIG.authSessionKey); } catch (e) { /* */ } }
+  function showAuthGate(show) { var g = $("auth-gate"); if (g) g.classList.toggle("hidden", !show); }
+
+  function initCloud() {
+    if (!global.firebase || !FIREBASE_CONFIG.apiKey) return false;
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      cloud.db = firebase.database();
+      cloud.auth = firebase.auth();
+      cloud.on = true;
+      return true;
+    } catch (e) { cloud.on = false; return false; }
+  }
+
+  async function ensureSequentialSpecialId(userId) {
+    if (!userId) return "0001000";
+    if (S.me.specialId && /^\d{7}$/.test(S.me.specialId)) return S.me.specialId;
+    if (!cloud.on || !cloud.db) {
+      S.me.specialId = formatSpecialId(CONFIG.initialSpecialIdNumber);
+      return S.me.specialId;
     }
-    if (fbUser.email) {
-      S.me.email = fbUser.email;
+    try {
+      var snap = await cloud.db.ref("users/" + userId + "/specialId").once("value");
+      var v = snap.val();
+      if (typeof v === "string" && /^\d{7}$/.test(v.trim())) { S.me.specialId = v.trim(); return S.me.specialId; }
+      var assigned = null;
+      await cloud.db.ref("system/userIdCounter/lastAssignedId").transaction(function (curr) {
+        var next = (typeof curr === "number" && curr >= CONFIG.initialSpecialIdNumber) ? Math.floor(curr) + 1 : CONFIG.initialSpecialIdNumber;
+        assigned = formatSpecialId(next);
+        return next;
+      });
+      if (assigned) {
+        S.me.specialId = assigned;
+        await cloud.db.ref("users/" + userId + "/specialId").set(assigned);
+      }
+      return S.me.specialId || "0001000";
+    } catch (e) { return S.me.specialId || "0001000"; }
+  }
+
+  function normalizeRoom(id, r) {
+    r = r || {};
+    var n = Number(r.seatCount) || (Array.isArray(r.seats) ? r.seats.length : 9) || 9;
+    var seats = [];
+    for (var i = 0; i < n; i++) {
+      var s = (r.seats && r.seats[i]) || {};
+      seats.push({ uid: s.uid || null, locked: !!s.locked, muted: !!s.muted, vip: s.vip != null ? !!s.vip : i === 0 });
     }
-    if (fbUser.photoURL && !S.me.photo) {
-      S.me.photo = fbUser.photoURL;
-    }
+    var listenersArr = Array.isArray(r.listeners) ? r.listeners : Object.keys(r.listeners || {}).filter(function (k) { return r.listeners[k]; });
+    var modsArr = Array.isArray(r.mods) ? r.mods : Object.keys(r.mods || {});
+    var bansArr = Array.isArray(r.bans) ? r.bans : Object.keys(r.bans || {});
+    return {
+      id: id, name: r.name || "غرفة", desc: r.desc || "", cat: r.cat || "chat",
+      owner: r.owner || "", mods: modsArr, seats: seats, listeners: listenersArr,
+      bans: bansArr, priv: !!r.priv, locked: !!r.locked, pinned: r.pinned || "",
+      created: typeof r.created === "number" ? r.created : now(),
+      color: r.color || 0, icon: r.icon || 0, roomPhoto: r.roomPhoto || "",
+      msgs: cloud.roomMsgs[id] || r.msgs || []
+    };
+  }
+
+  function startCloudSync() {
+    if (!cloud.on) return Promise.resolve();
+    return new Promise(function (resolve) {
+      var done = false;
+      function finish() { if (!done) { done = true; resolve(); } }
+      setTimeout(finish, 2500);
+      var myId = getOrCreateFixedUid();
+      S.me.id = myId;
+      S.me.num = hashNum(myId);
+
+      var uRef = cloud.db.ref("users/" + myId);
+      uRef.once("value").then(async function (snap) {
+        var p = snap.val();
+        if (p && p.id) {
+          S.me = Object.assign({}, S.me, p, { id: myId, num: p.num || S.me.num });
+        }
+        await ensureSequentialSpecialId(myId);
+        uRef.child("online").onDisconnect().set(false);
+        uRef.update({ online: true, specialId: S.me.specialId }).catch(function () { /* */ });
+
+        onDb("app", cloud.db.ref("users"), "value", function (us) {
+          var val = us.val() || {};
+          cloud.usersMap = val;
+          S.users = Object.keys(val).filter(function (k) { return k !== S.me.id; }).map(function (k) {
+            return Object.assign({ id: k }, val[k]);
+          });
+          renderAll();
+          if (UI.roomId) renderRoom();
+        });
+
+        onDb("app", cloud.db.ref("rooms"), "value", function (rs) {
+          var val = rs.val() || {};
+          var list = Object.keys(val).map(function (rid) { return normalizeRoom(rid, val[rid]); });
+          if (list.length) S.rooms = list;
+          if (UI.roomId) {
+            var cur = getRoom(UI.roomId);
+            if (!cur) { leaveRoom(false); }
+            else { syncMicHardwareState(); renderRoom(); }
+          }
+          renderFloatingOrb();
+          if (UI.page === "home") renderHome();
+          else if (UI.page === "rooms") renderRooms();
+        });
+
+        onDb("app", cloud.db.ref("social/" + S.me.id), "value", function (ss) {
+          var sv = ss.val() || {};
+          S.friends = Object.keys(sv.friends || {});
+          S.requests = Object.keys(sv.requests || {});
+          S.sentReq = Object.keys(sv.sentReq || {});
+          S.follows = Object.keys(sv.follows || {});
+          S.blocked = Object.keys(sv.blocked || {});
+          renderAll();
+        });
+
+        onDb("app", cloud.db.ref("userDms/" + myId), "value", function (ds) {
+          var threads = ds.val() || {};
+          Object.keys(threads).forEach(function (peerId) {
+            cloud.db.ref("dms/" + dmThreadId(myId, peerId)).limitToLast(50).once("value").then(function (ms) {
+              var v = ms.val() || {};
+              S.dms[peerId] = Object.keys(v).map(function (k) { return Object.assign({ key: k }, v[k]); });
+              saveLocal();
+              if (UI.page === "messages") renderMessages();
+              if (UI.dmId === peerId) renderDM();
+            }).catch(function () { /* */ });
+          });
+        });
+
+        finish();
+      }).catch(finish);
+    });
   }
 
   async function signInWithGoogle() {
@@ -1323,348 +559,37 @@
     UI.authSigningIn = true;
     try {
       if (cloud.on && cloud.auth && global.firebase && firebase.auth.GoogleAuthProvider) {
-        var provider = new firebase.auth.GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: "select_account" });
-        var result = await cloud.auth.signInWithPopup(provider);
-        var gUser = result && result.user;
-        if (gUser) {
-          cloud.fbUser = gUser;
-          applyGoogleProfileToMe(gUser);
-        }
-      } else {
-        if (!S.me.name || S.me.name === "مستخدم جديد") {
-          S.me.name = "حساب Google";
+        var prov = new firebase.auth.GoogleAuthProvider();
+        prov.setCustomParameters({ prompt: "select_account" });
+        var res = await cloud.auth.signInWithPopup(prov);
+        if (res && res.user) {
+          if (res.user.displayName && (!S.me.name || S.me.name === "مستخدم جديد")) S.me.name = clean(res.user.displayName);
+          if (res.user.email) S.me.email = res.user.email;
+          if (res.user.photoURL && !S.me.photo) S.me.photo = res.user.photoURL;
         }
       }
       setLocalSession(true);
       UI.authReady = true;
       showAuthGate(false);
-      await ensureSequentialSpecialId(S.me.id, S.me.name);
-      save();
-      renderAll();
-      toast("تم تسجيل الدخول عبر Google بنجاح 🎉");
-    } catch (err) {
-      if (err && err.code === "auth/popup-blocked" && cloud.auth && global.firebase && firebase.auth.GoogleAuthProvider) {
-        setLocalSession(true);
-        var prov2 = new firebase.auth.GoogleAuthProvider();
-        cloud.auth.signInWithRedirect(prov2).catch(function () { /* */ });
-        return;
-      }
-      toast((err && err.message) || "تعذر تسجيل الدخول عبر Google");
-    } finally {
-      UI.authSigningIn = false;
-    }
+      await ensureSequentialSpecialId(S.me.id);
+      save(); renderAll();
+      toast("تم تسجيل الدخول عبر Google بنجاح ✅");
+    } catch (e) { toast((e && e.message) || "تعذر تسجيل الدخول"); }
+    finally { UI.authSigningIn = false; }
   }
 
   async function signInAsGuest() {
-    setLocalSession(true);
-    UI.authReady = true;
-    showAuthGate(false);
-    await ensureSequentialSpecialId(S.me.id, S.me.name);
-    save();
-    renderAll();
-    toast("مرحباً بك في REAL VOICE 👋");
+    setLocalSession(true); UI.authReady = true; showAuthGate(false);
+    await ensureSequentialSpecialId(S.me.id);
+    save(); renderAll();
   }
 
-  async function signOutAccount() {
-    setLocalSession(false);
-    UI.authReady = false;
-    if (UI.roomId) leaveRoom(true);
-    if (cloud.on && cloud.auth) {
-      try { await cloud.auth.signOut(); } catch (e) { /* */ }
-    }
-    showAuthGate(true);
-    toast("تم تسجيل الخروج");
-  }
-
-  function normalizeRoom(id, r) {
-    r = r || {};
-    var n = Number(r.seatCount) || (Array.isArray(r.seats) ? r.seats.length : 9) || 9;
-    var seats = [];
-    var seenSeatUids = {};
-    for (var i = 0; i < n; i++) {
-      var s = (r.seats && r.seats[i]) || {};
-      var seatUid = s.uid || null;
-      if (seatUid) {
-        if (seenSeatUids[seatUid]) seatUid = null;
-        else seenSeatUids[seatUid] = true;
-      }
-      seats.push({
-        uid: seatUid,
-        locked: !!s.locked,
-        muted: !!s.muted,
-        vip: s.vip != null ? !!s.vip : i === 0
-      });
-    }
-    var listenersArr = [];
-    if (Array.isArray(r.listeners)) {
-      r.listeners.forEach(function (uidKey) {
-        if (uidKey && !seenSeatUids[uidKey] && listenersArr.indexOf(uidKey) < 0) listenersArr.push(uidKey);
-      });
-    } else if (r.listeners && typeof r.listeners === "object") {
-      Object.keys(r.listeners).forEach(function (uidKey) {
-        if (r.listeners[uidKey] && !seenSeatUids[uidKey] && listenersArr.indexOf(uidKey) < 0) listenersArr.push(uidKey);
-      });
-    }
-    var modsArr = Array.isArray(r.mods) ? r.mods : Object.keys(r.mods || {});
-    var bansArr = Array.isArray(r.bans) ? r.bans : Object.keys(r.bans || {});
-
-    return {
-      id: id, name: r.name || "غرفة", desc: r.desc || "", cat: r.cat || "chat",
-      owner: r.owner || "", mods: modsArr,
-      seats: seats, listeners: listenersArr,
-      bans: bansArr, priv: !!r.priv, locked: !!r.locked, pinned: r.pinned || "",
-      created: typeof r.created === "number" ? r.created : now(),
-      color: r.color || 0, icon: r.icon || 0,
-      roomPhoto: r.roomPhoto || "",
-      theme: r.theme || null,
-      recvTop: r.recvTop || {}, seatCount: n, msgs: cloud.roomMsgs[id] || r.msgs || []
-    };
-  }
-
-  function requestBrowserNotifPermission() {
-    if ("Notification" in global && Notification.permission === "default") {
-      try { Notification.requestPermission().catch(function () { /* */ }); } catch (e) { /* */ }
-    }
-  }
-
-  function triggerBrowserNotif(title, body) {
-    if (!S || !S.settings || !S.settings.notif) return;
-    if ("Notification" in global && Notification.permission === "granted") {
-      try { new Notification(title, { body: body }); } catch (e) { /* */ }
-    }
-  }
-
-  function attachDmInboxListener(myId) {
-    if (!cloud.on || !cloud.db) return;
-    trackListener("app", cloud.db.ref("userDms/" + myId), "value", function (snap) {
-      var threads = snap.val() || {};
-      Object.keys(threads).forEach(function (peerId) {
-        if (S.blocked.indexOf(peerId) >= 0) return;
-        var tid = dmThreadId(myId, peerId);
-        cloud.db.ref("dms/" + tid).limitToLast(50).once("value").then(function (msnap) {
-          var v = msnap.val() || {};
-          var msgs = Object.keys(v).map(function (k) { return Object.assign({ key: k }, v[k]); });
-          var prevLen = (S.dms[peerId] && S.dms[peerId].length) || 0;
-          S.dms[peerId] = msgs;
-          if (msgs.length > prevLen && UI.dmId !== peerId) {
-            var last = msgs[msgs.length - 1];
-            if (last && last.from !== myId) {
-              S.unread[peerId] = (S.unread[peerId] || 0) + (msgs.length - prevLen);
-            }
-          }
-          saveLocal();
-          renderTop();
-          if (UI.page === "messages") renderMessages();
-          if (UI.dmId === peerId) renderDM();
-        }).catch(function () { /* */ });
-      });
-    });
-  }
-
-  function startCloudSync() {
-    if (!cloud.on) return Promise.resolve();
-    return new Promise(function (resolve) {
-      var resolved = false;
-      function finish() { if (!resolved) { resolved = true; resolve(); } }
-      var safetyTimer = setTimeout(finish, 3000);
-
-      var myId = getOrCreateFixedUid();
-      var myNum = hashNum(myId);
-      S.me.id = myId;
-      S.me.num = myNum;
-      S.me.level = level();
-
-      var uRef = cloud.db.ref("users/" + myId);
-      uRef.once("value").then(async function (snap) {
-        var p = snap.val();
-        if (p && p.id) {
-          var mergedXp = Math.max(Number(S.me.xp || 0), Number(p.xp || 0));
-          S.me = Object.assign({}, S.me, p, {
-            id: myId,
-            num: p.num || myNum,
-            specialId: (typeof p.specialId === "string" && /^\d{7}$/.test(p.specialId.trim())) ? p.specialId.trim() : "",
-            xp: mergedXp,
-            level: computeLevelFromXp(mergedXp),
-            wealth: Math.max(Number(S.me.wealth || 0), Number(p.wealth || 0)),
-            charm: Math.max(Number(S.me.charm || 0), Number(p.charm || 0))
-          });
-        } else {
-          await uRef.set(Object.assign({}, S.me, {
-            username: S.me.name,
-            createdAt: S.me.joined || Date.now(),
-            online: true,
-            level: level()
-          })).catch(function () { /* */ });
-        }
-
-        await ensureSequentialSpecialId(myId, S.me.name);
-        ensureDailyTasks();
-
-        var params = new URLSearchParams(location.search);
-        var refUid = params.get("ref");
-        if (refUid && refUid !== S.me.id && !S.me._invitedBy) {
-          S.me._invitedBy = refUid;
-          cloud.db.ref("users/" + refUid + "/invites").transaction(function (c) { return (c || 0) + 1; }).catch(function () { /* */ });
-        }
-
-        trackListener("app", cloud.db.ref(".info/connected"), "value", function (cs) {
-          if (cs.val() !== true) return;
-          uRef.child("online").onDisconnect().set(false);
-          uRef.child("lastSeen").onDisconnect().set(serverTs());
-          uRef.update({ online: true, level: level() }).catch(function () { /* */ });
-        });
-
-        trackListener("app", cloud.db.ref("users"), "value", function (usnap) {
-          var val = usnap.val() || {};
-          cloud.usersMap = val;
-          var list = [];
-          Object.keys(val).forEach(function (k) {
-            if (k !== S.me.id) {
-              var uObj = Object.assign({ id: k }, val[k]);
-              uObj.level = computeLevelFromXp(uObj.xp || 0);
-              list.push(uObj);
-            }
-          });
-          S.users = list;
-          renderTop();
-          if (UI.page === "home" && UI.query.trim()) renderHome();
-          if (UI.page === "friends") renderFriends();
-          if (UI.page === "messages") renderMessages();
-          if (UI.page === "profile") renderProfile();
-          if (UI.roomId) renderRoom();
-        });
-
-        trackListener("app", cloud.db.ref("rooms"), "value", function (rsnap) {
-          var val = rsnap.val() || {};
-          var list = [];
-          Object.keys(val).forEach(function (rid) {
-            list.push(normalizeRoom(rid, val[rid]));
-          });
-          if (list.length) {
-            S.rooms = list;
-          }
-
-          if (UI.roomId) {
-            var cur = getRoom(UI.roomId);
-            if (!cur && list.length) {
-              toast("تم إغلاق الغرفة من المالك");
-              leaveRoom(false);
-            } else if (cur && cur.bans.indexOf(S.me.id) >= 0) {
-              toast("تم حظرك من هذه الغرفة 🚫");
-              leaveRoom(false);
-            } else if (cur) {
-              if (cur.theme) applyRoomTheme(cur.theme);
-              syncMicHardwareState();
-              renderRoom();
-            }
-          }
-          renderFloatingOrb();
-          if (UI.page === "home") renderHome();
-          else if (UI.page === "rooms") renderRooms();
-          else if (UI.page === "friends") renderFriends();
-        });
-
-        trackListener("app", cloud.db.ref("social/" + S.me.id), "value", function (ssnap) {
-          var sv = ssnap.val() || {};
-          S.friends = Object.keys(sv.friends || {});
-          S.requests = Object.keys(sv.requests || {});
-          S.sentReq = Object.keys(sv.sentReq || {});
-          S.follows = Object.keys(sv.follows || {});
-          S.blocked = Object.keys(sv.blocked || {});
-          renderTop();
-          if (UI.page === "friends") renderFriends();
-          if (UI.page === "profile") renderProfile();
-        });
-
-        trackListener("app", cloud.db.ref("notifications/" + S.me.id).limitToLast(50), "value", function (nsnap) {
-          var nv = nsnap.val() || {};
-          var arr = Object.keys(nv).map(function (k) {
-            return Object.assign({ id: k }, nv[k]);
-          }).sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
-          S.notifs = arr;
-          renderTop();
-        });
-
-        attachDmInboxListener(myId);
-
-        saveLocal();
-        clearTimeout(safetyTimer);
-        finish();
-      }).catch(function () {
-        clearTimeout(safetyTimer);
-        finish();
-      });
-
-      if (cloud.auth) {
-        cloud.auth.onAuthStateChanged(function (fbUser) {
-          if (fbUser) {
-            cloud.fbUser = fbUser;
-            applyGoogleProfileToMe(fbUser);
-            setLocalSession(true);
-            UI.authReady = true;
-            showAuthGate(false);
-            saveLocal();
-            renderAll();
-          } else if (!hasLocalSession()) {
-            UI.authReady = false;
-            showAuthGate(true);
-          }
-        });
-      }
-    });
-  }
-
-  /* ========= 7. دوال البيانات المساعدة ========= */
   function getUser(id) {
-    if (!id) return { id: "", num: 0, specialId: "0001000", name: "مستخدم", photo: "", cover: "", online: false, bio: "", vip: 0, vipExp: 0, verified: false, level: 1, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, visits: 0, roomsJoined: 0, roomSeconds: 0, gifts: 0, xp: 0, ach: {}, receivedGifts: [], wealthLog: [], charmLog: [] };
-    if (id === S.me.id) {
-      var meLv = level();
-      return {
-        id: S.me.id, num: S.me.num,
-        specialId: S.me.specialId || "",
-        name: S.me.name,
-        photo: S.me.photo || "", cover: S.me.cover || "",
-        online: true, bio: S.me.bio, vip: S.me.vip || 0, vipExp: S.me.vipExp || 0,
-        verified: !!(S.me.verified || (S.me.vip || 0) >= 2 || meLv >= 5),
-        level: meLv,
-        wealth: Number(S.me.wealth || 0),
-        charm: Number(S.me.charm || 0),
-        followers: S.me.followers || 0, following: S.follows.length || 0,
-        friendsCount: S.friends.length || 0,
-        visits: S.me.visits || 0, roomsJoined: S.me.roomsJoined || 0,
-        roomSeconds: S.me.roomSeconds || 0, gifts: S.me.gifts || 0,
-        xp: S.me.xp || 0, country: S.me.country || "🇪🇬 مصر",
-        ach: S.me.ach || {},
-        receivedGifts: S.me.receivedGifts || [],
-        wealthLog: S.me.wealthLog || [],
-        charmLog: S.me.charmLog || [],
-        me: true
-      };
-    }
-    if (cloud.usersMap[id]) {
-      var cu = cloud.usersMap[id];
-      var cLv = computeLevelFromXp(cu.xp || 0);
-      return Object.assign({
-        id: id, specialId: cu.specialId || "", photo: "", cover: "", online: false, bio: "",
-        vip: 0, vipExp: 0, verified: false, level: cLv,
-        wealth: Number(cu.wealth || 0),
-        charm: Number(cu.charm || 0),
-        followers: 0, following: 0, friendsCount: 0, visits: 0, roomsJoined: 0,
-        roomSeconds: 0, gifts: 0, xp: 0, country: "🌍 غير محدد",
-        ach: {}, receivedGifts: [], wealthLog: [], charmLog: []
-      }, cu, { level: cLv });
-    }
-    for (var i = 0; i < S.users.length; i++) {
-      if (S.users[i].id === id) {
-        var su = S.users[i];
-        return Object.assign({
-          specialId: su.specialId || "", friendsCount: 0, wealth: 0, charm: 0, ach: {},
-          receivedGifts: [], wealthLog: [], charmLog: []
-        }, su, { level: computeLevelFromXp(su.xp || 0) });
-      }
-    }
-    return { id: id, num: hashNum(id), specialId: "", name: "مستخدم", photo: "", cover: "", online: false, bio: "", vip: 0, vipExp: 0, verified: false, level: 1, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, visits: 0, roomsJoined: 0, roomSeconds: 0, gifts: 0, xp: 0, ach: {}, receivedGifts: [], wealthLog: [], charmLog: [] };
+    if (!id) return { id: "", num: 0, specialId: "0001000", name: "مستخدم", photo: "", online: false, bio: "", vip: 0, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, coins: 0, xp: 0 };
+    if (id === S.me.id) return Object.assign({}, S.me, { level: computeLevelFromXp(S.me.xp || 0), me: true });
+    if (cloud.usersMap[id]) return Object.assign({ id: id, photo: "", online: false, bio: "", vip: 0, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, coins: 0, xp: 0 }, cloud.usersMap[id]);
+    for (var i = 0; i < S.users.length; i++) if (S.users[i].id === id) return S.users[i];
+    return { id: id, num: hashNum(id), specialId: "", name: "مستخدم", photo: "", online: false, bio: "", vip: 0, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, coins: 0, xp: 0 };
   }
 
   function getRoom(id) {
@@ -1673,92 +598,40 @@
     return null;
   }
 
-  function level() { return computeLevelFromXp(S.me.xp || 0); }
-
-  function addXP(n) {
-    var delta = Math.max(0, Number(n || 0));
-    if (!delta) return;
-    var before = level();
-    S.me.xp = Math.max(0, Number(S.me.xp || 0)) + delta;
-    var after = computeLevelFromXp(S.me.xp);
-    S.me.level = after;
-
-    if (after > before) {
-      var bonusCoins = after * 20;
-      S.me.coins += bonusCoins;
-      var tierChanged = Math.floor(after / 10) > Math.floor(before / 10);
-      var msg = tierChanged
-        ? "تهانينا! وصلت للمستوى " + after + " وحصلت على شارة مستوى جديدة ومكافأة " + bonusCoins + " عملة!"
-        : "ارتفع مستواك إلى " + after + "! مكافأتك " + bonusCoins + " عملة.";
-      addNotif("⭐", msg);
-      toast("🎉 مستوى " + after + (tierChanged ? " — شارة جديدة!" : ""));
-    }
-    if (after >= 3) S.me.ach.lvl3 = true;
+  function isFriendWith(otherId) {
+    return !!(otherId && otherId !== S.me.id && Array.isArray(S.friends) && S.friends.indexOf(otherId) >= 0);
   }
 
-  function addNotif(icon, text, targetUserId) {
-    var uidTarget = targetUserId || S.me.id;
-    var item = { id: uid(), icon: icon, text: text, t: now(), read: false };
-    requestBrowserNotifPermission();
-    triggerBrowserNotif("REAL VOICE " + icon, text);
-
-    if (cloud.on && cloud.db) {
-      cloud.db.ref("notifications/" + uidTarget).push({ icon: icon, text: text, t: serverTs(), read: false }).catch(function () { /* */ });
-    }
-    if (uidTarget === S.me.id) {
-      S.notifs.unshift(item);
-      if (S.notifs.length > 60) S.notifs.length = 60;
-    }
+  function avatarInnerHTML(u) {
+    if (u && u.photo) return '<img src="' + esc(u.photo) + '" alt="' + esc(u.name || "avatar") + '" />';
+    return esc(initials(u && u.name));
   }
+  function avatarHTML(u, cls) {
+    return '<div class="avatar ' + (cls || "") + '">' + avatarInnerHTML(u) + "</div>";
+  }
+  function setAvatarEl(el, u) { if (el) el.innerHTML = avatarInnerHTML(u); }
 
-  function pushRoomMsg(room, msgObj) {
-    if (!room) return;
-    if (!Array.isArray(room.msgs)) room.msgs = [];
-    var localKey = uid();
-    var localMsg = Object.assign({ key: localKey }, msgObj, { t: now() });
-    room.msgs.push(localMsg);
-    if (room.msgs.length > 150) room.msgs.shift();
-    if (UI.roomId === room.id) renderRoomChat();
-
-    if (cloud.on && cloud.db) {
-      cloud.db.ref("roomMessages/" + room.id).push(Object.assign({}, msgObj, { t: serverTs() })).catch(function () { /* */ });
-    }
+  function roomSqMediaHTML(r) {
+    var bg = COVERS[(r.color || 0) % COVERS.length];
+    var ic = COVER_ICONS[(r.icon || 0) % COVER_ICONS.length];
+    var inner = r.roomPhoto ? '<img src="' + esc(r.roomPhoto) + '" alt="' + esc(r.name || "") + '" />' : "<span>" + ic + "</span>";
+    return '<div class="room-sq-media" style="background:' + bg + '">' + inner + "</div>";
   }
 
   function getRoomParticipantIds(room) {
-    var seen = {};
-    var ids = [];
+    var seen = {}, ids = [];
     if (!room) return ids;
-    (room.seats || []).forEach(function (s) {
-      if (s && s.uid && !seen[s.uid]) {
-        seen[s.uid] = true;
-        ids.push(s.uid);
-      }
-    });
-    (room.listeners || []).forEach(function (uidItem) {
-      if (uidItem && !seen[uidItem]) {
-        seen[uidItem] = true;
-        ids.push(uidItem);
-      }
-    });
+    (room.seats || []).forEach(function (s) { if (s && s.uid && !seen[s.uid]) { seen[s.uid] = true; ids.push(s.uid); } });
+    (room.listeners || []).forEach(function (uidItem) { if (uidItem && !seen[uidItem]) { seen[uidItem] = true; ids.push(uidItem); } });
     return ids;
   }
-
-  function count(room) {
-    return getRoomParticipantIds(room).length;
-  }
-
+  function count(room) { return getRoomParticipantIds(room).length; }
   function seatIndexOf(room, id) {
     if (!room || !Array.isArray(room.seats)) return -1;
     for (var i = 0; i < room.seats.length; i++) if (room.seats[i].uid === id) return i;
     return -1;
   }
-
-  function inRoom(room, id) {
-    if (!room) return false;
-    return seatIndexOf(room, id) >= 0 || (room.listeners || []).indexOf(id) >= 0;
-  }
-
+  function inRoom(room, id) { return !!room && (seatIndexOf(room, id) >= 0 || (room.listeners || []).indexOf(id) >= 0); }
   function role(room, id) {
     if (!room) return "user";
     if (room.owner === id) return "owner";
@@ -1766,78 +639,32 @@
     return "user";
   }
 
-  function avatarInnerHTML(u) {
-    if (u && u.photo) {
-      return '<img src="' + esc(u.photo) + '" alt="' + esc(u.name || "avatar") + '" />';
-    }
-    return esc(initials(u && u.name));
+  function pushRoomMsg(room, msgObj) {
+    if (!room) return;
+    if (!Array.isArray(room.msgs)) room.msgs = [];
+    room.msgs.push(Object.assign({ key: uid() }, msgObj, { t: now() }));
+    if (UI.roomId === room.id) renderRoomChat();
+    if (cloud.on && cloud.db) cloud.db.ref("roomMessages/" + room.id).push(Object.assign({}, msgObj, { t: serverTs() })).catch(function () { /* */ });
   }
 
-  function avatarHTML(u, cls) {
-    return '<div class="avatar ' + (cls || "") + '">' + avatarInnerHTML(u) + "</div>";
-  }
-
-  function setAvatarEl(el, u) {
-    if (!el) return;
-    el.innerHTML = avatarInnerHTML(u);
-  }
-
-  function roomSqMediaHTML(r) {
-    var bg = COVERS[(r.color || 0) % COVERS.length];
-    var ic = COVER_ICONS[(r.icon || 0) % COVER_ICONS.length];
-    var mediaInner = r.roomPhoto
-      ? '<img src="' + esc(r.roomPhoto) + '" alt="' + esc(r.name || "room") + '" />'
-      : "<span>" + ic + "</span>";
-    return '<div class="room-sq-media" style="background:' + bg + '">' + mediaInner + "</div>";
-  }
-
-  function userNameHTML(u) {
-    var lv = computeLevelFromXp(u && u.xp ? u.xp : (u && u.level ? (u.level - 1) * CONFIG.xpPerLevel : 0));
-    var lvBadge = levelBadgeHTML(lv);
-    var v = (u && u.vip > 0) ? '<span class="tag vip">VIP' + u.vip + "</span>" : "";
-    var ver = (u && (u.verified || (u.vip || 0) >= 2 || lv >= 5)) ? '<span class="tag verified">✔ موثق</span>' : "";
-    return esc(u.name) + lvBadge + ver + v;
-  }
-
-  function updateAppBadge(unreadCount) {
-    if (navigator && typeof navigator.setAppBadge === "function") {
-      if (unreadCount > 0) navigator.setAppBadge(unreadCount).catch(function () { /* */ });
-      else navigator.clearAppBadge().catch(function () { /* */ });
-    }
-  }
-
-  /* ========= 8. شريط دخول الأعضاء الاحترافي (3 ثوانٍ) ========= */
   function showEntryBanner(userObj) {
     var wrap = $("entry-banner-wrap");
     if (!wrap || !userObj) return;
     var u = typeof userObj === "string" ? getUser(userObj) : userObj;
     var ribbon = document.createElement("div");
     ribbon.className = "entry-ribbon";
-    var avHtml = u.photo
-      ? '<img src="' + esc(u.photo) + '" alt="" />'
-      : esc(initials(u.name));
-    ribbon.innerHTML =
-      '<span class="entry-ribbon-av">' + avHtml + "</span>" +
-      "<span>✨ دخل الغرفة: " + esc(u.name || "مستخدم") + "</span>";
+    ribbon.innerHTML = "<span>✨ دخل الغرفة: " + esc(u.name || "مستخدم") + "</span>";
     wrap.appendChild(ribbon);
-    setTimeout(function () {
-      if (ribbon.parentNode) ribbon.parentNode.removeChild(ribbon);
-    }, 3050);
+    setTimeout(function () { if (ribbon.parentNode) ribbon.parentNode.removeChild(ribbon); }, 3000);
   }
 
-  /* ========= 9. حركة طيران الهدية مباشرة نحو المقعد المستهدف ========= */
   function showFlyGiftToSeat(emoji, senderName, targetUid, targetName) {
-    var activeRId = UI.roomId || UI.floatingRoomId;
-    var room = getRoom(activeRId);
+    var room = getRoom(UI.roomId || UI.floatingRoomId);
     var appEl = $("app");
     if (!appEl) return;
-
-    var startX = window.innerWidth / 2;
-    var startY = window.innerHeight - 90;
-    var endX = window.innerWidth / 2;
-    var endY = window.innerHeight * 0.28;
+    var startX = window.innerWidth / 2, startY = window.innerHeight - 90;
+    var endX = window.innerWidth / 2, endY = window.innerHeight * 0.28;
     var targetSeatIdx = -1;
-
     if (room && targetUid && targetUid !== "room" && UI.roomId) {
       targetSeatIdx = seatIndexOf(room, targetUid);
       if (targetSeatIdx >= 0) {
@@ -1849,249 +676,107 @@
         }
       }
     }
-
     var proj = document.createElement("div");
     proj.className = "gift-projectile";
-    proj.style.left = startX + "px";
-    proj.style.top = startY + "px";
+    proj.style.left = startX + "px"; proj.style.top = startY + "px";
     proj.innerHTML = emoji + "<small>" + esc(senderName) + " ➔ " + esc(targetName) + "</small>";
     appEl.appendChild(proj);
-
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
-        proj.style.left = endX + "px";
-        proj.style.top = endY + "px";
-        proj.style.transform = "translate(-50%, -50%) scale(1.22)";
+        proj.style.left = endX + "px"; proj.style.top = endY + "px";
+        proj.style.transform = "translate(-50%,-50%) scale(1.2)";
       });
     });
-
     setTimeout(function () {
       if (targetSeatIdx >= 0) {
         var hitEl = document.querySelector('#room-seats .seat[data-seat="' + targetSeatIdx + '"]');
-        if (hitEl) {
-          hitEl.classList.remove("gift-hit");
-          void hitEl.offsetWidth;
-          hitEl.classList.add("gift-hit");
-          setTimeout(function () { hitEl.classList.remove("gift-hit"); }, 1900);
-        }
+        if (hitEl) { hitEl.classList.add("gift-hit"); setTimeout(function () { hitEl.classList.remove("gift-hit"); }, 1400); }
       }
-    }, 800);
-
-    setTimeout(function () {
-      proj.style.opacity = "0";
-      proj.style.transform = "translate(-50%, -65%) scale(1.35)";
-    }, 2100);
-
-    setTimeout(function () {
-      if (proj.parentNode) proj.parentNode.removeChild(proj);
-    }, 2600);
+    }, 750);
+    setTimeout(function () { proj.style.opacity = "0"; }, 1900);
+    setTimeout(function () { if (proj.parentNode) proj.parentNode.removeChild(proj); }, 2400);
   }
 
-  /* ========= 10. الغرفة العائمة الدائرية القابلة للسحب + الانتقال لغرفة أخرى مع حفظ الصوت ========= */
-  function renderFloatingOrb() {
-    var orb = $("floating-room-orb");
-    if (!orb) return;
-    if (!UI.floatingRoomId) {
-      orb.classList.add("hidden");
+  /* ========= البنرات في الواجهة الرئيسية ========= */
+  function renderHomeBanners() {
+    var slot = $("home-banners-slot");
+    if (!slot) return;
+    if (!S || !Array.isArray(S.banners) || !S.banners.length) {
+      slot.innerHTML = '<div class="banners-placeholder">🖼️ مكان البنرات — سيتم إضافتها لاحقاً</div>';
       return;
     }
-    var r = getRoom(UI.floatingRoomId);
-    if (!r) {
-      UI.floatingRoomId = null;
-      orb.classList.add("hidden");
-      return;
-    }
-    orb.classList.remove("hidden");
-    var avBox = $("floating-orb-avatar");
-    var lblBox = $("floating-orb-label");
-    if (avBox) {
-      avBox.innerHTML = r.roomPhoto
-        ? '<img src="' + esc(r.roomPhoto) + '" alt="" />'
-        : esc(COVER_ICONS[(r.icon || 0) % COVER_ICONS.length]);
-    }
-    if (lblBox) lblBox.textContent = r.name || "روم";
+    slot.innerHTML = '<img src="' + esc(S.banners[0]) + '" alt="Banner" />';
   }
 
-  function findNextRoomToEnter(currentRoomId) {
-    var candidates = S.rooms.filter(function (r) {
-      return r.id !== currentRoomId && (!r.priv || r.owner === S.me.id || inRoom(r, S.me.id));
-    });
-    if (candidates.length) return candidates[0];
-    return null;
-  }
-
-  function minimizeRoomToFloatingOrb() {
-    var room = getRoom(UI.roomId);
-    if (!room) return;
-    var rid = room.id;
-    closeSheet();
-    cleanup("room");
-    UI.roomId = null;
-    UI.floatingRoomId = rid;
-    $("room-view").classList.remove("open");
-    renderFloatingOrb();
-    renderAll();
-    toast("تم تصغير الغرفة لدائرة — اسحبها أو اضغط لدخول غرفة أخرى مع بقاء الصوت 🎧");
-  }
-
-  function attachFloatingOrbDragAndClick() {
-    var orb = $("floating-room-orb");
-    if (!orb) return;
-    var dragging = false;
-    var moved = false;
-    var startX = 0, startY = 0, origLeft = 0, origTop = 0;
-
-    function onStart(clientX, clientY) {
-      dragging = true;
-      moved = false;
-      var rect = orb.getBoundingClientRect();
-      startX = clientX;
-      startY = clientY;
-      origLeft = rect.left;
-      origTop = rect.top;
-      orb.style.left = origLeft + "px";
-      orb.style.top = origTop + "px";
-      orb.style.right = "auto";
-      orb.style.bottom = "auto";
-    }
-
-    function onMove(clientX, clientY) {
-      if (!dragging) return;
-      var dx = clientX - startX;
-      var dy = clientY - startY;
-      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
-      if (!moved) return;
-      var maxX = Math.max(8, window.innerWidth - orb.offsetWidth - 8);
-      var maxY = Math.max(8, window.innerHeight - orb.offsetHeight - 8);
-      var nextX = Math.min(maxX, Math.max(8, origLeft + dx));
-      var nextY = Math.min(maxY, Math.max(8, origTop + dy));
-      orb.style.left = nextX + "px";
-      orb.style.top = nextY + "px";
-    }
-
-    function onEnd() {
-      if (!dragging) return;
-      dragging = false;
-      if (moved) return;
-
-      var sourceRoomId = UI.floatingRoomId;
-      var nextRoom = findNextRoomToEnter(sourceRoomId);
-      if (!nextRoom) {
-        toast("لا توجد غرفة أخرى متاحة حالياً — أنشئ غرفة جديدة أولاً");
-        return;
-      }
-
-      UI.floatingRoomId = null;
-      renderFloatingOrb();
-      enterRoom(nextRoom.id, true, { keepVoiceAlive: true, previousRoomId: sourceRoomId });
-      toast("تم الانتقال إلى: " + nextRoom.name + " مع الإبقاء على الصوت 🔊");
-    }
-
-    orb.addEventListener("pointerdown", function (e) {
-      e.preventDefault();
-      onStart(e.clientX, e.clientY);
-      var moveEv = function (ev) { onMove(ev.clientX, ev.clientY); };
-      var upEv = function () {
-        document.removeEventListener("pointermove", moveEv);
-        document.removeEventListener("pointerup", upEv);
-        onEnd();
-      };
-      document.addEventListener("pointermove", moveEv);
-      document.addEventListener("pointerup", upEv);
-    });
-  }
-
-  /* ========= 11. التنقل ورسم الصفحات ========= */
+  /* ========= التنقل ورسم الصفحات ========= */
   function go(page) {
     closeSheet();
     UI.page = page;
     document.querySelectorAll(".page").forEach(function (p) { p.classList.toggle("active", p.id === "page-" + page); });
     document.querySelectorAll(".navbtn").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-page") === page); });
-    var pg = $("page-" + page);
-    if (pg) pg.scrollTop = 0;
     renderCurrentPage();
   }
 
   function renderTop() {
-    $("coins-top").textContent = S.me.coins;
-    $("level-top").textContent = level();
     setAvatarEl($("avatar-top"), S.me);
     var tBtn = $("theme-toggle-btn");
     if (tBtn) tBtn.textContent = (S.settings && S.settings.lightTheme) ? "🌙" : "☀️";
     var unread = S.notifs.filter(function (n) { return !n.read; }).length;
     var b = $("notif-badge");
-    b.textContent = unread; b.classList.toggle("hidden", unread === 0);
+    if (b) { b.textContent = unread; b.classList.toggle("hidden", unread === 0); }
     var mu = 0; for (var k in S.unread) mu += S.unread[k] || 0;
-    var mb = $("msg-badge"); mb.textContent = mu; mb.classList.toggle("hidden", mu === 0);
-    updateAppBadge(mu);
-    var fb = $("friends-badge"); fb.textContent = S.requests.length; fb.classList.toggle("hidden", S.requests.length === 0);
+    var mb = $("msg-badge");
+    if (mb) { mb.textContent = mu; mb.classList.toggle("hidden", mu === 0); }
+    var fb = $("friends-badge");
+    if (fb) { fb.textContent = S.requests.length; fb.classList.toggle("hidden", S.requests.length === 0); }
   }
 
   function roomCard(r) {
     return '<div class="room-sq-card" data-enter="' + esc(r.id) + '">' +
       roomSqMediaHTML(r) +
-      '<div class="room-sq-name-only">' + esc(r.name) + "</div></div>";
-  }
-
-  function filterRooms() {
-    var list = S.rooms.filter(function (r) { return !r.priv || r.owner === S.me.id || inRoom(r, S.me.id); });
-    var q = UI.query.trim().toLowerCase();
-    if (q) {
-      list = list.filter(function (r) {
-        return r.name.toLowerCase().indexOf(q) >= 0 ||
-          r.id.toLowerCase().indexOf(q) >= 0 ||
-          (r.desc || "").toLowerCase().indexOf(q) >= 0;
-      });
-    }
-    var f = UI.filter;
-    if (f === "popular") list = list.slice().sort(function (a, b) { return count(b) - count(a); });
-    else if (f === "new") list = list.slice().sort(function (a, b) { return (b.created || 0) - (a.created || 0); });
-    else if (f === "friends") list = list.filter(function (r) { return S.friends.some(function (fid) { return inRoom(r, fid); }); });
-    else if (f === "vip") list = list.filter(function (r) { return r.cat === "vip"; });
-    else if (f === "games") list = list.filter(function (r) { return r.cat === "games"; });
-    return list;
+      '<div class="room-sq-name-full">' + esc(r.name) + "</div></div>";
   }
 
   function renderHome() {
-    var list = filterRooms();
-    $("home-rooms").innerHTML = list.length ? list.map(roomCard).join("") : '<div class="empty" style="grid-column:1/-1">لا توجد غرف مطابقة 🔎</div>';
-    var box = $("search-users");
+    renderHomeBanners();
+    var list = S.rooms.filter(function (r) { return !r.priv || r.owner === S.me.id || inRoom(r, S.me.id); });
     var q = UI.query.trim().toLowerCase();
+    if (q) list = list.filter(function (r) { return r.name.toLowerCase().indexOf(q) >= 0 || r.id.toLowerCase().indexOf(q) >= 0; });
+    if (UI.filter === "popular") list = list.slice().sort(function (a, b) { return count(b) - count(a); });
+    else if (UI.filter === "new") list = list.slice().sort(function (a, b) { return (b.created || 0) - (a.created || 0); });
+    else if (UI.filter === "friends") list = list.filter(function (r) { return S.friends.some(function (fid) { return inRoom(r, fid); }); });
+    else if (UI.filter === "vip") list = list.filter(function (r) { return r.cat === "vip"; });
+    else if (UI.filter === "games") list = list.filter(function (r) { return r.cat === "games"; });
+
+    $("home-rooms").innerHTML = list.length ? list.map(roomCard).join("") : '<div class="empty" style="grid-column:1/-1">لا توجد غرف مطابقة</div>';
+
+    var uBox = $("search-users");
     if (q) {
       var us = S.users.filter(function (u) {
-        var sp = String(u.specialId || "").toLowerCase();
-        return (u.name || "").toLowerCase().indexOf(q) >= 0 ||
-          (u.id || "").toLowerCase().indexOf(q) >= 0 ||
-          sp.indexOf(q) >= 0;
+        return (u.name || "").toLowerCase().indexOf(q) >= 0 || String(u.specialId || "").indexOf(q) >= 0;
       });
-      box.classList.toggle("hidden", us.length === 0);
-      box.innerHTML = us.length ? '<h2 class="title">المستخدمون</h2>' + us.map(function (u) {
-        var spId = displayUserId(u);
-        return '<div class="row glass" data-profile="' + esc(u.id) + '">' +
-          avatarHTML(u) +
-          '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">ID: ' + esc(spId) + "</div></div>" +
-          copyBtnHTML(spId, "📋") +
-          "</div>";
-      }).join("") : "";
-    } else { box.classList.add("hidden"); box.innerHTML = ""; }
+      uBox.classList.toggle("hidden", us.length === 0);
+      uBox.innerHTML = us.map(function (u) {
+        return '<div class="row glass" data-profile="' + esc(u.id) + '">' + avatarHTML(u) +
+          '<div class="info"><div class="name">' + esc(u.name) + '</div><div class="meta">ID: ' + esc(displayUserId(u)) + "</div></div></div>";
+      }).join("");
+    } else { uBox.classList.add("hidden"); }
+
     document.querySelectorAll("#home-tabs .tab").forEach(function (t) { t.classList.toggle("active", t.getAttribute("data-filter") === UI.filter); });
   }
 
   function renderRooms() {
     var list = UI.rfilter === "mine"
       ? S.rooms.filter(function (r) { return r.owner === S.me.id; })
-      : S.rooms.filter(function (r) { return !r.priv || r.owner === S.me.id; }).sort(function (a, b) { return count(b) - count(a); });
-    $("rooms-list").innerHTML = list.length ? list.map(roomCard).join("") : '<div class="empty" style="grid-column:1/-1">' + (UI.rfilter === "mine" ? "لم تنشئ غرفة بعد. اضغط ＋ لإنشاء غرفتك الأولى" : "لا توجد غرف متاحة") + "</div>";
+      : S.rooms.filter(function (r) { return !r.priv || r.owner === S.me.id; });
+    $("rooms-list").innerHTML = list.length ? list.map(roomCard).join("") : '<div class="empty" style="grid-column:1/-1">لا توجد غرف</div>';
     document.querySelectorAll("#rooms-tabs .tab").forEach(function (t) { t.classList.toggle("active", t.getAttribute("data-rfilter") === UI.rfilter); });
   }
 
   function personRow(u, actions) {
-    var where = "";
-    var spId = displayUserId(u);
-    for (var i = 0; i < S.rooms.length; i++) if (inRoom(S.rooms[i], u.id)) { where = " • في غرفة: " + esc(S.rooms[i].name); break; }
     return '<div class="row glass"><div data-profile="' + esc(u.id) + '" style="position:relative">' + avatarHTML(u) + '<span class="dot ' + (u.online ? "on" : "") + '"></span></div>' +
-      '<div class="info" data-profile="' + esc(u.id) + '"><div class="name">' + userNameHTML(u) + '</div><div class="meta">ID: ' + esc(spId) + " • " + (u.online ? "متصل" : "غير متصل") + where + "</div></div>" +
-      copyBtnHTML(spId, "📋") + actions + "</div>";
+      '<div class="info" data-profile="' + esc(u.id) + '"><div class="name">' + esc(u.name) + '</div><div class="meta">ID: ' + esc(displayUserId(u)) + " • " + (u.online ? "متصل" : "غير متصل") + "</div></div>" +
+      actions + "</div>";
   }
 
   function renderFriends() {
@@ -2100,37 +785,23 @@
     $("find-box").classList.toggle("hidden", UI.ftab !== "find");
     var html = "";
     if (UI.ftab === "friends") {
-      var fr = S.friends.map(getUser).sort(function (a, b) { return (b.online ? 1 : 0) - (a.online ? 1 : 0); });
+      var fr = S.friends.map(getUser);
       html = fr.length ? fr.map(function (u) {
-        var room = null;
-        for (var i = 0; i < S.rooms.length; i++) if (inRoom(S.rooms[i], u.id)) { room = S.rooms[i]; break; }
-        var btns = (room ? '<button class="btn sm" data-enter="' + esc(room.id) + '" type="button">🚪 انضم</button>' : "") +
-          '<button class="btn sm ghost" data-dm="' + esc(u.id) + '" type="button">💬</button>';
-        return personRow(u, btns);
-      }).join("") : '<div class="empty">لا يوجد أصدقاء بعد. استخدم تبويب "بحث" لإضافة أصدقاء</div>';
+        return personRow(u, '<button class="btn sm ghost" data-dm="' + esc(u.id) + '" type="button">💬 خاص</button>');
+      }).join("") : '<div class="empty">لا يوجد أصدقاء بعد</div>';
     } else if (UI.ftab === "requests") {
       html = S.requests.length ? S.requests.map(function (id) {
         return personRow(getUser(id), '<button class="btn sm" data-accept="' + esc(id) + '" type="button">قبول</button><button class="btn sm ghost" data-reject="' + esc(id) + '" type="button">رفض</button>');
       }).join("") : '<div class="empty">لا توجد طلبات صداقة</div>';
-      if (S.sentReq.length) {
-        html += '<h2 class="title">طلبات أرسلتها</h2>' + S.sentReq.map(function (id) {
-          return personRow(getUser(id), '<button class="btn sm ghost" data-cancelreq="' + esc(id) + '" type="button">إلغاء</button>');
-        }).join("");
-      }
     } else {
       var q = UI.findQ.trim().toLowerCase();
       var res = S.users.filter(function (u) {
-        var sp = String(u.specialId || "").toLowerCase();
-        return !q ||
-          (u.name || "").toLowerCase().indexOf(q) >= 0 ||
-          (u.id || "").toLowerCase().indexOf(q) >= 0 ||
-          sp.indexOf(q) >= 0;
+        return !q || (u.name || "").toLowerCase().indexOf(q) >= 0 || String(u.specialId || "").indexOf(q) >= 0;
       });
       html = res.length ? res.map(function (u) {
-        var btn;
-        if (S.friends.indexOf(u.id) >= 0) btn = '<span class="small">صديق ✔</span>';
-        else if (S.sentReq.indexOf(u.id) >= 0) btn = '<span class="small">تم الإرسال</span>';
-        else btn = '<button class="btn sm" data-addfriend="' + esc(u.id) + '" type="button">+ إضافة</button>';
+        var btn = S.friends.indexOf(u.id) >= 0 ? '<span class="tag verified">صديق ✔</span>'
+          : (S.sentReq.indexOf(u.id) >= 0 ? '<span class="tag">تم الإرسال</span>'
+          : '<button class="btn sm" data-addfriend="' + esc(u.id) + '" type="button">+ إضافة</button>');
         return personRow(u, btn);
       }).join("") : '<div class="empty">لا نتائج</div>';
     }
@@ -2138,188 +809,28 @@
   }
 
   function renderMessages() {
-    var ids = Object.keys(S.dms).filter(function (id) { return S.dms[id] && S.dms[id].length && S.blocked.indexOf(id) < 0; });
-    ids.sort(function (a, b) { return (S.dms[b][S.dms[b].length - 1].t || 0) - (S.dms[a][S.dms[a].length - 1].t || 0); });
+    var ids = Object.keys(S.dms).filter(function (id) { return isFriendWith(id) && S.dms[id] && S.dms[id].length; });
     $("dm-list").innerHTML = ids.length ? ids.map(function (id) {
-      var u = getUser(id), last = S.dms[id][S.dms[id].length - 1], un = S.unread[id] || 0;
-      var preview = last.audio ? "🎙️ رسالة صوتية" : esc(last.text || "");
-      return '<div class="row glass" data-dm="' + esc(id) + '">' + avatarHTML(u) + '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">' + (last.from === S.me.id ? "أنت: " : "") + preview + '</div></div><div style="text-align:left"><div class="small">' + timeStr(last.t) + "</div>" + (un ? '<span class="badge" style="position:static;display:inline-flex;margin-top:4px">' + un + "</span>" : "") + "</div></div>";
-    }).join("") : '<div class="empty">لا توجد محادثات بعد.<br>افتح ملف صديق واضغط "رسالة".</div>';
+      var u = getUser(id), last = S.dms[id][S.dms[id].length - 1];
+      return '<div class="row glass" data-dm="' + esc(id) + '">' + avatarHTML(u) +
+        '<div class="info"><div class="name">' + esc(u.name) + '</div><div class="meta">' + esc(last.text || "رسالة") + '</div></div>' +
+        '<div class="meta">' + timeStr(last.t) + "</div></div>";
+    }).join("") : '<div class="empty">لا توجد رسائل خاصة للأصدقاء حالياً</div>';
   }
 
-  function renderGiftsAndCollectionsHTML(userObj) {
-    var rec = Array.isArray(userObj.receivedGifts) ? userObj.receivedGifts : [];
-    var wLog = Array.isArray(userObj.wealthLog) ? userObj.wealthLog : [];
-    var cLog = Array.isArray(userObj.charmLog) ? userObj.charmLog : [];
-    var totalVal = 0;
-    var rarest = null;
-    rec.forEach(function (g) {
-      var p = Number(g.p || 0);
-      totalVal += p;
-      if (!rarest || p > Number(rarest.p || 0)) rarest = g;
-    });
-
-    var rareHtml = rarest
-      ? '<div class="row glass" style="margin-bottom:8px"><div style="font-size:28px">' + esc(rarest.e || "💎") + '</div><div class="info"><div class="name">أغلى هدية مميزة: ' + esc(rarest.n || "هدية") + '</div><div class="meta">القيمة: 🪙 ' + esc(rarest.p || 0) + " • من: " + esc(rarest.fromName || "مستخدم") + "</div></div></div>"
-      : '<div class="small" style="margin-bottom:8px">لا توجد هدايا مستقبلة مسجلة بعد.</div>';
-
-    var giftsGrid = rec.length
-      ? '<div class="showcase-grid">' + rec.slice(-9).reverse().map(function (g) {
-        return '<div class="show-item"><div class="ic">' + esc(g.e || "🎁") + "</div><b>" + esc(g.n || "هدية") + "</b><small>🪙 " + esc(g.p || 0) + (g.charmGain ? " • ✨+" + g.charmGain : "") + "</small></div>";
-      }).join("") + "</div>"
-      : "";
-
-    var charmHistoryHtml = cLog.length
-      ? '<h4 style="margin:12px 0 6px;font-size:12.5px">سجل نقاط الجاذبية الأخيرة (Charm)</h4>' +
-        cLog.slice(-6).reverse().map(function (item) {
-          return '<div class="task-item"><span>' + esc(item.e || "🎁") + " " + esc(item.n || "هدية") + " من " + esc(item.fromName || "مستخدم") + '</span><span class="charm-badge">+' + Number(item.gain || 0) + "</span></div>";
-        }).join("")
-      : "";
-
-    var wealthHistoryHtml = wLog.length
-      ? '<h4 style="margin:10px 0 6px;font-size:12.5px">سجل نقاط الثروة الأخيرة (Wealth)</h4>' +
-        wLog.slice(-6).reverse().map(function (item) {
-          return '<div class="task-item"><span>' + esc(item.label || "هدايا / عملات") + '</span><span class="wealth-badge">+' + Number(item.gain || 0) + "</span></div>";
-        }).join("")
-      : "";
-
-    var achMap = userObj.ach || {};
-    var unlockedAchs = ACHIEVEMENTS.filter(function (a) { return !!achMap[a.id]; });
-    var achHtml = unlockedAchs.length
-      ? '<div class="ach-list" style="margin-top:8px">' + unlockedAchs.map(function (a) { return "<span>" + a.t + "</span>"; }).join("") + "</div>"
-      : '<div class="small" style="margin-top:6px">لا توجد إنجازات مفتوحة بعد.</div>';
-
-    var ownedItems = [
-      { ic: "🖼️", t: "غلاف 3D", s: userObj.cover ? "مخصص" : "افتراضي" },
-      { ic: "⭕", t: "إطار الأفاتار", s: (userObj.vip || 0) > 0 ? "إطار VIP" : "إطار قياسي" },
-      { ic: "👑", t: "شارة VIP", s: (userObj.vip || 0) > 0 ? "VIP " + userObj.vip : "غير مفعّلة" }
-    ];
-
-    var itemsHtml = '<h4 style="margin:12px 0 6px;font-size:12.5px">المقتنيات والشارات والإنجازات</h4><div class="showcase-grid">' + ownedItems.map(function (it) {
-      return '<div class="show-item"><div class="ic">' + it.ic + "</div><b>" + esc(it.t) + "</b><small>" + esc(it.s) + "</small></div>";
-    }).join("") + "</div>" + achHtml;
-
-    return '<div class="glass" style="padding:12px;margin-bottom:10px">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
-      "<b>🎁 الهدايا المستقبلة (" + Math.max(rec.length, Number(userObj.gifts || 0)) + ")</b>" +
-      '<span class="tag vip">القيمة: 🪙 ' + totalVal + "</span></div>" +
-      rareHtml + giftsGrid + charmHistoryHtml + wealthHistoryHtml + itemsHtml + "</div>";
-  }
-
-  function renderVipSectionHTML(userObj, isMe) {
-    var vLv = Number(userObj.vip || 0);
-    var expTxt = userObj.vipExp && Number(userObj.vipExp) > Date.now()
-      ? "سارية حتى: " + new Date(Number(userObj.vipExp)).toLocaleDateString("ar")
-      : (vLv > 0 ? "عضوية VIP مفعّلة" : "غير مشترك في VIP حالياً");
-
-    var cardsHtml = VIP_TIERS.map(function (tier) {
-      var active = vLv >= tier.level;
-      var btnHtml = isMe
-        ? '<button class="btn sm ' + (active ? "ghost" : "gold") + '" data-buyvip="' + tier.level + '" type="button">' + (active ? "تجديد / ترقية" : "تفعيل (" + tier.cost + " 🪙)") + "</button>"
-        : '<span class="small">' + (active ? "✔ مفعّل" : "") + "</span>";
-      return '<div class="row glass" style="margin-bottom:8px">' +
-        '<div style="font-size:24px">👑</div>' +
-        '<div class="info"><div class="name">' + esc(tier.title) + " (VIP " + tier.level + ')</div><div class="meta">' + esc(tier.perks.join(" • ")) + "</div></div>" +
-        btnHtml + "</div>";
-    }).join("");
-
-    return '<div class="vip-card-box">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center">' +
-      "<b>👑 نظام العضوية المميزة VIP</b>" +
-      '<span class="tag vip">' + (vLv > 0 ? "VIP " + vLv : "عضو عادي") + "</span></div>" +
-      '<div class="small" style="margin:6px 0 10px">' + esc(expTxt) + "</div>" +
-      cardsHtml + "</div>";
-  }
-
+  /* الملف الشخصي المنظم: الجاذبية والثروة + الأصدقاء ومن يتابعني + المحفظة بالخارج، والباقي داخل الإعدادات */
   function renderProfile() {
-    ensureDailyTasks();
-    var m = S.me, lv = level(), into = (m.xp || 0) % CONFIG.xpPerLevel;
-    var hasVip = (m.vip || 0) > 0;
-    var isVerified = !!(m.verified || hasVip || lv >= 5);
-    var wMeta = getWealthRankMeta(m.wealth || 0);
-    var cMeta = getCharmRankMeta(m.charm || 0);
-    var spId = displayUserId(m);
-
+    var m = S.me;
     var covEl = $("pf-cover");
-    if (covEl) {
-      if (m.cover) {
-        covEl.style.backgroundImage = 'url("' + String(m.cover).replace(/"/g, '\\"') + '")';
-      } else {
-        covEl.style.backgroundImage = "linear-gradient(135deg, #7c3aed, #db2777, #0891b2)";
-      }
-    }
-
-    var frameEl = $("pf-photo-trigger");
-    if (frameEl) frameEl.classList.toggle("vip-frame", hasVip);
-
+    if (covEl) covEl.style.backgroundImage = m.photo ? 'url("' + String(m.photo).replace(/"/g, '\\"') + '")' : "linear-gradient(135deg,#7c3aed,#db2777,#0891b2)";
     setAvatarEl($("pf-avatar"), m);
-    $("pf-name").innerHTML = esc(m.name) +
-      " " + levelBadgeHTML(lv) +
-      (isVerified ? ' <span class="tag verified">✔ موثق</span>' : "") +
-      (hasVip ? ' <span class="tag vip">👑 VIP ' + m.vip + "</span>" : "");
-    $("pf-id").textContent = "ID: " + spId;
-    $("pf-badges").innerHTML = '<span class="tag">🟢 متصل الآن</span>' +
-      wealthBadgeHTML(m.wealth || 0) +
-      charmBadgeHTML(m.charm || 0) +
-      (m.email ? '<span class="tag">✉️ ' + esc(m.email) + "</span>" : "") +
-      ((m.invites || 0) > 0 ? '<span class="tag">الدعوات: ' + m.invites + "</span>" : "");
-    $("pf-level").textContent = lv;
-    $("pf-xp").textContent = lv >= CONFIG.maxLevel ? "الحد الأقصى (Lv.100)" : (into + " / " + CONFIG.xpPerLevel + " XP");
-    $("pf-bar").style.width = (lv >= CONFIG.maxLevel ? 100 : (into / CONFIG.xpPerLevel * 100)) + "%";
-
-    $("pf-wealth-title").textContent = wMeta.rank.icon + " الثروة: " + wMeta.rank.name;
-    $("pf-wealth-next").textContent = wMeta.progText;
-    $("pf-wealth-bar").style.width = wMeta.pct + "%";
-
-    $("pf-charm-title").textContent = cMeta.rank.icon + " الجاذبية: " + cMeta.rank.name;
-    $("pf-charm-next").textContent = cMeta.progText;
-    $("pf-charm-bar").style.width = cMeta.pct + "%";
-
-    $("pf-followers").textContent = m.followers || 0;
-    $("pf-following").textContent = S.follows.length || 0;
-    $("pf-friends").textContent = S.friends.length || 0;
-    $("pf-wealth-val").textContent = m.wealth || 0;
-    $("pf-charm-val").textContent = m.charm || 0;
-    $("pf-time-cnt").textContent = Math.max(0, Math.floor((m.roomSeconds || 0) / 60)) + " د";
-    $("pf-coins").textContent = m.coins || 0;
-    $("pf-gifts").textContent = m.gifts || 0;
-    $("pf-xp-total").textContent = m.xp || 0;
-
-    $("pf-bio").textContent = m.bio;
-    $("pf-meta").textContent = (m.country || "🇪🇬 مصر") + " • انضم في " + new Date(m.joined || now()).toLocaleDateString("ar");
-    $("pf-ach").innerHTML = ACHIEVEMENTS.map(function (a) { return '<span class="' + (m.ach[a.id] ? "" : "off") + '">' + a.t + "</span>"; }).join("");
-
-    var canDaily = !m.daily || (Date.now() - Number(m.daily) >= 24 * 60 * 60 * 1000);
-    var dailyBtn = $("pf-daily");
-    if (dailyBtn) {
-      dailyBtn.disabled = !canDaily;
-      dailyBtn.style.opacity = canDaily ? "1" : "0.55";
-      dailyBtn.textContent = canDaily ? "🎁 استلم 100 عملة اليوم" : "✅ تم استلام مكافأة اليوم";
-    }
-
-    var tasksList = [
-      { key: "msg", label: "💬 أرسل رسالة في غرفة" },
-      { key: "friend", label: "👥 أضف صديقاً أو أرسل طلباً" },
-      { key: "mic", label: "🎤 اصعد إلى المايك" },
-      { key: "room", label: "🚪 ادخل غرفة صوتية" }
-    ];
-    $("pf-tasks").innerHTML = tasksList.map(function (tk) {
-      var done = !!(m.tasks && m.tasks[tk.key]);
-      return '<div class="task-item"><span>' + tk.label + '</span><span>' + (done ? "✅ مكتملة (+25 🪙)" : "⏳ 25 🪙") + "</span></div>";
-    }).join("");
-
-    document.querySelectorAll("#pf-subtabs .tab").forEach(function (tb) {
-      tb.classList.toggle("active", tb.getAttribute("data-pftab") === UI.pftab);
-    });
-    $("pf-section-overview").classList.toggle("hidden", UI.pftab !== "overview");
-    $("pf-section-gifts").classList.toggle("hidden", UI.pftab !== "gifts");
-    $("pf-section-vip").classList.toggle("hidden", UI.pftab !== "vip");
-
-    if (UI.pftab === "gifts") {
-      $("pf-section-gifts").innerHTML = renderGiftsAndCollectionsHTML(getUser(S.me.id));
-    } else if (UI.pftab === "vip") {
-      $("pf-section-vip").innerHTML = renderVipSectionHTML(getUser(S.me.id), true);
-    }
+    $("pf-name").textContent = m.name || "مستخدم";
+    $("pf-id").textContent = "ID: " + displayUserId(m);
+    $("pf-charm-level").textContent = "Lv." + getCharmLevel(m.charm || 0) + " (" + Number(m.charm || 0) + ")";
+    $("pf-wealth-level").textContent = "Lv." + getWealthLevel(m.wealth || 0) + " (" + Number(m.wealth || 0) + ")";
+    $("pf-friends-count").textContent = String((S.friends || []).length);
+    $("pf-followers-count").textContent = String(Number(m.followers || 0));
+    $("pf-wallet-coins").textContent = String(Number(m.coins || 0));
   }
 
   function renderCurrentPage() {
@@ -2329,539 +840,235 @@
     else if (UI.page === "messages") renderMessages();
     else if (UI.page === "profile") renderProfile();
   }
+  function renderAll() { renderTop(); renderCurrentPage(); }
 
-  function renderAll() {
-    renderTop();
-    renderCurrentPage();
-  }
-
-  /* ========= 12. النوافذ السفلية ========= */
+  /* ========= النوافذ السفلية وإعدادات الملف الشخصي الكاملة ========= */
   function openSheet(html) {
-    var content = String(html || "").trim();
-    if (!content) {
-      closeSheet();
-      return;
-    }
-    var sh = $("sheet");
-    var sc = $("scrim");
+    var sh = $("sheet"), sc = $("scrim");
     sh.onclick = null;
-    sh.innerHTML = '<div class="sheet-handle"></div>' + content;
+    sh.innerHTML = '<div class="sheet-handle"></div>' + html;
     sh.scrollTop = 0;
     sc.classList.add("open");
     sh.classList.add("open");
   }
-
   function closeSheet() {
-    cleanup("seat_profile");
-    UI.activeSeatProfileUid = null;
-    UI.activeSeatProfileIdx = -1;
-    var sh = $("sheet");
-    var sc = $("scrim");
+    var sh = $("sheet"), sc = $("scrim");
     if (sc) sc.classList.remove("open");
-    if (sh) {
-      sh.classList.remove("open");
-      sh.onclick = null;
-    }
+    if (sh) { sh.classList.remove("open"); sh.onclick = null; }
   }
 
-  function actionList(title, items) {
-    var html = "<h3>" + esc(title) + '</h3><div class="actlist">';
-    items.forEach(function (it, i) {
-      html += '<button class="' + (it.danger ? "danger" : "") + '" data-act="' + i + '" type="button">' + esc(it.label) + "</button>";
-    });
-    html += '<button data-act="cancel" type="button">إلغاء</button></div>';
-    openSheet(html);
-    $("sheet").onclick = function (e) {
-      var b = e.target.closest("[data-act]");
-      if (!b) return;
-      var a = b.getAttribute("data-act");
-      closeSheet();
-      if (a !== "cancel" && items[Number(a)] && typeof items[Number(a)].fn === "function") {
-        items[Number(a)].fn();
-      }
+  function openProfileSettingsSheet() {
+    var m = S.me;
+    var canDaily = !m.daily || (Date.now() - Number(m.daily) >= 24 * 60 * 60 * 1000);
+    openSheet("<h3>⚙️ إعدادات الملف الشخصي</h3>" +
+      "<label>الاسم</label><input id='set-name' maxlength='24' value='" + esc(m.name) + "' />" +
+      "<label>النبذة التعريفية</label><textarea id='set-bio' rows='2' maxlength='140'>" + esc(m.bio || "") + "</textarea>" +
+      "<label>صورة الحساب من المعرض</label><input id='set-photo-file' type='file' accept='image/*' />" +
+      '<button class="btn block" id="set-save-profile" type="button">💾 حفظ بيانات الملف</button>' +
+      '<div style="display:flex;gap:8px;margin-top:10px">' +
+        '<button class="btn ghost" style="flex:1" id="set-daily" type="button">' + (canDaily ? "🎁 مكافأة اليوم (+100)" : "✅ تم استلام اليوم") + "</button>" +
+        '<button class="btn ghost" style="flex:1" id="set-topup" type="button">+ شحن 500 عملة</button>' +
+      "</div>" +
+      '<div class="switchrow" style="margin-top:8px"><span>الوضع النهاري</span><input type="checkbox" id="set-theme" ' + (S.settings.lightTheme ? "checked" : "") + " /></div>" +
+      '<button class="btn ghost block" id="set-google" type="button">🔄 تبديل / تسجيل دخول Google</button>' +
+      '<button class="btn red block" id="set-reset" type="button">إعادة ضبط البيانات</button>');
+
+    var nextPhoto = m.photo || "";
+    $("set-photo-file").onchange = async function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      try { nextPhoto = await readImageFileAsDataUrl(f, 220, 0.72); toast("تم اختيار الصورة ✅"); } catch (e) { toast(e.message); }
+    };
+    $("set-save-profile").onclick = function () {
+      var n = $("set-name").value.trim();
+      if (!n) { toast("الاسم مطلوب"); return; }
+      m.name = clean(n);
+      m.bio = clean($("set-bio").value.trim());
+      m.photo = nextPhoto;
+      save(); closeSheet(); renderAll(); toast("تم حفظ التعديلات ✅");
+    };
+    $("set-daily").onclick = function () {
+      if (!canDaily) { toast("استلمت مكافأة اليوم بالفعل"); return; }
+      m.daily = Date.now(); m.coins += 100;
+      save(); renderAll(); openProfileSettingsSheet(); toast("حصلت على 100 عملة 🪙");
+    };
+    $("set-topup").onclick = function () {
+      m.coins += 500; m.wealth = Number(m.wealth || 0) + 500;
+      save(); renderAll(); openProfileSettingsSheet(); toast("تم شحن 500 عملة 🪙");
+    };
+    $("set-theme").onchange = function () {
+      S.settings.lightTheme = this.checked; applyThemeMode(); saveLocal(); renderTop();
+    };
+    $("set-google").onclick = function () { closeSheet(); signInWithGoogle(); };
+    $("set-reset").onclick = function () {
+      localStorage.removeItem(CONFIG.storageKey);
+      location.reload();
     };
   }
 
-  function confirmBox(text, yes) {
-    openSheet("<h3>تأكيد</h3><p style='margin-bottom:14px;line-height:1.7'>" + esc(text) + '</p><div style="display:flex;gap:10px"><button class="btn" id="cf-yes" style="flex:1" type="button">تأكيد</button><button class="btn ghost" id="cf-no" style="flex:1" type="button">إلغاء</button></div>');
-    $("cf-yes").onclick = function () { closeSheet(); if (typeof yes === "function") yes(); };
-    $("cf-no").onclick = closeSheet;
-  }
-
-  /* ========= 13. الإشعارات ========= */
-  function openNotifs() {
-    var html = "<h3>🔔 الإشعارات</h3>";
-    if (!S.notifs.length) html += '<div class="empty">لا توجد إشعارات</div>';
-    S.notifs.forEach(function (n) {
-      html += '<div class="row glass" style="margin-bottom:8px"><div style="font-size:24px">' + n.icon + '</div><div class="info"><div class="name" style="white-space:normal;font-weight:' + (n.read ? "normal" : "bold") + '">' + esc(n.text) + '</div><div class="meta">' + timeStr(n.t) + '</div></div><button class="btn sm ghost" data-delnotif="' + esc(n.id) + '" type="button">🗑</button></div>';
-    });
-    if (S.notifs.length) html += '<button class="btn red block" id="clear-notifs" type="button">مسح الكل</button>';
-    openSheet(html);
-    S.notifs.forEach(function (n) { n.read = true; });
-    if (cloud.on && cloud.db) {
-      S.notifs.forEach(function (n) {
-        if (n.id && n.id.indexOf("u") !== 0) {
-          cloud.db.ref("notifications/" + S.me.id + "/" + n.id + "/read").set(true).catch(function () { /* */ });
-        }
-      });
-    }
-    saveLocal(); renderTop();
-    $("sheet").onclick = function (e) {
-      var d = e.target.closest("[data-delnotif]");
-      if (d) {
-        var nid = d.getAttribute("data-delnotif");
-        if (cloud.on && cloud.db && nid.indexOf("u") !== 0) {
-          cloud.db.ref("notifications/" + S.me.id + "/" + nid).remove().catch(function () { /* */ });
-        }
-        S.notifs = S.notifs.filter(function (n) { return n.id !== nid; });
-        saveLocal(); openNotifs(); return;
-      }
-      if (e.target.id === "clear-notifs") {
-        if (cloud.on && cloud.db) cloud.db.ref("notifications/" + S.me.id).remove().catch(function () { /* */ });
-        S.notifs = []; saveLocal(); openNotifs();
-      }
-    };
-  }
-
-  /* ========= 14. إنشاء ودخول ومغادرة الغرف + تغيير اسم الغرفة لأي عضو ========= */
+  /* ========= الغرفة الصوتية: اسم الروم كامل واسم المستخدم كامل على المقعد ========= */
   function openRenameRoomSheet(room) {
     if (!room) return;
-    openSheet("<h3>✏️ تغيير اسم الغرفة</h3>" +
-      "<label>الاسم الجديد للغرفة</label>" +
-      "<input id='rn-input' maxlength='30' value='" + esc(room.name) + "' placeholder='اكتب اسم الغرفة...' />" +
-      '<button class="btn block" id="rn-ok" type="button">حفظ الاسم</button>');
-
+    openSheet("<h3>✏️ تغيير اسم الغرفة</h3><input id='rn-input' maxlength='40' value='" + esc(room.name) + "' /><button class='btn block' id='rn-ok' type='button'>حفظ الاسم</button>");
     $("rn-ok").onclick = function () {
       var nextName = clean($("rn-input").value.trim());
-      if (!nextName) {
-        toast("اكتب اسم الغرفة أولاً");
-        return;
-      }
+      if (!nextName) { toast("اكتب اسم الغرفة"); return; }
       room.name = nextName;
-      if (cloud.on && cloud.db) {
-        cloud.db.ref("rooms/" + room.id + "/name").set(nextName).catch(function () { /* */ });
-      }
-      pushRoomMsg(room, { sys: true, text: S.me.name + " غيّر اسم الغرفة إلى: " + nextName });
-      saveLocal();
-      closeSheet();
-      renderRoom();
-      renderFloatingOrb();
-      renderAll();
-      toast("تم تغيير اسم الغرفة إلى: " + nextName + " ✅");
+      if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/name").set(nextName).catch(function () { /* */ });
+      saveLocal(); closeSheet(); renderRoom(); renderFloatingOrb(); renderHome(); renderRooms();
+      toast("تم تغيير اسم الغرفة ✅");
     };
   }
 
   function openCreateRoom() {
     var cats = Object.keys(CATEGORIES).map(function (k) { return '<option value="' + k + '">' + CATEGORIES[k] + "</option>"; }).join("");
-    openSheet("<h3>🎙️ إنشاء غرفة 3D جديدة</h3>" +
-      '<label>اسم الغرفة</label><input id="cr-name" maxlength="30" placeholder="مثال: سهرة الليل" />' +
-      '<label>وصف الغرفة</label><input id="cr-desc" maxlength="80" placeholder="وصف قصير" />' +
-      '<label>صورة الغرفة (اختياري)</label><input id="cr-rphoto" type="file" accept="image/*" />' +
+    openSheet("<h3>🎙️ إنشاء غرفة جديدة</h3>" +
+      '<label>اسم الغرفة</label><input id="cr-name" maxlength="40" placeholder="مثال: سهرة الأصدقاء" />' +
       '<label>التصنيف</label><select id="cr-cat">' + cats + "</select>" +
-      '<label>عدد المقاعد الدائرية</label><select id="cr-seats"><option value="4">4 مقاعد</option><option value="6">6 مقاعد</option><option value="9" selected>9 مقاعد</option><option value="12">12 مقعد</option></select>' +
-      '<label>خلفية الغرفة من المعرض (اختياري)</label><input id="cr-bgfile" type="file" accept="image/*" />' +
-      '<label>نوع الغرفة</label><select id="cr-priv"><option value="0">عامة</option><option value="1">خاصة (لا تظهر في القائمة)</option></select>' +
+      '<label>عدد المقاعد</label><select id="cr-seats"><option value="6">6 مقاعد</option><option value="9" selected>9 مقاعد</option><option value="12">12 مقعد</option></select>' +
       '<button class="btn block" id="cr-ok" type="button">إنشاء الغرفة</button>');
-    var selectedBgDataUrl = "";
-    var selectedRoomPhotoUrl = "";
-
-    $("cr-rphoto").onchange = async function () {
-      var f = this.files && this.files[0];
-      if (!f) return;
-      try {
-        selectedRoomPhotoUrl = await readImageFileAsDataUrl(f, 260, 0.72);
-        toast("تم اختيار صورة الغرفة ✅");
-      } catch (err) {
-        toast(err.message || "تعذر تحميل الصورة");
-      }
-    };
-
-    $("cr-bgfile").onchange = async function () {
-      var f = this.files && this.files[0];
-      if (!f) return;
-      try {
-        selectedBgDataUrl = await readImageFileAsDataUrl(f, 540, 0.58);
-        toast("تم اختيار خلفية الغرفة ✅");
-      } catch (err) {
-        toast(err.message || "تعذر تحميل الخلفية");
-      }
-    };
-
     $("cr-ok").onclick = function () {
       var name = $("cr-name").value.trim();
-      if (!name) { toast("اكتب اسم الغرفة أولاً"); return; }
+      if (!name) { toast("اكتب اسم الغرفة"); return; }
       var n = Number($("cr-seats").value);
       var roomId = "r" + Math.random().toString(36).slice(2, 7);
-      var initTheme = selectedBgDataUrl
-        ? { id: "custom", name: "خلفية مخصصة", bgImage: selectedBgDataUrl, accent: "#ec4899" }
-        : ROOM_THEMES[0];
       var room = {
-        id: roomId, name: clean(name), desc: clean($("cr-desc").value.trim()), cat: $("cr-cat").value,
-        owner: S.me.id, mods: [], seats: makeSeats(n, []), listeners: [], bans: [],
-        priv: $("cr-priv").value === "1", locked: false, pinned: "", created: now(), msgs: [],
-        color: Math.floor(Math.random() * COVERS.length), icon: Math.floor(Math.random() * COVER_ICONS.length),
-        roomPhoto: selectedRoomPhotoUrl,
-        theme: initTheme, recvTop: {}
+        id: roomId, name: clean(name), desc: "", cat: $("cr-cat").value,
+        owner: S.me.id, mods: [], seats: makeSeats(n), listeners: [], bans: [],
+        priv: false, locked: false, pinned: "", created: now(), msgs: [],
+        color: Math.floor(Math.random() * COVERS.length), icon: Math.floor(Math.random() * COVER_ICONS.length), roomPhoto: ""
       };
       S.rooms.unshift(room);
       if (cloud.on && cloud.db) {
         cloud.db.ref("rooms/" + roomId).set({
-          name: room.name, desc: room.desc, cat: room.cat, owner: room.owner,
-          seatCount: n, priv: room.priv, locked: false,
-          pinned: "", created: serverTs(), color: room.color, icon: room.icon,
-          roomPhoto: room.roomPhoto,
-          theme: initTheme
+          name: room.name, cat: room.cat, owner: room.owner, seatCount: n,
+          created: serverTs(), color: room.color, icon: room.icon
         }).catch(function () { /* */ });
       }
-      S.me.ach.host = true;
-      addXP(20);
       save(); closeSheet(); renderAll();
-      toast("تم إنشاء الغرفة ✅");
-      enterRoom(roomId, true);
+      enterRoom(roomId);
     };
   }
 
-  function applyRoomTheme(theme) {
-    var rv = $("room-view");
-    if (!rv) return;
-    var t = theme || ROOM_THEMES[0];
-    UI.theme = t;
-    if (t.bgImage) {
-      rv.style.backgroundImage = 'url("' + String(t.bgImage).replace(/"/g, '\\"') + '")';
-      rv.style.backgroundSize = "cover";
-      rv.style.backgroundPosition = "center";
-      rv.style.backgroundRepeat = "no-repeat";
-    } else {
-      rv.style.backgroundImage = "none";
-      rv.style.background = t.bg || ROOM_THEMES[0].bg;
-    }
-    document.documentElement.style.setProperty("--acc2", t.accent || "#ec4899");
-  }
-
-  function renderQuizBox() {
-    var box = $("quiz-box");
-    if (!box) return;
-    var q = UI.quiz;
-    if (!q || !q.active) {
-      box.classList.add("hidden");
-      box.innerHTML = "";
-      return;
-    }
-    box.classList.remove("hidden");
-    var myAns = q.answers && q.answers[S.me.id];
-    var optsHtml = (q.opts || []).map(function (opt, idx) {
-      var mark = myAns === idx ? " ✔" : "";
-      return '<button class="btn sm ghost" data-quizans="' + idx + '" type="button">' + esc(opt) + mark + "</button>";
-    }).join("");
-    box.innerHTML = '<div><b>🧠 سؤال الغرفة:</b> ' + esc(q.q) + '</div><div class="quiz-opts">' + optsHtml + "</div>";
-  }
-
-  function enterRoom(id, skipPass, opts) {
-    opts = opts || {};
+  function enterRoom(id) {
     closeSheet();
     var room = getRoom(id);
     if (!room) { toast("الغرفة غير موجودة"); return; }
-    if (room.bans.indexOf(S.me.id) >= 0) { toast("أنت محظور من هذه الغرفة 🚫"); return; }
-    if (room.locked && room.owner !== S.me.id && !inRoom(room, S.me.id)) { toast("الغرفة مقفلة من المالك 🔒"); return; }
-
-    if (UI.floatingRoomId && UI.floatingRoomId !== id) {
-      var prevFloatRoom = getRoom(UI.floatingRoomId);
-      if (prevFloatRoom) {
-        var psi = seatIndexOf(prevFloatRoom, S.me.id);
-        if (psi >= 0) { prevFloatRoom.seats[psi].uid = null; prevFloatRoom.seats[psi].muted = false; }
-        prevFloatRoom.listeners = prevFloatRoom.listeners.filter(function (x) { return x !== S.me.id; });
-        if (cloud.on && cloud.db) {
-          var pUps = {};
-          if (psi >= 0) pUps["rooms/" + prevFloatRoom.id + "/seats/" + psi + "/uid"] = null;
-          pUps["rooms/" + prevFloatRoom.id + "/listeners/" + S.me.id] = null;
-          cloud.db.ref().update(pUps).catch(function () { /* */ });
-        }
-      }
-      UI.floatingRoomId = null;
-      renderFloatingOrb();
-    }
-
-    if (UI.roomId && UI.roomId !== id) {
-      leaveRoom(true, !!opts.keepVoiceAlive);
-    }
-
-    cleanup("room");
-    musicState.roomXpEarned = 0;
-    musicState.data = null;
-    musicState.queue = [];
-    UI.quiz = null;
-    UI.roomSpeakerMuted = false;
-    applyRoomSpeakerMuteState();
-    applyRoomTheme(room.theme || ROOM_THEMES[0]);
-    renderMusicMini();
-    renderQuizBox();
-
-    var wrap = $("entry-banner-wrap");
-    if (wrap) wrap.innerHTML = "";
-
+    offDb("room");
     if (!inRoom(room, S.me.id)) {
       if (room.listeners.indexOf(S.me.id) < 0) room.listeners.push(S.me.id);
       if (cloud.on && cloud.db) {
         var lRef = cloud.db.ref("rooms/" + id + "/listeners/" + S.me.id);
-        try { lRef.onDisconnect().remove(); } catch (e0) { /* */ }
+        try { lRef.onDisconnect().remove(); } catch (e) { /* */ }
         lRef.set(true).catch(function () { /* */ });
       }
-      pushRoomMsg(room, {
-        sys: true,
-        joinUser: { uid: S.me.id, name: S.me.name, photo: S.me.photo || "" },
-        text: S.me.name + " دخل الغرفة 👋"
-      });
+      pushRoomMsg(room, { sys: true, joinUser: { uid: S.me.id, name: S.me.name }, text: S.me.name + " دخل الغرفة 👋" });
       showEntryBanner(S.me);
-      S.me.visits++;
-      S.me.roomsJoined = (S.me.roomsJoined || 0) + 1;
-      S.me.ach.first = true;
-      addXP(5);
-      completeTask("room", 25);
     }
-
     UI.roomId = id;
     UI.micMuted = false;
-    save();
     $("room-view").classList.add("open");
     renderRoom();
-    renderAll();
-
-    trackTimer("room", setInterval(function () {
-      if (!UI.roomId) return;
-      S.me.roomSeconds = (S.me.roomSeconds || 0) + 60;
-      if (musicState.roomXpEarned < 10) {
-        musicState.roomXpEarned += 2;
-        addXP(2);
-      }
-      save();
-      renderTop();
-      if (UI.page === "profile") renderProfile();
-    }, 60 * 1000), "interval");
 
     if (cloud.on && cloud.db) {
-      var msgsRef = cloud.db.ref("roomMessages/" + id).limitToLast(100);
-      trackListener("room", msgsRef, "value", function (msnap) {
-        var mv = msnap.val() || {};
-        var arr = Object.keys(mv).map(function (k) {
-          return Object.assign({ key: k }, mv[k]);
-        });
+      onDb("room", cloud.db.ref("roomMessages/" + id).limitToLast(100), "value", function (ms) {
+        var mv = ms.val() || {};
+        var arr = Object.keys(mv).map(function (k) { return Object.assign({ key: k }, mv[k]); });
         cloud.roomMsgs[id] = arr;
         var r = getRoom(id);
         if (r) r.msgs = arr;
         renderRoomChat();
-
         var last = arr[arr.length - 1];
-        if (last && last.giftAnim && !cloud.seenFly[last.key] && (now() - (last.t || 0) < 8000)) {
-          cloud.seenFly[last.key] = true;
-          if (last.from !== S.me.id) {
-            showFlyGiftToSeat(last.giftAnim.e, last.giftAnim.fromName, last.giftAnim.toUid, last.giftAnim.toName);
-          }
+        if (last && last.giftAnim && last.from !== S.me.id && (now() - (last.t || 0) < 8000)) {
+          showFlyGiftToSeat(last.giftAnim.e, last.giftAnim.fromName, last.giftAnim.toUid, last.giftAnim.toName);
         }
-        if (last && last.joinUser && !cloud.seenJoin[last.key] && (now() - (last.t || 0) < 8000)) {
-          cloud.seenJoin[last.key] = true;
-          if (last.joinUser.uid !== S.me.id) {
-            showEntryBanner(last.joinUser);
-          }
+        if (last && last.joinUser && last.joinUser.uid !== S.me.id && (now() - (last.t || 0) < 8000)) {
+          showEntryBanner(last.joinUser);
         }
-      });
-
-      trackListener("room", cloud.db.ref("rooms/" + id + "/music"), "value", function (musSnap) {
-        var m = musSnap.val() || null;
-        if (m && m.url) {
-          musicState.data = m;
-          renderMusicMini();
-          syncRoomMusicForEveryone(m);
-        } else if (musicState.data && (!m || !m.url)) {
-          musicState.data = null;
-          renderMusicMini();
-          stopMusicBroadcast();
-        }
-      });
-
-      trackListener("room", cloud.db.ref("rooms/" + id + "/reactions").limitToLast(20), "child_added", function (rSnap) {
-        var rv = rSnap.val();
-        if (!rv || cloud.seenReact[rSnap.key]) return;
-        cloud.seenReact[rSnap.key] = true;
-        var ts = typeof rv.t === "number" ? rv.t : now();
-        if (now() - ts <= 8000) {
-          showFlyGiftToSeat(rv.emoji || "👏", rv.fromName || "مستخدم", rv.targetUid || "room", rv.targetName || "الغرفة");
-        }
-      });
-
-      trackListener("room", cloud.db.ref("rooms/" + id + "/theme"), "value", function (thSnap) {
-        var thVal = thSnap.val();
-        if (thVal) {
-          var rCur = getRoom(id);
-          if (rCur) rCur.theme = thVal;
-          applyRoomTheme(thVal);
-        }
-      });
-
-      trackListener("room", cloud.db.ref("rooms/" + id + "/quiz/current"), "value", function (qzSnap) {
-        var qVal = qzSnap.val();
-        UI.quiz = (qVal && qVal.active) ? qVal : null;
-        renderQuizBox();
       });
     }
-
-    var initialRole = seatIndexOf(room, S.me.id) >= 0 ? "publisher" : "subscriber";
-    joinVoiceChannel(id, initialRole);
+    joinVoiceChannel(id, seatIndexOf(room, S.me.id) >= 0 ? "publisher" : "subscriber");
   }
 
-  function leaveRoom(silent, keepVoiceAlive) {
+  function leaveRoom(silent) {
     closeSheet();
-    cleanup("room");
-    clearSeatDisconnectBinding();
-    var rid = UI.roomId;
-    var room = getRoom(rid);
-
+    offDb("room");
+    var room = getRoom(UI.roomId);
     if (room) {
       var si = seatIndexOf(room, S.me.id);
-      if (si >= 0) {
-        room.seats[si].uid = null;
-        room.seats[si].muted = false;
-      }
+      if (si >= 0) { room.seats[si].uid = null; room.seats[si].muted = false; }
       room.listeners = room.listeners.filter(function (x) { return x !== S.me.id; });
       if (cloud.on && cloud.db) {
         var ups = {};
-        if (si >= 0) {
-          ups["rooms/" + rid + "/seats/" + si + "/uid"] = null;
-          ups["rooms/" + rid + "/seats/" + si + "/muted"] = false;
-        }
-        ups["rooms/" + rid + "/listeners/" + S.me.id] = null;
-        if (musicState.data && musicState.data.djUid === S.me.id) {
-          ups["rooms/" + rid + "/music/djUid"] = null;
-          ups["rooms/" + rid + "/music/paused"] = true;
-        }
+        if (si >= 0) { ups["rooms/" + room.id + "/seats/" + si + "/uid"] = null; ups["rooms/" + room.id + "/seats/" + si + "/muted"] = false; }
+        ups["rooms/" + room.id + "/listeners/" + S.me.id] = null;
         cloud.db.ref().update(ups).catch(function () { /* */ });
       }
       pushRoomMsg(room, { sys: true, text: S.me.name + " غادر الغرفة" });
     }
-
     UI.roomId = null;
-    if (!keepVoiceAlive) {
-      UI.floatingRoomId = null;
-      renderFloatingOrb();
-      musicState.data = null;
-      musicState.queue = [];
-    }
-    applyRoomTheme(ROOM_THEMES[0]);
-    saveLocal();
+    UI.floatingRoomId = null;
+    renderFloatingOrb();
     $("room-view").classList.remove("open");
-
-    if (!keepVoiceAlive) {
-      leaveVoiceChannel();
-    }
+    leaveVoiceChannel();
     if (!silent) renderAll();
   }
 
-  /* ========= 15. رسم الغرفة والمقاعد الدائرية 3D والدردشة ========= */
-  function renderRoomPresenceStrip(room) {
-    var ids = getRoomParticipantIds(room);
-    var cntEl = $("room-online-count");
-    var stripEl = $("room-avatars-strip");
-    if (cntEl) cntEl.textContent = String(ids.length);
-    if (!stripEl) return;
-
-    var maxShow = 3;
-    var shown = ids.slice(0, maxShow);
-    var extra = ids.length - shown.length;
-
-    var html = shown.map(function (uidItem) {
-      var u = getUser(uidItem);
-      var inner = u.photo
-        ? '<img src="' + esc(u.photo) + '" alt="' + esc(u.name || "") + '" />'
-        : esc(initials(u.name));
-      return '<span class="room-mini-av" title="' + esc(u.name) + '">' + inner + "</span>";
-    }).join("");
-
-    if (extra > 0) {
-      html += '<span class="room-mini-more">+' + extra + "</span>";
-    }
-    stripEl.innerHTML = html;
+  function renderFloatingOrb() {
+    var orb = $("floating-room-orb");
+    if (!orb) return;
+    if (!UI.floatingRoomId) { orb.classList.add("hidden"); return; }
+    var r = getRoom(UI.floatingRoomId);
+    if (!r) { UI.floatingRoomId = null; orb.classList.add("hidden"); return; }
+    orb.classList.remove("hidden");
+    $("floating-orb-avatar").innerHTML = r.roomPhoto ? '<img src="' + esc(r.roomPhoto) + '" alt="" />' : esc(COVER_ICONS[(r.icon || 0) % COVER_ICONS.length]);
+    $("floating-orb-label").textContent = r.name || "روم";
   }
 
   function renderRoom() {
     var room = getRoom(UI.roomId);
     if (!room) return;
-    var mySeat = seatIndexOf(room, S.me.id);
-
     $("room-title").textContent = room.name;
     $("room-right-id").textContent = "ID: " + displayUserId(S.me);
+    $("room-online-count").textContent = String(count(room));
 
     var thumbInner = $("room-top-thumb-inner");
     if (thumbInner) {
-      if (room.roomPhoto) {
-        thumbInner.innerHTML = '<img src="' + esc(room.roomPhoto) + '" alt="' + esc(room.name || "room") + '" />';
-      } else {
-        thumbInner.textContent = COVER_ICONS[(room.icon || 0) % COVER_ICONS.length];
-      }
+      thumbInner.innerHTML = room.roomPhoto ? '<img src="' + esc(room.roomPhoto) + '" alt="" />' : esc(COVER_ICONS[(room.icon || 0) % COVER_ICONS.length]);
     }
-
-    renderRoomPresenceStrip(room);
-
-    var pin = $("room-pinned");
-    pin.classList.toggle("hidden", !room.pinned);
-    pin.textContent = "📌 " + room.pinned;
 
     var cols = { 4: 4, 6: 3, 9: 3, 12: 4 }[room.seats.length] || 3;
     var grid = $("room-seats");
     grid.style.gridTemplateColumns = "repeat(" + cols + ",1fr)";
     grid.innerHTML = room.seats.map(function (s, i) {
-      var cls = "seat", inner, name, sub;
+      var cls = "seat", inner, fullName, sub;
       if (s.uid) {
         var u = getUser(s.uid);
-        var uNum = u.num || hashNum(s.uid);
-        var isMuted = s.muted || (s.uid === S.me.id && UI.micMuted);
-        var isSpeaking = !isMuted && !!voice.speakingNums[uNum];
-        cls += " occ" + (u.vip > 0 || s.vip ? " vip" : "") + (isSpeaking ? " speak" : "");
+        var muted = s.muted || (s.uid === S.me.id && UI.micMuted);
+        var speaking = !muted && !!voice.speakingNums[u.num || hashNum(s.uid)];
+        cls += " occ" + (speaking ? " speak" : "");
         inner = avatarInnerHTML(u);
-        name = esc(u.name);
-        sub = s.uid === room.owner ? "👑 المالك" : (room.mods.indexOf(s.uid) >= 0 ? "🛡️ مشرف" : (u.me ? "أنت" : "Lv." + (u.level || 1)));
+        fullName = esc(u.name || "مستخدم");
+        sub = s.uid === room.owner ? "👑 المالك" : (u.me ? "أنت" : "مقعد " + (i + 1));
       } else if (s.locked) {
-        cls += " locked"; inner = "🔒"; name = "مقفل"; sub = "مقعد " + (i + 1);
+        cls += " locked"; inner = "🔒"; fullName = "مقفل"; sub = "مقعد " + (i + 1);
       } else {
-        inner = s.vip ? "👑" : "🎙️"; name = "مقعد " + (i + 1); sub = s.vip ? "VIP" : "فارغ";
+        inner = s.vip ? "👑" : "🎙️"; fullName = "مقعد " + (i + 1); sub = "فارغ";
       }
-
-      var isSeatMuted = s.uid && (s.muted || (s.uid === S.me.id && UI.micMuted));
+      var isMuted = s.uid && (s.muted || (s.uid === S.me.id && UI.micMuted));
       return '<div class="' + cls + '" data-seat="' + i + '">' +
-        '<div class="seat-orb" data-seat-avatar="' + i + '">' +
-          '<span class="seat-num-badge">' + (i + 1) + "</span>" +
-          '<div class="seatav">' + inner + "</div>" +
-          (isSeatMuted ? '<span class="mutedmark">🔇</span>' : "") +
-        "</div>" +
-        '<div class="seat-meta-pill">' +
-          '<div class="seatname">' + name + "</div>" +
-          '<div class="seatsub">' + sub + "</div>" +
-        "</div>" +
-      "</div>";
+        '<div class="seat-orb"><span class="seat-num-badge">' + (i + 1) + '</span><div class="seatav">' + inner + "</div>" + (isMuted ? '<span class="mutedmark">🔇</span>' : "") + "</div>" +
+        '<div class="seat-meta-pill"><div class="seatname-full">' + fullName + '</div><div class="seatsub">' + sub + "</div></div></div>";
     }).join("");
 
     var mic = $("mic-btn");
+    var mySeat = seatIndexOf(room, S.me.id);
     if (mic) {
-      var onSeat = mySeat >= 0;
-      var adminMuted = onSeat && room.seats[mySeat].muted;
-      var effectiveMuted = UI.micMuted || adminMuted;
-      mic.classList.remove("mic-on", "mic-off", "mic-idle");
-      if (!onSeat) {
-        mic.classList.add("mic-idle");
-        mic.textContent = "🎙️";
-        mic.title = "اضغط للصعود على المايك";
-      } else if (effectiveMuted) {
-        mic.classList.add("mic-off");
-        mic.textContent = "🔇";
-        mic.title = "فتح المايك";
-      } else {
-        mic.classList.add("mic-on");
-        mic.textContent = "🎤";
-        mic.title = "كتم المايك";
-      }
+      mic.classList.remove("mic-on", "mic-off");
+      if (mySeat < 0) mic.textContent = "🎙️";
+      else if (UI.micMuted || room.seats[mySeat].muted) { mic.classList.add("mic-off"); mic.textContent = "🔇"; }
+      else { mic.classList.add("mic-on"); mic.textContent = "🎤"; }
     }
-
-    applyRoomSpeakerMuteState();
-    renderMusicMini();
-    renderQuizBox();
     renderRoomChat();
   }
 
@@ -2870,15 +1077,12 @@
     if (!room) return;
     var box = $("room-chat");
     var stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 48;
-    box.innerHTML = (room.msgs || []).map(function (m, i) {
+    box.innerHTML = (room.msgs || []).map(function (m) {
       if (m.sys) return '<div class="msg sys">' + esc(m.text) + "</div>";
       var u = getUser(m.from), me = m.from === S.me.id;
-      var body = "";
-      if (m.sticker) body = '<div style="font-size:38px;line-height:1.1">' + esc(m.sticker) + '</div><div class="small">' + esc(m.text || "") + "</div>";
-      else if (m.img) body = '<img src="' + esc(m.img) + '" alt="صورة" style="max-width:190px;max-height:170px;border-radius:10px;display:block" />';
-      else body = esc(m.text);
-
-      return '<div class="msg ' + (me ? "me" : "") + '"' + (me ? ' data-delmsg="' + esc(m.key || String(i)) + '"' : "") + '><div class="who">' + userNameHTML(u) + "</div>" + body + '<div class="tm">' + timeStr(m.t) + (me ? " • اضغط للحذف" : "") + "</div></div>";
+      var body = m.sticker ? '<div style="font-size:36px">' + esc(m.sticker) + "</div>"
+        : (m.img ? '<img src="' + esc(m.img) + '" alt="" style="max-width:190px;border-radius:10px" />' : esc(m.text));
+      return '<div class="msg ' + (me ? "me" : "") + '"><div class="who">' + esc(u.name) + "</div>" + body + '<div class="tm">' + timeStr(m.t) + "</div></div>";
     }).join("");
     if (stick) box.scrollTop = box.scrollHeight;
   }
@@ -2887,458 +1091,150 @@
     var room = getRoom(UI.roomId);
     text = String(text || "").trim();
     if (!room || (!text && (!extra || (!extra.img && !extra.sticker)))) return;
-    var msg = Object.assign({ from: S.me.id, text: clean(text) }, extra || {});
-    pushRoomMsg(room, msg);
-    S.me.msgCount = (S.me.msgCount || 0) + 1;
-    if (S.me.msgCount >= 5) S.me.ach.chatter = true;
-    addXP(2);
-    completeTask("msg", 25);
-    save(); renderTop();
-  }
-
-  /* ========= 16. إدارة المقاعد والمايك + نافذة البروفايل الخفيفة داخل الغرفة ========= */
-  function findFirstFreeSeatIndex(room) {
-    if (!room || !Array.isArray(room.seats)) return -1;
-    for (var i = 0; i < room.seats.length; i++) {
-      if (!room.seats[i].uid && !room.seats[i].locked) return i;
-    }
-    return -1;
-  }
-
-  function stepOffSeat(room, seatIdx) {
-    if (!room || !room.seats[seatIdx]) return;
-    UI.micMuted = false;
-    clearSeatDisconnectBinding();
-    stopLocalMic();
-    room.seats[seatIdx].uid = null;
-    room.seats[seatIdx].muted = false;
-    if (room.listeners.indexOf(S.me.id) < 0) room.listeners.push(S.me.id);
-    if (cloud.on && cloud.db) {
-      var ups = {};
-      ups["rooms/" + room.id + "/seats/" + seatIdx + "/uid"] = null;
-      ups["rooms/" + room.id + "/seats/" + seatIdx + "/muted"] = false;
-      ups["rooms/" + room.id + "/listeners/" + S.me.id] = true;
-      cloud.db.ref().update(ups).catch(function () { /* */ });
-    }
-    saveLocal();
-    renderRoom();
-    toast("تم النزول من المايك ⬇️");
-  }
-
-  function openSeatUserProfile(seatIdx) {
-    var room = getRoom(UI.roomId);
-    if (!room || !room.seats[seatIdx]) return;
-    var s = room.seats[seatIdx];
-    var targetUid = s.uid;
-    if (!targetUid) return;
-
-    cleanup("seat_profile");
-    UI.activeSeatProfileUid = targetUid;
-    UI.activeSeatProfileIdx = seatIdx;
-
-    function buildAndRender(userData) {
-      var curRoom = getRoom(UI.roomId);
-      if (!curRoom || !curRoom.seats[seatIdx] || curRoom.seats[seatIdx].uid !== targetUid) {
-        closeSheet();
-        return;
-      }
-      var curSeat = curRoom.seats[seatIdx];
-      var u = Object.assign({}, getUser(targetUid), userData || {});
-      var spId = displayUserId(u);
-      var isSelf = targetUid === S.me.id;
-      var myRole = role(curRoom, S.me.id);
-      var canManage = myRole === "owner" || myRole === "mod";
-      var isTargetOwner = targetUid === curRoom.owner;
-      var isTargetMod = curRoom.mods.indexOf(targetUid) >= 0;
-
-      var isF = S.friends.indexOf(targetUid) >= 0;
-      var isFol = S.follows.indexOf(targetUid) >= 0;
-      var hasVip = (u.vip || 0) > 0;
-      var lv = computeLevelFromXp(u.xp || 0);
-      var intoXp = (u.xp || 0) % CONFIG.xpPerLevel;
-      var xpPct = lv >= CONFIG.maxLevel ? 100 : (intoXp / CONFIG.xpPerLevel) * 100;
-      var wMeta = getWealthRankMeta(u.wealth || 0);
-      var cMeta = getCharmRankMeta(u.charm || 0);
-
-      var uNum = u.num || hashNum(targetUid);
-      var isSeatMuted = !!(curSeat.muted || (isSelf && UI.micMuted));
-      var isSpeaking = !isSeatMuted && !!voice.speakingNums[uNum];
-
-      var showCeleb = !isSelf && (hasVip || lv >= 20) && !UI.celebratedProfiles[targetUid];
-      if (showCeleb) UI.celebratedProfiles[targetUid] = true;
-
-      var actionsHtml = "";
-      if (isSelf) {
-        actionsHtml =
-          '<div class="social-grid">' +
-            '<button class="btn sm" data-sp="fullme" type="button">👤 الملف الشخصي الكامل</button>' +
-            '<button class="btn sm ghost" data-sp="leave_seat" type="button">⬇️ النزول من المقعد</button>' +
-          "</div>";
-      } else {
-        actionsHtml =
-          '<div class="social-grid">' +
-            '<button class="btn sm ' + (isFol ? "ghost" : "") + '" data-sp="follow" type="button">' + (isFol ? "✔ متابَع" : "➕ متابعة") + "</button>" +
-            '<button class="btn sm" data-sp="dm" type="button">💬 رسالة</button>' +
-            (isF
-              ? '<button class="btn sm ghost" data-sp="unfriend" type="button">💔 صديق</button>'
-              : (S.sentReq.indexOf(targetUid) >= 0
-                ? '<button class="btn sm ghost" data-sp="cancelreq" type="button">⏳ مرسل</button>'
-                : '<button class="btn sm" data-sp="add" type="button">👥 إضافة صديق</button>')) +
-            '<button class="btn sm ghost" data-sp="fullprofile" type="button">🪪 الملف الكامل</button>' +
-          "</div>";
-
-        if (canManage && !isTargetOwner && !(myRole === "mod" && isTargetMod)) {
-          actionsHtml +=
-            '<div style="display:flex;gap:6px;margin-top:8px">' +
-              '<button class="btn sm ghost" style="flex:1" data-sp="admin_mute" type="button">' + (curSeat.muted ? "🔊 فك الكتم" : "🔇 كتم") + "</button>" +
-              '<button class="btn sm ghost" style="flex:1" data-sp="admin_down" type="button">⬇️ إنزال</button>' +
-              '<button class="btn sm red" style="flex:1" data-sp="admin_kick" type="button">🚫 طرد</button>' +
-            "</div>";
-        }
-      }
-
-      var html =
-        '<div class="room-mini-profile">' +
-          (showCeleb ? '<div style="text-align:center"><span class="celeb-banner">✨ عضو مميز: ' + esc(u.name) + " ✨</span></div>" : "") +
-          '<div class="rmp-header">' +
-            '<div class="frame ' + (hasVip ? "vip-frame" : "") + '" style="flex-shrink:0">' + avatarHTML(u, "md") + "</div>" +
-            '<div class="rmp-info">' +
-              '<div class="rmp-name">' +
-                '<span>' + esc(u.name) + "</span>" +
-                levelBadgeHTML(lv) +
-                (hasVip ? '<span class="tag vip">VIP ' + u.vip + "</span>" : "") +
-              "</div>" +
-              '<div class="rmp-sub">' +
-                '<span>' + esc(u.country || "🌍") + "</span>" +
-                '<span>•</span>' +
-                '<span>ID: <b>' + esc(spId) + "</b></span>" +
-                copyBtnHTML(spId, "📋") +
-              "</div>" +
-              '<div class="seat-status-pills">' +
-                '<span class="seat-pill">🪑 مقعد #' + (seatIdx + 1) + "</span>" +
-                '<span id="sp-live-speak-pill" class="seat-pill ' + (isSeatMuted ? "muted" : (isSpeaking ? "live" : "")) + '">' +
-                  (isSeatMuted ? "🔇 مكتوم" : (isSpeaking ? "🎙️ يتحدث" : "🎤 هادئ")) +
-                "</span>" +
-              "</div>" +
-            "</div>" +
-          "</div>" +
-
-          '<div class="rmp-metrics">' +
-            '<div class="rmp-metric"><b>Lv.' + lv + "</b><span>المستوى (" + (u.xp || 0) + " XP)</span></div>" +
-            '<div class="rmp-metric"><b>' + wMeta.value + "</b><span>" + wMeta.rank.icon + " " + esc(wMeta.rank.name) + "</span></div>" +
-            '<div class="rmp-metric"><b>' + cMeta.value + "</b><span>" + cMeta.rank.icon + " " + esc(cMeta.rank.name) + "</span></div>" +
-          "</div>" +
-
-          '<div class="rmp-prog-row">' +
-            '<div style="display:flex;justify-content:space-between"><span>تقدم المستوى التالي</span><span>' + (lv >= CONFIG.maxLevel ? "100%" : (intoXp + "/" + CONFIG.xpPerLevel + " XP")) + "</span></div>" +
-            '<div class="bar"><i style="width:' + xpPct + '%"></i></div>' +
-          "</div>" +
-
-          actionsHtml +
-        "</div>";
-
-      openSheet(html);
-
-      $("sheet").onclick = function (e) {
-        var cpBtn = e.target.closest("[data-copyval]");
-        if (cpBtn) {
-          e.stopPropagation();
-          copyText(cpBtn.getAttribute("data-copyval"), "تم نسخ User ID (" + spId + ") 📋");
-          return;
-        }
-        var btn = e.target.closest("[data-sp]");
-        if (!btn) return;
-        var act = btn.getAttribute("data-sp");
-
-        if (act === "fullme") {
-          closeSheet();
-          leaveRoom(false);
-          go("profile");
-        } else if (act === "leave_seat") {
-          closeSheet();
-          stepOffSeat(curRoom, seatIdx);
-        } else if (act === "follow") {
-          if (isFol) {
-            S.follows = S.follows.filter(function (x) { return x !== targetUid; });
-            if (cloud.on && cloud.db) {
-              cloud.db.ref("social/" + S.me.id + "/follows/" + targetUid).remove().catch(function () { /* */ });
-              cloud.db.ref("users/" + targetUid + "/followers").transaction(function (c) { return Math.max(0, (c || 0) - 1); }).catch(function () { /* */ });
-            }
-            toast("تم إلغاء المتابعة");
-          } else {
-            S.follows.push(targetUid);
-            if (cloud.on && cloud.db) {
-              cloud.db.ref("social/" + S.me.id + "/follows/" + targetUid).set(true).catch(function () { /* */ });
-              cloud.db.ref("users/" + targetUid + "/followers").transaction(function (c) { return (c || 0) + 1; }).catch(function () { /* */ });
-              addNotif("➕", S.me.name + " بدأ بمتابعتك.", targetUid);
-            }
-            toast("تمت المتابعة ✅");
-          }
-          saveLocal();
-          renderTop();
-          buildAndRender(u);
-        } else if (act === "add") {
-          sendFriendReq(targetUid);
-          buildAndRender(u);
-        } else if (act === "cancelreq") {
-          S.sentReq = S.sentReq.filter(function (x) { return x !== targetUid; });
-          if (cloud.on && cloud.db) {
-            var upsReq = {};
-            upsReq["social/" + S.me.id + "/sentReq/" + targetUid] = null;
-            upsReq["social/" + targetUid + "/requests/" + S.me.id] = null;
-            cloud.db.ref().update(upsReq).catch(function () { /* */ });
-          }
-          saveLocal();
-          buildAndRender(u);
-        } else if (act === "unfriend") {
-          S.friends = S.friends.filter(function (x) { return x !== targetUid; });
-          if (cloud.on && cloud.db) {
-            var upsUnf = {};
-            upsUnf["social/" + S.me.id + "/friends/" + targetUid] = null;
-            upsUnf["social/" + targetUid + "/friends/" + S.me.id] = null;
-            cloud.db.ref().update(upsUnf).catch(function () { /* */ });
-          }
-          saveLocal();
-          toast("تم حذف الصديق");
-          buildAndRender(u);
-        } else if (act === "dm") {
-          closeSheet();
-          leaveRoom(false);
-          openDM(targetUid);
-        } else if (act === "fullprofile") {
-          openUserProfile(targetUid);
-        } else if (act === "admin_mute") {
-          curSeat.muted = !curSeat.muted;
-          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + curRoom.id + "/seats/" + seatIdx + "/muted").set(curSeat.muted).catch(function () { /* */ });
-          toast(curSeat.muted ? "تم كتم المقعد" : "تم فك الكتم");
-          renderRoom();
-          buildAndRender(u);
-        } else if (act === "admin_down") {
-          curSeat.uid = null; curSeat.muted = false;
-          if (cloud.on && cloud.db) {
-            cloud.db.ref("rooms/" + curRoom.id + "/seats/" + seatIdx + "/uid").set(null).catch(function () { /* */ });
-            cloud.db.ref("rooms/" + curRoom.id + "/seats/" + seatIdx + "/muted").set(false).catch(function () { /* */ });
-          }
-          toast("تم إنزال المستخدم من المقعد");
-          closeSheet();
-          renderRoom();
-        } else if (act === "admin_kick") {
-          curSeat.uid = null; curSeat.muted = false;
-          curRoom.listeners = curRoom.listeners.filter(function (x) { return x !== targetUid; });
-          if (cloud.on && cloud.db) {
-            cloud.db.ref("rooms/" + curRoom.id + "/seats/" + seatIdx + "/uid").set(null).catch(function () { /* */ });
-            cloud.db.ref("rooms/" + curRoom.id + "/listeners/" + targetUid).remove().catch(function () { /* */ });
-          }
-          pushRoomMsg(curRoom, { sys: true, text: "تم طرد " + u.name + " من الغرفة" });
-          toast("تم الطرد");
-          closeSheet();
-          renderRoom();
-        }
-      };
-    }
-
-    buildAndRender(getUser(targetUid));
-
-    if (cloud.on && cloud.db) {
-      var uRef = cloud.db.ref("users/" + targetUid);
-      trackListener("seat_profile", uRef, "value", function (snap) {
-        var freshVal = snap.val();
-        if (freshVal && UI.activeSeatProfileUid === targetUid) {
-          buildAndRender(Object.assign({ id: targetUid }, freshVal));
-        }
-      });
-    }
+    pushRoomMsg(room, Object.assign({ from: S.me.id, text: clean(text) }, extra || {}));
+    S.me.xp = Number(S.me.xp || 0) + 2;
+    save();
   }
 
   function seatClick(i) {
     var room = getRoom(UI.roomId);
     if (!room) return;
     var s = room.seats[i];
-    var myRole = role(room, S.me.id);
-    var mySeat = seatIndexOf(room, S.me.id);
-
     if (s.uid) {
-      openSeatUserProfile(i);
-      return;
-    }
-
-    if (s.locked) {
-      if (myRole === "owner" || myRole === "mod") {
-        actionList("مقعد مقفل #" + (i + 1), [
-          { label: "🔓 فتح المقعد", fn: function () {
-            s.locked = false;
-            if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + i + "/locked").set(false).catch(function () { /* */ });
-            renderRoom();
-          } }
-        ]);
-      } else {
-        toast("هذا المقعد مقفل 🔒");
+      if (s.uid !== S.me.id) openUserProfile(s.uid);
+      else {
+        UI.micMuted = !UI.micMuted;
+        renderRoom(); syncMicHardwareState();
       }
       return;
     }
-
-    if (mySeat >= 0 && mySeat !== i) {
-      actionList("المقعد #" + (i + 1), [
-        { label: "🪑 الانتقال إلى هذا المقعد", fn: function () {
-          var prevMuted = !!room.seats[mySeat].muted;
-          room.seats[mySeat].uid = null;
-          room.seats[mySeat].muted = false;
-          s.uid = S.me.id;
-          s.muted = prevMuted;
-          bindSeatDisconnect(room.id, i);
-          if (cloud.on && cloud.db) {
-            var ups = {};
-            ups["rooms/" + room.id + "/seats/" + mySeat + "/uid"] = null;
-            ups["rooms/" + room.id + "/seats/" + mySeat + "/muted"] = false;
-            ups["rooms/" + room.id + "/seats/" + i + "/uid"] = S.me.id;
-            ups["rooms/" + room.id + "/seats/" + i + "/muted"] = prevMuted;
-            cloud.db.ref().update(ups).catch(function () { /* */ });
-          }
-          saveLocal(); renderRoom(); joinVoiceChannel(room.id, "publisher");
-          toast("انتقلت إلى المقعد #" + (i + 1));
-        } },
-        { label: "⬇️ النزول من مقعدي الحالي", fn: function () { stepOffSeat(room, mySeat); } },
-        (myRole === "owner" || myRole === "mod") ? { label: "🔒 قفل المقعد #" + (i + 1), fn: function () {
-          s.locked = true;
-          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + i + "/locked").set(true).catch(function () { /* */ });
-          renderRoom();
-        } } : null
-      ].filter(Boolean));
-      return;
+    if (s.locked) { toast("المقعد مقفل 🔒"); return; }
+    var prevSeat = seatIndexOf(room, S.me.id);
+    if (prevSeat >= 0) {
+      room.seats[prevSeat].uid = null; room.seats[prevSeat].muted = false;
+      if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + prevSeat + "/uid").set(null).catch(function () { /* */ });
     }
-
-    if (mySeat === i) {
-      actionList("مقعدي #" + (i + 1), [
-        { label: UI.micMuted ? "🎤 فتح المايك" : "🔇 كتم المايك", fn: function () {
-          UI.micMuted = !UI.micMuted;
-          renderRoom();
-          syncMicHardwareState();
-        } },
-        { label: "⬇️ النزول من المقعد", fn: function () { stepOffSeat(room, i); } }
-      ]);
-      return;
-    }
-
-    s.uid = S.me.id;
-    s.muted = false;
-    UI.micMuted = false;
-    room.listeners = room.listeners.filter(function (x) { return x !== S.me.id; });
-    bindSeatDisconnect(room.id, i);
-
-    if (cloud.on && cloud.db) {
-      var ups = {};
-      ups["rooms/" + room.id + "/seats/" + i + "/uid"] = S.me.id;
-      ups["rooms/" + room.id + "/seats/" + i + "/muted"] = false;
-      ups["rooms/" + room.id + "/listeners/" + S.me.id] = null;
-      cloud.db.ref().update(ups).catch(function () { /* */ });
-    }
-    completeTask("mic", 25);
-    saveLocal();
+    s.uid = S.me.id; s.muted = false; UI.micMuted = false;
+    if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + i + "/uid").set(S.me.id).catch(function () { /* */ });
     renderRoom();
     joinVoiceChannel(room.id, "publisher");
-    toast("صعدت إلى المقعد #" + (i + 1) + " 🎙️");
   }
 
-  function handleMicButtonClick() {
-    var room = getRoom(UI.roomId);
-    if (!room) return;
-    var mySeat = seatIndexOf(room, S.me.id);
+  /* ========= الدردشة الخاصة: متاحة للأصدقاء فقط ========= */
+  function openDM(id) {
+    if (!isFriendWith(id)) {
+      toast("الدردشة الخاصة متاحة للأصدقاء فقط 👥");
+      return;
+    }
+    closeSheet();
+    UI.dmId = id;
+    if (!S.dms[id]) S.dms[id] = [];
+    var u = getUser(id);
+    setAvatarEl($("chat-avatar"), u);
+    $("chat-title").textContent = u.name;
+    $("chat-sub").textContent = "صديق • ID: " + displayUserId(u);
+    $("chat-view").classList.add("open");
+    renderDM();
+    offDb("dm");
+    if (cloud.on && cloud.db) {
+      onDb("dm", cloud.db.ref("dms/" + dmThreadId(S.me.id, id)).limitToLast(100), "value", function (snap) {
+        var v = snap.val() || {};
+        S.dms[id] = Object.keys(v).map(function (k) { return Object.assign({ key: k }, v[k]); });
+        saveLocal();
+        renderDM();
+      });
+    }
+  }
 
-    if (mySeat < 0) {
-      var freeIdx = findFirstFreeSeatIndex(room);
-      if (freeIdx < 0) {
-        toast("لا يوجد مقعد فارغ متاح حالياً");
-        return;
-      }
-      room.seats[freeIdx].uid = S.me.id;
-      room.seats[freeIdx].muted = false;
-      UI.micMuted = false;
-      room.listeners = room.listeners.filter(function (x) { return x !== S.me.id; });
-      bindSeatDisconnect(room.id, freeIdx);
+  function closeDM() {
+    offDb("dm");
+    UI.dmId = null;
+    $("chat-view").classList.remove("open");
+    renderAll();
+  }
+
+  function renderDM() {
+    var id = UI.dmId;
+    if (!id) return;
+    var box = $("chat-msgs");
+    box.innerHTML = (S.dms[id] || []).map(function (m) {
+      var me = m.from === S.me.id;
+      return '<div class="msg ' + (me ? "me" : "") + '"><div>' + esc(m.text) + '</div><div class="tm">' + timeStr(m.t) + "</div></div>";
+    }).join("");
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function sendDM(text) {
+    var id = UI.dmId;
+    text = String(text || "").trim();
+    if (!id || !text) return;
+    if (!isFriendWith(id)) {
+      toast("لا يمكنك إرسال رسالة؛ يجب أن يكون المستخدم صديقاً 👥");
+      closeDM();
+      return;
+    }
+    var msgObj = { from: S.me.id, to: id, text: clean(text), t: now() };
+    if (!S.dms[id]) S.dms[id] = [];
+    S.dms[id].push(msgObj);
+    if (cloud.on && cloud.db) {
+      var tid = dmThreadId(S.me.id, id);
+      cloud.db.ref("dms/" + tid).push(Object.assign({}, msgObj, { t: serverTs() })).catch(function () { /* */ });
+      cloud.db.ref("userDms/" + S.me.id + "/" + id).set(true).catch(function () { /* */ });
+      cloud.db.ref("userDms/" + id + "/" + S.me.id).set(true).catch(function () { /* */ });
+    }
+    saveLocal();
+    renderDM();
+  }
+
+  function openUserProfile(id) {
+    var u = getUser(id);
+    if (!u || !u.id || id === S.me.id) return;
+    var isF = isFriendWith(id);
+    var html = '<div style="display:flex;gap:12px;align-items:center">' + avatarHTML(u, "lg") +
+      '<div class="info"><div class="name">' + esc(u.name) + '</div><div class="meta">ID: ' + esc(displayUserId(u)) + " • " + (isF ? "صديق ✔" : "ليس صديقاً") + "</div></div></div>" +
+      '<div class="social-grid">' +
+        (isF
+          ? '<button class="btn" id="up-dm" type="button">💬 رسالة خاصة</button>'
+          : '<button class="btn" id="up-add" type="button">+ إضافة صديق</button>') +
+        '<button class="btn ghost" id="up-close" type="button">إغلاق</button>' +
+      "</div>";
+    openSheet(html);
+    if ($("up-dm")) $("up-dm").onclick = function () { closeSheet(); if (UI.roomId) leaveRoom(true); openDM(id); };
+    if ($("up-add")) $("up-add").onclick = function () {
+      if (S.friends.indexOf(id) < 0) S.friends.push(id);
       if (cloud.on && cloud.db) {
         var ups = {};
-        ups["rooms/" + room.id + "/seats/" + freeIdx + "/uid"] = S.me.id;
-        ups["rooms/" + room.id + "/seats/" + freeIdx + "/muted"] = false;
-        ups["rooms/" + room.id + "/listeners/" + S.me.id] = null;
+        ups["social/" + S.me.id + "/friends/" + id] = true;
+        ups["social/" + id + "/friends/" + S.me.id] = true;
         cloud.db.ref().update(ups).catch(function () { /* */ });
       }
-      completeTask("mic", 25);
-      saveLocal();
-      renderRoom();
-      joinVoiceChannel(room.id, "publisher");
-      toast("صعدت إلى المقعد #" + (freeIdx + 1) + " 🎙️");
-      return;
-    }
-
-    if (room.seats[mySeat].muted) {
-      toast("المايك مكتوم من إدارة الغرفة");
-      return;
-    }
-
-    UI.micMuted = !UI.micMuted;
-    renderRoom();
-    syncMicHardwareState();
-    toast(UI.micMuted ? "تم كتم المايك 🔇" : "تم فتح المايك 🎤");
-  }
-
-  /* ========= 17. الهدايا الموجهة للمقاعد المشغولة فقط (منع الإرسال على مايك فاضي) ========= */
-  function getSeatedRecipientIds(room) {
-    var ids = [];
-    if (!room || !Array.isArray(room.seats)) return ids;
-    room.seats.forEach(function (s) {
-      if (s && s.uid && ids.indexOf(s.uid) < 0) {
-        ids.push(s.uid);
-      }
-    });
-    return ids;
-  }
-
-  function isTargetSeatedInRoom(room, targetUid) {
-    if (!room || !targetUid || targetUid === "room") return false;
-    return seatIndexOf(room, targetUid) >= 0;
+      save(); closeSheet(); renderAll(); toast("تمت الإضافة كصديق ✅");
+    };
+    if ($("up-close")) $("up-close").onclick = closeSheet;
   }
 
   function openGiftSheet() {
     var room = getRoom(UI.roomId);
     if (!room) return;
-    var seatedIds = getSeatedRecipientIds(room);
-
-    if (!seatedIds.length) {
-      toast("لا يمكنك إرسال هدية على مايك فاضي — لا يوجد أحد جالس على مقعد حالياً");
-      return;
-    }
-
-    var othersSeated = seatedIds.filter(function (id) { return id !== S.me.id; });
-    if (!UI.giftTarget || !isTargetSeatedInRoom(room, UI.giftTarget)) {
-      UI.giftTarget = othersSeated[0] || seatedIds[0];
-    }
+    var seatedIds = [];
+    room.seats.forEach(function (s) { if (s && s.uid && seatedIds.indexOf(s.uid) < 0) seatedIds.push(s.uid); });
+    if (!seatedIds.length) { toast("لا يوجد عضو جالس على مقعد لإرسال الهدية له"); return; }
+    if (!UI.giftTarget || seatedIds.indexOf(UI.giftTarget) < 0) UI.giftTarget = seatedIds[0];
 
     var targetsHtml = seatedIds.map(function (id) {
       var u = getUser(id);
-      var sel = UI.giftTarget === id ? "sel" : "";
-      var avInner = u.photo ? '<img src="' + esc(u.photo) + '" alt="" />' : esc(initials(u.name));
-      return '<button class="gt-chip ' + sel + '" data-gtarget="' + esc(id) + '" type="button">' +
-        '<span class="gt-chip-av">' + avInner + "</span>" +
-        "<span>" + esc(u.name) + (id === S.me.id ? " (أنت)" : "") + "</span></button>";
+      return '<button class="gt-chip ' + (UI.giftTarget === id ? "sel" : "") + '" data-gtarget="' + esc(id) + '" type="button">' + esc(u.name) + "</button>";
     }).join("");
-
-    var grid = GIFTS.map(function (g) {
+    var gridHtml = GIFTS.map(function (g) {
       return '<div class="gift ' + (UI.giftSel === g.id ? "sel" : "") + '" data-gift="' + g.id + '"><div class="e">' + g.e + "</div><small>" + g.n + '</small><span class="p">🪙 ' + g.p + "</span></div>";
     }).join("");
 
-    openSheet("<h3>🎁 إرسال هدية</h3>" +
-      '<div class="small">اختر المستلم (الأعضاء الجالسون على المايك فقط):</div>' +
-      '<div class="gift-targets-bar">' + targetsHtml + "</div>" +
-      '<div class="giftgrid">' + grid + "</div>" +
-      '<div class="small">رصيدك الحالي: <b>🪙 ' + S.me.coins + '</b></div><button class="btn block" id="send-gift" type="button">إرسال الهدية</button>');
-
+    openSheet("<h3>🎁 إرسال هدية</h3><div class='gift-targets-bar'>" + targetsHtml + "</div><div class='giftgrid'>" + gridHtml + "</div><button class='btn block' id='send-gift' type='button'>إرسال</button>");
     $("sheet").onclick = function (e) {
       var gt = e.target.closest("[data-gtarget]");
       if (gt) {
         UI.giftTarget = gt.getAttribute("data-gtarget");
-        $("sheet").querySelectorAll("[data-gtarget]").forEach(function (c) {
-          c.classList.toggle("sel", c.getAttribute("data-gtarget") === UI.giftTarget);
-        });
+        $("sheet").querySelectorAll("[data-gtarget]").forEach(function (c) { c.classList.toggle("sel", c.getAttribute("data-gtarget") === UI.giftTarget); });
         return;
       }
       var g = e.target.closest("[data-gift]");
@@ -3348,1096 +1244,195 @@
         return;
       }
       if (e.target.id === "send-gift") {
-        if (UI.giftSending) return;
-        var curRoom = getRoom(UI.roomId);
-        if (!curRoom) { closeSheet(); return; }
-
-        if (!UI.giftTarget || !isTargetSeatedInRoom(curRoom, UI.giftTarget)) {
-          toast("لا يمكنك إرسال هدية على مايك فاضي — اختر مستخدماً جالساً على مقعد");
-          return;
-        }
-
         var giftObj = GIFTS.filter(function (x) { return x.id === UI.giftSel; })[0];
         if (!giftObj) return;
-        if (S.me.coins < giftObj.p) { toast("عملاتك غير كافية 🪙"); return; }
-
-        UI.giftSending = true;
-        var sendBtn = $("send-gift");
-        if (sendBtn) sendBtn.disabled = true;
-
-        var targetUid = UI.giftTarget;
-        var recU = getUser(targetUid);
-        var toName = recU.name || "مستخدم";
-        var econ = getGiftEconomyRule(giftObj);
-        var giftTxId = "g_" + now() + "_" + Math.random().toString(36).slice(2, 7);
-
+        if (S.me.coins < giftObj.p) { toast("رصيد المحفظة غير كافٍ"); return; }
+        var recU = getUser(UI.giftTarget);
         S.me.coins -= giftObj.p;
-        S.me.gifts = (S.me.gifts || 0) + 1;
-        S.me.sent = (S.me.sent || 0) + 1;
-        S.me.wealth = Number(S.me.wealth || 0) + econ.wealthGain;
-        S.me.wealthLog = (S.me.wealthLog || []).concat([{
-          id: giftTxId, label: "إرسال " + giftObj.n + " إلى " + toName,
-          gain: econ.wealthGain, t: now()
-        }]).slice(-25);
-
-        if (targetUid === S.me.id) {
-          S.me.charm = Number(S.me.charm || 0) + econ.charmGain;
-          S.me.receivedGifts = (S.me.receivedGifts || []).concat([{
-            id: giftTxId, e: giftObj.e, n: giftObj.n, p: giftObj.p,
-            charmGain: econ.charmGain, fromId: S.me.id, fromName: S.me.name, t: now()
-          }]).slice(-30);
-          S.me.charmLog = (S.me.charmLog || []).concat([{
-            id: giftTxId, e: giftObj.e, n: giftObj.n,
-            fromName: S.me.name, gain: econ.charmGain, t: now()
-          }]).slice(-25);
-        }
-
-        S.me.ach.giver = true;
-        addXP(econ.xpGain);
-        S.giftsLog.push({ id: giftTxId, to: targetUid, gift: giftObj, cost: giftObj.p, t: now() });
-        S.txs.push({ t: "gift", amt: -giftObj.p, note: "هدية " + giftObj.n + " إلى " + toName, time: now() });
-
-        if (cloud.on && cloud.db && targetUid !== S.me.id) {
-          var recGiftItem = {
-            id: giftTxId, e: giftObj.e, n: giftObj.n, p: giftObj.p,
-            charmGain: econ.charmGain, fromId: S.me.id, fromName: S.me.name, t: now()
-          };
-          var recCharmItem = {
-            id: giftTxId, e: giftObj.e, n: giftObj.n,
-            fromName: S.me.name, gain: econ.charmGain, t: now()
-          };
-          cloud.db.ref("users/" + targetUid + "/charm").transaction(function (c) { return (Number(c) || 0) + econ.charmGain; }).catch(function () { /* */ });
-          cloud.db.ref("users/" + targetUid + "/gifts").transaction(function (c) { return (Number(c) || 0) + 1; }).catch(function () { /* */ });
-          cloud.db.ref("users/" + targetUid + "/receivedGifts").transaction(function (arr) {
-            var list = Array.isArray(arr) ? arr.slice(-29) : [];
-            list.push(recGiftItem);
-            return list;
-          }).catch(function () { /* */ });
-          cloud.db.ref("users/" + targetUid + "/charmLog").transaction(function (arr) {
-            var list = Array.isArray(arr) ? arr.slice(-24) : [];
-            list.push(recCharmItem);
-            return list;
-          }).catch(function () { /* */ });
-          addNotif(giftObj.e, S.me.name + " أرسل لك " + giftObj.n + " (+ " + econ.charmGain + " جاذبية ✨)", targetUid);
-        }
-
-        pushRoomMsg(curRoom, {
-          from: S.me.id,
-          text: "أرسل " + giftObj.e + " " + giftObj.n + " إلى " + toName + "!",
-          giftAnim: { e: giftObj.e, fromName: S.me.name, toUid: targetUid, toName: toName }
-        });
-
-        save();
-        closeSheet();
-        renderTop();
-        renderRoom();
-        showFlyGiftToSeat(giftObj.e, S.me.name, targetUid, toName);
-        toast("تم إرسال " + giftObj.n + " إلى " + toName + " " + giftObj.e);
-
-        setTimeout(function () {
-          UI.giftSending = false;
-        }, 350);
+        S.me.wealth = Number(S.me.wealth || 0) + giftObj.p;
+        if (UI.giftTarget === S.me.id) S.me.charm = Number(S.me.charm || 0) + giftObj.p;
+        else if (cloud.on && cloud.db) cloud.db.ref("users/" + UI.giftTarget + "/charm").transaction(function (c) { return (Number(c) || 0) + giftObj.p; }).catch(function () { /* */ });
+        pushRoomMsg(room, { from: S.me.id, text: "أرسل " + giftObj.e + " " + giftObj.n + " إلى " + recU.name, giftAnim: { e: giftObj.e, fromName: S.me.name, toUid: UI.giftTarget, toName: recU.name } });
+        save(); closeSheet(); renderAll();
+        showFlyGiftToSeat(giftObj.e, S.me.name, UI.giftTarget, recU.name);
+        toast("تم إرسال الهدية ✅");
       }
     };
   }
 
-  /* ========= 18. قائمة الغرفة (تغيير الاسم لأي عضو، تغيير الصورة، خلفية 3D، سؤال، صراحة، إدارة) ========= */
-  function openRoomMenu() {
-    var room = getRoom(UI.roomId);
-    if (!room) return;
-    var myRole = role(room, S.me.id);
-    var isOwner = room.owner === S.me.id;
-
-    var items = [
-      { label: "⬇️ تصغير الغرفة لدائرة عائمة", fn: minimizeRoomToFloatingOrb },
-      { label: "✏️ تغيير اسم الغرفة", fn: function () { openRenameRoomSheet(room); } },
-      { label: "🖼️ تغيير صورة الغرفة", fn: function () {
-        var inp = $("room-photo-input");
-        if (inp) inp.click();
-      } },
-      { label: "🎨 تغيير خلفية الغرفة (ألوان / معرض الصور)", fn: function () {
-        openSheet("<h3>🎨 تخصيص خلفية الغرفة</h3>" +
-          ROOM_THEMES.map(function (th) {
-            return '<button class="btn ghost block" data-th="' + th.id + '" style="margin-bottom:8px" type="button">' + esc(th.name) + "</button>";
-          }).join("") +
-          '<label style="margin-top:8px">أو اختر صورة خلفية من جهازك</label>' +
-          '<input id="th-img-file" type="file" accept="image/*" />');
-
-        $("sheet").onclick = function (e) {
-          var b = e.target.closest("[data-th]");
-          if (!b) return;
-          var chosen = ROOM_THEMES.filter(function (x) { return x.id === b.getAttribute("data-th"); })[0] || ROOM_THEMES[0];
-          var nextTheme = { id: chosen.id, name: chosen.name, bg: chosen.bg, bgImage: "", accent: chosen.accent };
-          room.theme = nextTheme;
-          applyRoomTheme(nextTheme);
-          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/theme").set(nextTheme).catch(function () { /* */ });
-          saveLocal(); closeSheet(); toast("تم تغيير خلفية الغرفة 🎨");
-        };
-
-        $("th-img-file").onchange = async function () {
-          var f = this.files && this.files[0];
-          if (!f) return;
-          try {
-            var dataUrl = await readImageFileAsDataUrl(f, 540, 0.58);
-            var customTheme = { id: "custom", name: "خلفية مخصصة", bg: ROOM_THEMES[0].bg, bgImage: dataUrl, accent: "#ec4899" };
-            room.theme = customTheme;
-            applyRoomTheme(customTheme);
-            if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/theme").set(customTheme).catch(function () { /* */ });
-            saveLocal(); closeSheet(); toast("تم تعيين صورة خلفية الغرفة ✅");
-          } catch (err) {
-            toast(err.message || "تعذر تحميل الصورة");
-          }
-        };
-      } },
-      { label: "🎲 صراحة أو تحدٍ", fn: function () {
-        var pick = TRUTH_OR_DARE[Math.floor(Math.random() * TRUTH_OR_DARE.length)];
-        pushRoomMsg(room, { sys: true, text: "🎲 " + pick });
-      } },
-      { label: "🧠 طرح سؤال تفاعلي للغرفة", fn: function () {
-        var qItem = QUIZ_BANK[Math.floor(Math.random() * QUIZ_BANK.length)];
-        var qObj = { active: true, q: qItem.q, opts: qItem.opts, ans: qItem.ans, answers: {} };
-        UI.quiz = qObj;
-        renderQuizBox();
-        if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/quiz/current").set(qObj).catch(function () { /* */ });
-        pushRoomMsg(room, { sys: true, text: "🧠 تم طرح سؤال تفاعلي جديد في الغرفة!" });
-      } },
-      { label: "🚪 مغادرة الغرفة نهائياً", danger: true, fn: function () { leaveRoom(false); } }
-    ];
-
-    if (myRole === "owner" || myRole === "mod") {
-      items.splice(3, 0,
-        { label: "📌 تثبيت إعلان الغرفة", fn: function () {
-          openSheet('<h3>📌 إعلان الغرفة</h3><input id="pin-in" maxlength="100" value="' + esc(room.pinned) + '" placeholder="اكتب الإعلان..." /><button class="btn block" id="pin-ok" type="button">حفظ</button>');
-          $("pin-ok").onclick = function () {
-            room.pinned = clean($("pin-in").value.trim());
-            if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/pinned").set(room.pinned).catch(function () { /* */ });
-            saveLocal(); closeSheet(); renderRoom(); toast("تم التحديث");
-          };
-        } },
-        { label: room.locked ? "🔓 فتح قفل الغرفة" : "🔒 قفل الغرفة", fn: function () {
-          room.locked = !room.locked;
-          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/locked").set(room.locked).catch(function () { /* */ });
-          saveLocal(); renderRoom(); toast(room.locked ? "تم قفل الغرفة" : "تم فتح الغرفة");
-        } },
-        { label: "🧹 مسح رسائل الغرفة", fn: function () {
-          room.msgs = [];
-          cloud.roomMsgs[room.id] = [];
-          if (cloud.on && cloud.db) cloud.db.ref("roomMessages/" + room.id).remove().catch(function () { /* */ });
-          saveLocal(); renderRoomChat(); toast("تم مسح الرسائل");
-        } }
-      );
-    }
-
-    if (isOwner) {
-      items.push({ label: "🗑️ إغلاق وحذف الغرفة", danger: true, fn: function () {
-        confirmBox("هل تريد حذف هذه الغرفة نهائياً؟", function () {
-          var rid = room.id;
-          leaveRoom(true);
-          S.rooms = S.rooms.filter(function (r) { return r.id !== rid; });
-          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + rid).remove().catch(function () { /* */ });
-          saveLocal(); renderAll(); toast("تم حذف الغرفة");
-        });
-      } });
-    }
-
-    actionList(room.name, items);
-  }
-
-  function openRoomParticipantsSheet() {
-    var room = getRoom(UI.roomId);
-    if (!room) return;
-    var ids = getRoomParticipantIds(room);
-    var myRole = role(room, S.me.id);
-    var isOwner = room.owner === S.me.id;
-
-    var html = "<h3>🎧 المتواجدون في الغرفة (" + ids.length + ")</h3>";
-    if (!ids.length) {
-      html += '<div class="empty">لا يوجد أعضاء متواجدون حالياً</div>';
-    } else {
-      html += ids.map(function (uidItem) {
-        var u = getUser(uidItem);
-        var spId = displayUserId(u);
-        var sIdx = seatIndexOf(room, uidItem);
-        var isMod = (room.mods || []).indexOf(uidItem) >= 0;
-        var st = sIdx >= 0 ? "🪑 مقعد #" + (sIdx + 1) : "👂 مستمع";
-        var rBadge = uidItem === room.owner ? "👑 المالك" : (isMod ? "🛡️ مشرف" : st);
-        var modBtn = (isOwner && uidItem !== S.me.id)
-          ? '<button class="btn sm ghost" data-togglemod="' + esc(uidItem) + '" type="button">' + (isMod ? "إزالة إشراف" : "إشراف") + "</button>"
-          : "";
-        return '<div class="row glass" style="margin-bottom:8px">' +
-          '<div data-profile="' + esc(uidItem) + '">' + avatarHTML(u, "sm") + "</div>" +
-          '<div class="info" data-profile="' + esc(uidItem) + '"><div class="name">' + userNameHTML(u) + '</div><div class="meta">' + rBadge + " • ID: " + esc(spId) + "</div></div>" +
-          copyBtnHTML(spId, "📋") + modBtn + "</div>";
-      }).join("");
-    }
-    openSheet(html);
-
-    $("sheet").onclick = function (e) {
-      var cpBtn = e.target.closest("[data-copyval]");
-      if (cpBtn) {
-        e.stopPropagation();
-        copyText(cpBtn.getAttribute("data-copyval"), "تم نسخ User ID 📋");
-        return;
-      }
-      var mb = e.target.closest("[data-togglemod]");
-      if (mb && isOwner) {
-        var targetId = mb.getAttribute("data-togglemod");
-        var idx = room.mods.indexOf(targetId);
-        if (idx >= 0) {
-          room.mods.splice(idx, 1);
-          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/mods/" + targetId).remove().catch(function () { /* */ });
-          toast("تمت إزالة الإشراف");
-        } else {
-          room.mods.push(targetId);
-          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/mods/" + targetId).set(true).catch(function () { /* */ });
-          toast("تم تعيينه مشرفاً 🛡️");
-        }
-        saveLocal();
-        renderRoom();
-        openRoomParticipantsSheet();
-        return;
-      }
-      var pr = e.target.closest("[data-profile]");
-      if (pr) {
-        openUserProfile(pr.getAttribute("data-profile"));
-      }
-    };
-  }
-
-  /* ========= 19. الصداقة والرسائل الخاصة ========= */
-  function sendFriendReq(id) {
-    if (S.friends.indexOf(id) >= 0) { toast("بالفعل صديق"); return; }
-    if (S.sentReq.indexOf(id) >= 0) { toast("تم إرسال الطلب مسبقاً"); return; }
-    S.sentReq.push(id);
-    if (cloud.on && cloud.db) {
-      var ups = {};
-      ups["social/" + S.me.id + "/sentReq/" + id] = true;
-      ups["social/" + id + "/requests/" + S.me.id] = true;
-      cloud.db.ref().update(ups).catch(function () { /* */ });
-      addNotif("👥", S.me.name + " أرسل لك طلب صداقة.", id);
-    } else {
-      S.friends.push(id);
-    }
-    completeTask("friend", 25);
-    save(); toast("تم إرسال طلب الصداقة ✅");
-  }
-
-  function acceptFriend(id) {
-    S.requests = S.requests.filter(function (x) { return x !== id; });
-    S.sentReq = S.sentReq.filter(function (x) { return x !== id; });
-    if (S.friends.indexOf(id) < 0) S.friends.push(id);
-    S.me.ach.social = true;
-    if (cloud.on && cloud.db) {
-      var ups = {};
-      ups["social/" + S.me.id + "/requests/" + id] = null;
-      ups["social/" + S.me.id + "/sentReq/" + id] = null;
-      ups["social/" + S.me.id + "/friends/" + id] = true;
-      ups["social/" + id + "/friends/" + S.me.id] = true;
-      ups["social/" + id + "/sentReq/" + S.me.id] = null;
-      cloud.db.ref().update(ups).catch(function () { /* */ });
-      addNotif("🤝", S.me.name + " قبل طلب صداقتك!", id);
-    }
-    addXP(15); save(); renderAll(); toast("أصبحتما صديقين 🎉");
-  }
-
-  function rejectFriend(id) {
-    S.requests = S.requests.filter(function (x) { return x !== id; });
-    if (cloud.on && cloud.db) {
-      cloud.db.ref("social/" + S.me.id + "/requests/" + id).remove().catch(function () { /* */ });
-      cloud.db.ref("social/" + id + "/sentReq/" + S.me.id).remove().catch(function () { /* */ });
-    }
-    save(); renderAll(); toast("تم رفض الطلب");
-  }
-
-  function openDM(id) {
-    if (S.blocked.indexOf(id) >= 0) { toast("هذا المستخدم محظور"); return; }
-    closeSheet();
-    UI.dmId = id;
-    S.unread[id] = 0;
-    if (!S.dms[id]) S.dms[id] = [];
-    saveLocal(); renderTop();
-    var u = getUser(id);
-    setAvatarEl($("chat-avatar"), u);
-    $("chat-title").textContent = u.name;
-    $("chat-sub").textContent = "ID: " + displayUserId(u) + " • " + (u.online ? "متصل" : "غير متصل");
-    $("chat-view").classList.add("open");
-    renderDM();
-
-    cleanup("dm");
-    if (cloud.on && cloud.db) {
-      var tid = dmThreadId(S.me.id, id);
-      trackListener("dm", cloud.db.ref("dms/" + tid).limitToLast(100), "value", function (snap) {
-        var v = snap.val() || {};
-        S.dms[id] = Object.keys(v).map(function (k) { return Object.assign({ key: k }, v[k]); });
-        S.unread[id] = 0;
-        saveLocal();
-        renderDM();
-        renderTop();
-      });
-    }
-  }
-
-  function closeDM() {
-    cleanup("dm");
-    UI.dmId = null;
-    $("chat-view").classList.remove("open");
-    renderAll();
-  }
-
-  function renderDM() {
-    var id = UI.dmId; if (!id) return;
-    var box = $("chat-msgs");
-    box.innerHTML = (S.dms[id] || []).map(function (m) {
-      var me = m.from === S.me.id;
-      var inner = m.audio
-        ? '<audio controls src="' + esc(m.audio) + '" style="max-width:210px;height:34px"></audio>'
-        : esc(m.text);
-      return '<div class="msg ' + (me ? "me" : "") + '"><div>' + inner + '</div><div class="tm">' + timeStr(m.t) + "</div></div>";
-    }).join("");
-    box.scrollTop = box.scrollHeight;
-  }
-
-  function sendDM(text, audioDataUrl) {
-    var id = UI.dmId;
-    text = String(text || "").trim();
-    if (!id || (!text && !audioDataUrl)) return;
-    if (S.blocked.indexOf(id) >= 0) { toast("لا يمكن المراسلة لأن المستخدم محظور"); return; }
-    var msgObj = { from: S.me.id, to: id, text: clean(text), audio: audioDataUrl || "", t: now() };
-    if (!S.dms[id]) S.dms[id] = [];
-    S.dms[id].push(msgObj);
-    if (cloud.on && cloud.db) {
-      var tid = dmThreadId(S.me.id, id);
-      cloud.db.ref("dms/" + tid).push(Object.assign({}, msgObj, { t: serverTs() })).catch(function () { /* */ });
-      cloud.db.ref("userDms/" + S.me.id + "/" + id).set(true).catch(function () { /* */ });
-      cloud.db.ref("userDms/" + id + "/" + S.me.id).set(true).catch(function () { /* */ });
-      addNotif("💬", "رسالة جديدة من " + S.me.name + (audioDataUrl ? " 🎙️" : ": " + msgObj.text), id);
-    }
-    saveLocal(); renderDM();
-  }
-
-  function openUserProfile(id) {
-    var u = getUser(id);
-    if (!u || !u.id) return;
-    if (id === S.me.id) {
-      closeSheet();
-      go("profile");
-      return;
-    }
-
-    var spId = displayUserId(u);
-    var isF = S.friends.indexOf(id) >= 0;
-    var isFol = S.follows.indexOf(id) >= 0;
-    var isB = S.blocked.indexOf(id) >= 0;
-    var hasVip = (u.vip || 0) > 0;
-    var lv = computeLevelFromXp(u.xp || 0);
-
-    var room = null;
-    for (var i = 0; i < S.rooms.length; i++) if (inRoom(S.rooms[i], id)) { room = S.rooms[i]; break; }
-
-    var html = '<div style="display:flex;gap:12px;align-items:center">' +
-      '<div class="frame ' + (hasVip ? "vip-frame" : "") + '">' + avatarHTML(u, "lg") + "</div>" +
-      '<div class="info"><div class="name">' + userNameHTML(u) + '</div>' +
-      '<div class="meta" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span>ID: ' + esc(spId) + "</span>" + copyBtnHTML(spId, "📋") + "<span>• " + (u.online ? "🟢 متصل" : "⚫ غير متصل") + "</span></div>" +
-      '<div class="meta">' + esc(u.country || "🌍") + (room ? " • داخل: " + esc(room.name) : "") + "</div></div></div>" +
-      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' + wealthBadgeHTML(u.wealth || 0) + charmBadgeHTML(u.charm || 0) + "</div>" +
-      '<p style="margin:10px 0 6px;font-size:13px;line-height:1.6">' + esc(u.bio || "لا توجد نبذة") + "</p>" +
-      '<div class="pf-stats">' +
-        '<div class="stat"><b>' + lv + "</b><span>المستوى</span></div>" +
-        '<div class="stat"><b>' + (u.wealth || 0) + "</b><span>الثروة</span></div>" +
-        '<div class="stat"><b>' + (u.charm || 0) + "</b><span>الجاذبية</span></div>" +
-        '<div class="stat"><b>' + (u.followers || 0) + "</b><span>المتابعون</span></div>" +
-        '<div class="stat"><b>' + (u.following || 0) + "</b><span>يتابع</span></div>" +
-        '<div class="stat"><b>' + (u.friendsCount || 0) + "</b><span>الأصدقاء</span></div>" +
-      "</div>" +
-      '<div class="social-grid">' +
-        '<button class="btn ' + (isFol ? "ghost" : "") + '" data-act="follow" type="button">' + (isFol ? "✔ متابَع" : "➕ متابعة") + "</button>" +
-        '<button class="btn" data-act="dm" type="button">💬 رسالة</button>' +
-        (isF
-          ? '<button class="btn ghost" data-act="unfriend" type="button">💔 إزالة صديق</button>'
-          : (S.sentReq.indexOf(id) >= 0
-            ? '<button class="btn ghost" data-act="cancelreq" type="button">⏳ طلب مرسل</button>'
-            : '<button class="btn" data-act="add" type="button">👥 إضافة صديق</button>')) +
-        '<button class="btn ghost" data-act="block" type="button">' + (isB ? "فك الحظر" : "🚫 حظر") + "</button>" +
-      "</div>" +
-      '<div style="margin-top:10px">' + renderGiftsAndCollectionsHTML(u) + "</div>" +
-      renderVipSectionHTML(u, false) +
-      (room ? '<button class="btn block" data-act="joinroom" type="button">🚪 الانضمام إلى غرفة ' + esc(room.name) + "</button>" : "");
-
-    openSheet(html);
-
-    $("sheet").onclick = function (e) {
-      var cpBtn = e.target.closest("[data-copyval]");
-      if (cpBtn) {
-        e.stopPropagation();
-        copyText(cpBtn.getAttribute("data-copyval"), "تم نسخ User ID (" + spId + ") 📋");
-        return;
-      }
-      var b = e.target.closest("[data-act]");
-      if (!b) return;
-      var a = b.getAttribute("data-act");
-
-      if (a === "follow") {
-        if (isFol) {
-          S.follows = S.follows.filter(function (x) { return x !== id; });
-          if (cloud.on && cloud.db) {
-            cloud.db.ref("social/" + S.me.id + "/follows/" + id).remove().catch(function () { /* */ });
-            cloud.db.ref("users/" + id + "/followers").transaction(function (c) { return Math.max(0, (c || 0) - 1); }).catch(function () { /* */ });
-          }
-          toast("تم إلغاء المتابعة");
-        } else {
-          S.follows.push(id);
-          if (cloud.on && cloud.db) {
-            cloud.db.ref("social/" + S.me.id + "/follows/" + id).set(true).catch(function () { /* */ });
-            cloud.db.ref("users/" + id + "/followers").transaction(function (c) { return (c || 0) + 1; }).catch(function () { /* */ });
-            addNotif("➕", S.me.name + " بدأ بمتابعتك.", id);
-          }
-          toast("تمت المتابعة ✅");
-        }
-        saveLocal(); renderTop(); openUserProfile(id);
-      } else if (a === "dm") {
-        closeSheet();
-        if (UI.roomId) leaveRoom(false);
-        openDM(id);
-      } else if (a === "add") {
-        sendFriendReq(id);
-        openUserProfile(id);
-      } else if (a === "cancelreq") {
-        S.sentReq = S.sentReq.filter(function (x) { return x !== id; });
-        if (cloud.on && cloud.db) {
-          var ups = {};
-          ups["social/" + S.me.id + "/sentReq/" + id] = null;
-          ups["social/" + id + "/requests/" + S.me.id] = null;
-          cloud.db.ref().update(ups).catch(function () { /* */ });
-        }
-        saveLocal(); openUserProfile(id);
-      } else if (a === "unfriend") {
-        S.friends = S.friends.filter(function (x) { return x !== id; });
-        if (cloud.on && cloud.db) {
-          var ups2 = {};
-          ups2["social/" + S.me.id + "/friends/" + id] = null;
-          ups2["social/" + id + "/friends/" + S.me.id] = null;
-          cloud.db.ref().update(ups2).catch(function () { /* */ });
-        }
-        saveLocal(); toast("تم حذف الصديق"); openUserProfile(id);
-      } else if (a === "block") {
-        if (isB) {
-          S.blocked = S.blocked.filter(function (x) { return x !== id; });
-          if (cloud.on && cloud.db) cloud.db.ref("social/" + S.me.id + "/blocked/" + id).remove().catch(function () { /* */ });
-          toast("تم فك الحظر");
-        } else {
-          S.blocked.push(id);
-          S.friends = S.friends.filter(function (x) { return x !== id; });
-          if (cloud.on && cloud.db) {
-            var ups3 = {};
-            ups3["social/" + S.me.id + "/blocked/" + id] = true;
-            ups3["social/" + S.me.id + "/friends/" + id] = null;
-            ups3["social/" + id + "/friends/" + S.me.id] = null;
-            cloud.db.ref().update(ups3).catch(function () { /* */ });
-          }
-          toast("تم حظر المستخدم 🚫");
-        }
-        saveLocal(); renderAll(); openUserProfile(id);
-      } else if (a === "joinroom" && room) {
-        closeSheet();
-        enterRoom(room.id);
-      }
-    };
-  }
-
-  /* ========= 20. لوحة المتصدرين (أفضل 100: الثروة / الجاذبية / المستوى) ========= */
-  function getAllLeaderboardUsers() {
-    var map = {};
-    var meObj = getUser(S.me.id);
-    map[meObj.id] = meObj;
-
-    S.users.forEach(function (u) {
-      if (u && u.id) map[u.id] = Object.assign({}, getUser(u.id), u);
-    });
-    Object.keys(cloud.usersMap || {}).forEach(function (k) {
-      var cu = cloud.usersMap[k];
-      if (cu) map[k] = Object.assign({}, map[k] || {}, cu, { id: k });
-    });
-
-    return Object.keys(map).map(function (id) {
-      var u = map[id];
-      var xpVal = Number(u.xp || 0);
-      var lvVal = computeLevelFromXp(xpVal);
-      return Object.assign({}, u, {
-        xp: xpVal,
-        level: lvVal,
-        wealth: Number(u.wealth || 0),
-        charm: Number(u.charm || 0),
-        specialId: displayUserId(u)
-      });
-    });
-  }
-
-  function openLeaderboard() {
-    var tab = UI.leaderTab || "wealth";
-    var all = getAllLeaderboardUsers();
-
-    if (tab === "charm") {
-      all.sort(function (a, b) { return (b.charm - a.charm) || (b.xp - a.xp); });
-    } else if (tab === "level") {
-      all.sort(function (a, b) { return (b.xp - a.xp) || (b.wealth - a.wealth); });
-    } else {
-      all.sort(function (a, b) { return (b.wealth - a.wealth) || (b.xp - a.xp); });
-    }
-
-    var top100 = all.slice(0, 100);
-    var myRank = -1;
-    for (var i = 0; i < all.length; i++) {
-      if (all[i].id === S.me.id) { myRank = i + 1; break; }
-    }
-
-    var tabsHtml =
-      '<div class="tabs" style="margin-bottom:10px">' +
-        '<button class="tab ' + (tab === "wealth" ? "active" : "") + '" data-ltab="wealth" type="button">🪙 الثروة</button>' +
-        '<button class="tab ' + (tab === "charm" ? "active" : "") + '" data-ltab="charm" type="button">✨ الجاذبية</button>' +
-        '<button class="tab ' + (tab === "level" ? "active" : "") + '" data-ltab="level" type="button">⭐ المستوى</button>' +
-      "</div>";
-
-    var rowsHtml = top100.map(function (u, idx) {
-      var rank = idx + 1;
-      var medal = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : "#" + rank));
-      var metricText = tab === "charm"
-        ? "✨ جاذبية: <b>" + u.charm + "</b>"
-        : (tab === "level"
-          ? "⭐ Lv." + u.level + " • <b>" + u.xp + " XP</b>"
-          : "🪙 ثروة: <b>" + u.wealth + "</b>");
-
-      return '<div class="row glass" data-lprofile="' + esc(u.id) + '" style="margin-bottom:7px">' +
-        '<div style="width:32px;text-align:center;font-weight:800;font-size:' + (rank <= 3 ? "20px" : "12.5px") + '">' + medal + "</div>" +
-        avatarHTML(u, "sm") +
-        '<div class="info"><div class="name">' + esc(u.name) + " " + levelBadgeHTML(u.level) + '</div>' +
-        '<div class="meta">ID: ' + esc(u.specialId) + " • " + metricText + "</div></div>" +
-        copyBtnHTML(u.specialId, "📋") +
-      "</div>";
-    }).join("");
-
-    var myRankBanner = myRank > 0
-      ? '<div class="row glass" style="margin-bottom:10px;border-color:var(--border-hi)"><div class="info"><div class="name">📍 ترتيبك الحالي: #' + myRank + '</div><div class="meta">من أصل ' + all.length + " مستخدم</div></div></div>"
-      : "";
-
-    openSheet("<h3>🏆 المتصدرون (أفضل 100)</h3>" + tabsHtml + myRankBanner + (rowsHtml || '<div class="empty">لا توجد بيانات بعد</div>'));
-
-    $("sheet").onclick = function (e) {
-      var cpBtn = e.target.closest("[data-copyval]");
-      if (cpBtn) {
-        e.stopPropagation();
-        copyText(cpBtn.getAttribute("data-copyval"), "تم نسخ User ID 📋");
-        return;
-      }
-      var tb = e.target.closest("[data-ltab]");
-      if (tb) {
-        UI.leaderTab = tb.getAttribute("data-ltab");
-        openLeaderboard();
-        return;
-      }
-      var pr = e.target.closest("[data-lprofile]");
-      if (pr) {
-        openUserProfile(pr.getAttribute("data-lprofile"));
-      }
-    };
-  }
-
-  /* ========= 21. الملف الشخصي وتعديل البيانات و VIP والإعدادات ========= */
-  function buyVipTier(tierLevel) {
-    var tier = VIP_TIERS.filter(function (t) { return t.level === Number(tierLevel); })[0];
-    if (!tier) return;
-    if (S.me.coins < tier.cost) {
-      toast("عملاتك غير كافية لتفعيل " + tier.title + " 🪙");
-      return;
-    }
-    S.me.coins -= tier.cost;
-    S.me.vip = Math.max(Number(S.me.vip || 0), tier.level);
-    S.me.vipExp = Date.now() + tier.days * 86400000;
-    S.me.verified = true;
-    addXP(50);
-    S.txs.push({ t: "vip", amt: -tier.cost, note: "تفعيل " + tier.title, time: now() });
-    save();
-    renderAll();
-    toast("مبروك! تم تفعيل " + tier.title + " 👑");
-  }
-
-  function editProfile() {
-    var curLv = level();
-    var vipBadge = (S.me.vip || 0) > 0 ? '<span class="tag vip">VIP ' + S.me.vip + "</span>" : "";
-    openSheet("<h3>✏️ تعديل الملف الشخصي</h3>" +
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:12px;background:var(--card);border:1px solid var(--border);margin-bottom:8px">' +
-      '<div class="small"><b>ID: ' + esc(displayUserId(S.me)) + "</b> • Lv." + curLv + " " + vipBadge + "</div>" +
-      copyBtnHTML(displayUserId(S.me), "📋 نسخ ID") + "</div>" +
-      "<label>الاسم</label><input id='ed-name' maxlength='24' value='" + esc(S.me.name) + "' />" +
-      "<label>البلد</label><input id='ed-country' maxlength='24' value='" + esc(S.me.country || "🇪🇬 مصر") + "' />" +
-      "<label>صورة الحساب من المعرض (اختياري)</label><input id='ed-photo-file' type='file' accept='image/*' />" +
-      "<label>صورة الغلاف من المعرض (اختياري)</label><input id='ed-cover-file' type='file' accept='image/*' />" +
-      "<label>نبذة تعريفية</label><textarea id='ed-bio' rows='3' maxlength='140'>" + esc(S.me.bio) + "</textarea>" +
-      '<button class="btn block" id="ed-save" type="button">حفظ التعديلات</button>');
-
-    var uploadedPhoto = S.me.photo || "";
-    var uploadedCover = S.me.cover || "";
-
-    $("ed-photo-file").onchange = async function () {
-      var f = this.files && this.files[0];
-      if (!f) return;
-      try {
-        uploadedPhoto = await readImageFileAsDataUrl(f, 220, 0.72);
-        toast("تم اختيار صورة الحساب ✅");
-      } catch (err) {
-        toast(err.message || "تعذر تحميل الصورة");
-      }
-    };
-
-    $("ed-cover-file").onchange = async function () {
-      var f = this.files && this.files[0];
-      if (!f) return;
-      try {
-        uploadedCover = await readImageFileAsDataUrl(f, 540, 0.62);
-        toast("تم اختيار صورة الغلاف ✅");
-      } catch (err) {
-        toast(err.message || "تعذر تحميل الغلاف");
-      }
-    };
-
-    $("ed-save").onclick = function () {
-      var n = $("ed-name").value.trim();
-      if (!n) { toast("الاسم مطلوب"); return; }
-      S.me.name = clean(n);
-      S.me.country = clean($("ed-country").value.trim() || "🇪🇬 مصر");
-      S.me.photo = uploadedPhoto;
-      S.me.cover = uploadedCover;
-      S.me.bio = clean($("ed-bio").value.trim());
-      save(); closeSheet(); renderAll(); toast("تم حفظ التعديلات ✅");
-    };
-  }
-
-  function openSettings() {
-    openSheet("<h3>⚙️ الإعدادات</h3>" +
-      '<div class="switchrow"><span>الوضع النهاري الفاتح</span><input type="checkbox" id="st-theme" ' + (S.settings.lightTheme ? "checked" : "") + " /></div>" +
-      '<div class="switchrow"><span>الإشعارات</span><input type="checkbox" id="st-notif" ' + (S.settings.notif ? "checked" : "") + " /></div>" +
-      '<div class="switchrow"><span>الأصوات</span><input type="checkbox" id="st-sound" ' + (S.settings.sound ? "checked" : "") + " /></div>" +
-      '<button class="btn ghost block" id="st-switch-google" type="button">🔄 تبديل حساب Google</button>' +
-      '<button class="btn red block" id="st-logout" type="button">🚪 تسجيل الخروج</button>' +
-      '<button class="btn red block" id="st-reset" type="button">إعادة ضبط البيانات</button>');
-    $("st-theme").onchange = function () {
-      S.settings.lightTheme = this.checked;
-      applyThemeMode();
-      saveLocal();
-      renderTop();
-    };
-    $("st-notif").onchange = function () {
-      S.settings.notif = this.checked;
-      if (this.checked) requestBrowserNotifPermission();
-      saveLocal();
-    };
-    $("st-sound").onchange = function () { S.settings.sound = this.checked; saveLocal(); };
-    $("st-switch-google").onclick = function () {
-      closeSheet();
-      signInWithGoogle();
-    };
-    $("st-logout").onclick = function () {
-      closeSheet();
-      signOutAccount();
-    };
-    $("st-reset").onclick = function () {
-      confirmBox("سيتم حذف بياناتك المحلية وإعادة ضبط التطبيق. هل أنت متأكد؟", function () {
-        localStorage.removeItem(CONFIG.storageKey);
-        location.reload();
-      });
-    };
-  }
-
-  /* ========= 22. ربط الأحداث ========= */
   function bindEvents() {
-    if ($("google-login-btn")) $("google-login-btn").onclick = signInWithGoogle;
-    if ($("guest-login-btn")) $("guest-login-btn").onclick = signInAsGuest;
-
+    $("google-login-btn").onclick = signInWithGoogle;
+    $("guest-login-btn").onclick = signInAsGuest;
     document.querySelectorAll(".navbtn").forEach(function (b) { b.onclick = function () { go(b.getAttribute("data-page")); }; });
     $("avatar-top").onclick = function () { go("profile"); };
-    if ($("theme-toggle-btn")) {
-      $("theme-toggle-btn").onclick = function () {
-        S.settings.lightTheme = !S.settings.lightTheme;
-        applyThemeMode();
-        saveLocal();
-        renderTop();
-        toast(S.settings.lightTheme ? "تم تفعيل الوضع النهاري ☀️" : "تم تفعيل الوضع الليلي 🌙");
-      };
-    }
-    $("notif-btn").onclick = openNotifs;
-    $("banner-create").onclick = openCreateRoom;
+    $("theme-toggle-btn").onclick = function () { S.settings.lightTheme = !S.settings.lightTheme; applyThemeMode(); saveLocal(); renderTop(); };
+    $("pf-settings-btn").onclick = openProfileSettingsSheet;
+    $("pf-copy-id").onclick = function () {
+      var idVal = displayUserId(S.me);
+      if (navigator.clipboard) navigator.clipboard.writeText(idVal).catch(function () { /* */ });
+      toast("تم نسخ ID: " + idVal);
+    };
     $("fab-create").onclick = openCreateRoom;
-    $("refresh-rooms").onclick = function () { renderHome(); toast("تم تحديث القائمة"); };
+    $("refresh-rooms").onclick = function () { renderHome(); toast("تم التحديث"); };
     $("search-input").oninput = function () { UI.query = this.value; renderHome(); };
     $("find-input").oninput = function () { UI.findQ = this.value; renderFriends(); };
-
-    document.querySelectorAll("#home-tabs .tab").forEach(function (t) {
-      t.onclick = function () { UI.filter = t.getAttribute("data-filter"); renderHome(); };
-    });
-    document.querySelectorAll("#rooms-tabs .tab").forEach(function (t) {
-      t.onclick = function () { UI.rfilter = t.getAttribute("data-rfilter"); renderRooms(); };
-    });
-    document.querySelectorAll("#friends-tabs .tab").forEach(function (t) {
-      t.onclick = function () { UI.ftab = t.getAttribute("data-ftab"); renderFriends(); };
-    });
-    document.querySelectorAll("#pf-subtabs .tab").forEach(function (t) {
-      t.onclick = function () { UI.pftab = t.getAttribute("data-pftab"); renderProfile(); };
-    });
-
-    $("pf-photo-trigger").onclick = function () {
-      var inp = $("pf-photo-input");
-      if (inp) inp.click();
-    };
-    $("pf-photo-input").onchange = async function () {
-      var f = this.files && this.files[0];
-      if (!f) return;
-      try {
-        S.me.photo = await readImageFileAsDataUrl(f, 220, 0.72);
-        save(); renderAll(); toast("تم تحديث صورة الحساب ✅");
-      } catch (err) {
-        toast(err.message || "تعذر تحميل الصورة");
-      }
-    };
-
-    $("pf-cover-btn").onclick = function () {
-      var inp = $("pf-cover-input");
-      if (inp) inp.click();
-    };
-    $("pf-cover-input").onchange = async function () {
-      var f = this.files && this.files[0];
-      if (!f) return;
-      try {
-        S.me.cover = await readImageFileAsDataUrl(f, 540, 0.62);
-        save(); renderAll(); toast("تم تحديث صورة الغلاف ✅");
-      } catch (err) {
-        toast(err.message || "تعذر تحميل الغلاف");
-      }
-    };
-
-    $("pf-copy-id").onclick = function () {
-      copyText(displayUserId(S.me), "تم نسخ User ID (" + displayUserId(S.me) + ") 📋");
-    };
-    $("pf-share-btn").onclick = function () {
-      var shareUrl = location.origin + location.pathname + "?ref=" + encodeURIComponent(S.me.id);
-      copyText(shareUrl, "تم نسخ رابط الدعوة 🔗");
-    };
-    $("pf-vip-btn").onclick = function () {
-      UI.pftab = "vip";
-      renderProfile();
-    };
-    $("pf-leader").onclick = openLeaderboard;
-
-    $("pf-edit").onclick = editProfile;
-    $("pf-settings").onclick = openSettings;
-    $("pf-daily").onclick = function () {
-      if (S.me.daily && Date.now() - Number(S.me.daily) < 24 * 60 * 60 * 1000) { toast("استلمت مكافأة اليوم بالفعل"); return; }
-      S.me.daily = Date.now(); S.me.coins += 100; addXP(15);
-      S.txs.push({ t: "daily", amt: 100, note: "مكافأة يومية", time: now() });
-      save(); renderAll(); toast("حصلت على 100 عملة 🪙");
-    };
-    $("pf-topup").onclick = function () {
-      S.me.coins += 500;
-      S.me.wealth = Number(S.me.wealth || 0) + 500;
-      S.me.wealthLog = (S.me.wealthLog || []).concat([{
-        id: "top_" + now(), label: "شحن 500 عملة", gain: 500, t: now()
-      }]).slice(-25);
-      addXP(10);
-      S.txs.push({ t: "topup", amt: 500, note: "شحن رصيد تجريبي", time: now() });
-      save(); renderAll(); toast("تم إضافة 500 عملة 🪙 (+500 ثروة)");
-    };
+    document.querySelectorAll("#home-tabs .tab").forEach(function (t) { t.onclick = function () { UI.filter = t.getAttribute("data-filter"); renderHome(); }; });
+    document.querySelectorAll("#rooms-tabs .tab").forEach(function (t) { t.onclick = function () { UI.rfilter = t.getAttribute("data-rfilter"); renderRooms(); }; });
+    document.querySelectorAll("#friends-tabs .tab").forEach(function (t) { t.onclick = function () { UI.ftab = t.getAttribute("data-ftab"); renderFriends(); }; });
 
     document.addEventListener("click", function (e) {
-      var cpBtn = e.target.closest("[data-copyval]");
-      if (cpBtn && !$("sheet").classList.contains("open")) {
-        e.stopPropagation();
-        copyText(cpBtn.getAttribute("data-copyval"), "تم نسخ User ID 📋");
-        return;
-      }
-      var buyVipBtn = e.target.closest("[data-buyvip]");
-      if (buyVipBtn) {
-        buyVipTier(Number(buyVipBtn.getAttribute("data-buyvip")));
-        return;
-      }
       var en = e.target.closest("[data-enter]"); if (en) { enterRoom(en.getAttribute("data-enter")); return; }
       var pr = e.target.closest("[data-profile]"); if (pr) { openUserProfile(pr.getAttribute("data-profile")); return; }
       var dm = e.target.closest("[data-dm]"); if (dm) { openDM(dm.getAttribute("data-dm")); return; }
-      var af = e.target.closest("[data-addfriend]"); if (af) { sendFriendReq(af.getAttribute("data-addfriend")); return; }
-      var ac = e.target.closest("[data-accept]"); if (ac) { acceptFriend(ac.getAttribute("data-accept")); return; }
-      var rj = e.target.closest("[data-reject]"); if (rj) { rejectFriend(rj.getAttribute("data-reject")); return; }
-      var cr = e.target.closest("[data-cancelreq]"); if (cr) {
-        var cid = cr.getAttribute("data-cancelreq");
-        S.sentReq = S.sentReq.filter(function (x) { return x !== cid; });
-        if (cloud.on && cloud.db) {
-          var ups = {};
-          ups["social/" + S.me.id + "/sentReq/" + cid] = null;
-          ups["social/" + cid + "/requests/" + S.me.id] = null;
-          cloud.db.ref().update(ups).catch(function () { /* */ });
-        }
-        saveLocal(); renderAll(); return;
+      var af = e.target.closest("[data-addfriend]"); if (af) {
+        var fid = af.getAttribute("data-addfriend");
+        if (S.friends.indexOf(fid) < 0) S.friends.push(fid);
+        save(); renderAll(); toast("تمت الإضافة كصديق ✅");
+      }
+      var ac = e.target.closest("[data-accept]"); if (ac) {
+        var aid = ac.getAttribute("data-accept");
+        S.requests = S.requests.filter(function (x) { return x !== aid; });
+        if (S.friends.indexOf(aid) < 0) S.friends.push(aid);
+        save(); renderAll(); toast("أصبحتما صديقين ✅");
+      }
+      var rj = e.target.closest("[data-reject]"); if (rj) {
+        var rid = rj.getAttribute("data-reject");
+        S.requests = S.requests.filter(function (x) { return x !== rid; });
+        save(); renderAll();
       }
     });
 
     $("scrim").onclick = closeSheet;
-
     $("room-back").onclick = function () { leaveRoom(false); };
-    $("room-rename-quick").onclick = function () {
-      var room = getRoom(UI.roomId);
-      if (room) openRenameRoomSheet(room);
-    };
-    $("room-presence-btn").onclick = openRoomParticipantsSheet;
-    $("room-top-thumb").onclick = function () {
-      var inp = $("room-photo-input");
-      if (inp) inp.click();
-    };
+    $("room-rename-quick").onclick = function () { var r = getRoom(UI.roomId); if (r) openRenameRoomSheet(r); };
+    $("room-top-thumb").onclick = function () { $("room-photo-input").click(); };
     $("room-photo-input").onchange = async function () {
-      var f = this.files && this.files[0];
-      if (!f) return;
-      var room = getRoom(UI.roomId);
-      if (!room) return;
-      try {
-        var dataUrl = await readImageFileAsDataUrl(f, 260, 0.72);
-        room.roomPhoto = dataUrl;
-        if (cloud.on && cloud.db) {
-          cloud.db.ref("rooms/" + room.id + "/roomPhoto").set(dataUrl).catch(function () { /* */ });
-        }
-        saveLocal();
-        renderRoom();
-        renderFloatingOrb();
-        renderAll();
-        toast("تم تغيير صورة الغرفة ✅");
-      } catch (err) {
-        toast(err.message || "تعذر تحميل الصورة");
-      }
+      var f = this.files && this.files[0]; var r = getRoom(UI.roomId);
+      if (!f || !r) return;
+      r.roomPhoto = await readImageFileAsDataUrl(f, 260, 0.72);
+      if (cloud.on && cloud.db) cloud.db.ref("rooms/" + r.id + "/roomPhoto").set(r.roomPhoto).catch(function () { /* */ });
+      saveLocal(); renderRoom(); renderHome(); renderRooms();
     };
-
-    $("room-menu").onclick = openRoomMenu;
-    $("room-music").onclick = openMusicSheet;
+    $("room-menu").onclick = function () {
+      var r = getRoom(UI.roomId); if (!r) return;
+      openSheet("<h3>خيارات الغرفة</h3><div class='actlist'>" +
+        '<button id="rm-act-rename" type="button">✏️ تغيير اسم الغرفة</button>' +
+        '<button id="rm-act-float" type="button">⬇️ تصغير لدائرة عائمة</button>' +
+        '<button class="danger" id="rm-act-leave" type="button">🚪 مغادرة الغرفة</button></div>');
+      $("rm-act-rename").onclick = function () { closeSheet(); openRenameRoomSheet(r); };
+      $("rm-act-float").onclick = function () {
+        closeSheet(); offDb("room"); UI.floatingRoomId = r.id; UI.roomId = null;
+        $("room-view").classList.remove("open"); renderFloatingOrb(); renderAll();
+      };
+      $("rm-act-leave").onclick = function () { leaveRoom(false); };
+    };
+    $("room-music").onclick = function () {
+      var r = getRoom(UI.roomId); if (!r) return;
+      openSheet("<h3>🎵 الموسيقى</h3>" + DEFAULT_TRACKS.map(function (t) {
+        return '<div class="track-row" data-turl="' + esc(t.url) + '" data-ttitle="' + esc(t.title) + '">' +
+          '<div style="font-size:20px">' + t.cover + '</div><div class="info"><div class="name">' + esc(t.title) + '</div><div class="meta">' + esc(t.artist) + '</div></div><button class="btn sm" type="button">▶ تشغيل</button></div>';
+      }).join(""));
+      $("sheet").onclick = function (e) {
+        var row = e.target.closest("[data-turl]");
+        if (!row) return;
+        var u = row.getAttribute("data-turl"), title = row.getAttribute("data-ttitle");
+        if (!musicState.roomAudio) musicState.roomAudio = new Audio();
+        musicState.roomAudio.src = u;
+        musicState.roomAudio.play().catch(function () { /* */ });
+        $("music-mini").classList.remove("hidden");
+        $("music-mini-title").textContent = "🎵 " + title;
+        closeSheet();
+      };
+    };
     $("mmini-toggle").onclick = function () {
-      var room = getRoom(UI.roomId);
-      if (room) togglePlayPauseMusic(room);
+      if (!musicState.roomAudio) return;
+      if (musicState.roomAudio.paused) musicState.roomAudio.play().catch(function () { /* */ });
+      else musicState.roomAudio.pause();
     };
     $("mmini-skip").onclick = function () {
-      var room = getRoom(UI.roomId);
-      if (room) skipMusicTrack(room);
+      if (musicState.roomAudio) { musicState.roomAudio.pause(); musicState.roomAudio = null; }
+      $("music-mini").classList.add("hidden");
     };
-    $("mmini-open").onclick = openMusicSheet;
-
     $("room-speaker-btn").onclick = function () {
       UI.roomSpeakerMuted = !UI.roomSpeakerMuted;
       applyRoomSpeakerMuteState();
       if (!UI.roomSpeakerMuted) resumeAllRemoteAudioTracks();
-      toast(UI.roomSpeakerMuted ? "تم كتم صوت الغرفة 🔇" : "تم تشغيل صوت الغرفة 🔊");
     };
     $("audio-unlock-btn").onclick = function () {
-      UI.roomSpeakerMuted = false;
-      applyRoomSpeakerMuteState();
-      resumeAllRemoteAudioTracks();
-      showAudioUnlockBar(false);
-      toast("تم تشغيل الصوت 🔊");
+      UI.roomSpeakerMuted = false; applyRoomSpeakerMuteState(); resumeAllRemoteAudioTracks(); showAudioUnlockBar(false);
     };
-
-    $("mic-btn").onclick = handleMicButtonClick;
+    $("mic-btn").onclick = function () {
+      var r = getRoom(UI.roomId); if (!r) return;
+      if (seatIndexOf(r, S.me.id) < 0) {
+        var freeIdx = -1;
+        for (var i = 0; i < r.seats.length; i++) if (!r.seats[i].uid && !r.seats[i].locked) { freeIdx = i; break; }
+        if (freeIdx >= 0) seatClick(freeIdx);
+        else toast("لا يوجد مقعد فارغ");
+        return;
+      }
+      UI.micMuted = !UI.micMuted;
+      renderRoom(); syncMicHardwareState();
+    };
     $("room-gift").onclick = openGiftSheet;
-
     $("room-sticker").onclick = function () {
-      var html = "<h3>🎭 ملصقات وتفاعلات الغرفة</h3>" +
-        '<div class="giftgrid">' +
-        STICKERS.map(function (st) {
-          return '<div class="gift" data-stk="' + st.id + '"><div class="e">' + st.e + "</div><small>" + st.n + "</small></div>";
-        }).join("") +
-        "</div>";
-      openSheet(html);
+      openSheet("<h3>🎭 ملصقات</h3><div class='giftgrid'>" + STICKERS.map(function (st) {
+        return '<div class="gift" data-stk="' + st.id + '"><div class="e">' + st.e + '</div><small>' + st.n + "</small></div>";
+      }).join("") + "</div>");
       $("sheet").onclick = function (e) {
-        var item = e.target.closest("[data-stk]");
-        if (!item) return;
+        var item = e.target.closest("[data-stk]"); if (!item) return;
         var st = STICKERS.filter(function (x) { return x.id === item.getAttribute("data-stk"); })[0];
         if (!st) return;
-        var room = getRoom(UI.roomId);
-        closeSheet();
-        sendRoomMsg(st.n, { sticker: st.e });
-        showFlyGiftToSeat(st.e, S.me.name, "room", room ? room.name : "الغرفة");
-        if (room && cloud.on && cloud.db) {
-          cloud.db.ref("rooms/" + room.id + "/reactions").push({
-            emoji: st.e, fromName: S.me.name, targetUid: "room", targetName: room.name, t: serverTs()
-          }).catch(function () { /* */ });
-        }
+        closeSheet(); sendRoomMsg(st.n, { sticker: st.e });
       };
     };
-
     $("room-photo").onclick = function () {
-      openSheet('<h3>📷 إرسال صورة في الغرفة</h3><label>اختر صورة من جهازك</label><input id="rm-img-file" type="file" accept="image/*" />');
+      openSheet('<h3>📷 إرسال صورة</h3><input id="rm-img-file" type="file" accept="image/*" />');
       $("rm-img-file").onchange = async function () {
-        var f = this.files && this.files[0];
-        if (!f) return;
-        try {
-          var dataUrl = await readImageFileAsDataUrl(f, 380, 0.65);
-          closeSheet();
-          sendRoomMsg("", { img: dataUrl });
-        } catch (err) {
-          toast(err.message || "تعذر إرسال الصورة");
-        }
+        var f = this.files && this.files[0]; if (!f) return;
+        var url = await readImageFileAsDataUrl(f, 380, 0.65);
+        closeSheet(); sendRoomMsg("", { img: url });
       };
     };
-
     $("room-send").onclick = function () { var i = $("room-input"); sendRoomMsg(i.value); i.value = ""; };
     $("room-input").onkeydown = function (e) { if (e.key === "Enter") { sendRoomMsg(this.value); this.value = ""; } };
-
-    $("room-seats").onclick = function (e) {
-      var st = e.target.closest("[data-seat]");
-      if (!st) return;
-      seatClick(Number(st.getAttribute("data-seat")));
-    };
-
-    $("quiz-box").onclick = function (e) {
-      var ansBtn = e.target.closest("[data-quizans]");
-      if (!ansBtn || !UI.quiz || !UI.quiz.active) return;
-      var chosenIdx = Number(ansBtn.getAttribute("data-quizans"));
-      var room = getRoom(UI.roomId);
-      if (!room) return;
-      if (!UI.quiz.answers) UI.quiz.answers = {};
-      UI.quiz.answers[S.me.id] = chosenIdx;
-      if (cloud.on && cloud.db) {
-        cloud.db.ref("rooms/" + room.id + "/quiz/current/answers/" + S.me.id).set(chosenIdx).catch(function () { /* */ });
-      }
-      renderQuizBox();
-      if (chosenIdx === UI.quiz.ans) {
-        S.me.coins += 30;
-        addXP(15);
-        save();
-        renderTop();
-        pushRoomMsg(room, { sys: true, text: "🏆 " + S.me.name + " أجاب إجابة صحيحة وحصل على 30 عملة!" });
-        toast("إجابة صحيحة! +30 عملة 🏆");
-      } else {
-        toast("إجابة غير صحيحة، حاول مرة أخرى");
-      }
-    };
-
-    $("room-chat").onclick = function (e) {
-      var m = e.target.closest("[data-delmsg]");
-      if (!m) return;
-      var msgKey = m.getAttribute("data-delmsg");
-      var room = getRoom(UI.roomId);
-      if (!room) return;
-      confirmBox("حذف هذه الرسالة؟", function () {
-        room.msgs = (room.msgs || []).filter(function (x) { return String(x.key) !== String(msgKey); });
-        cloud.roomMsgs[room.id] = room.msgs;
-        if (cloud.on && cloud.db && msgKey && msgKey.indexOf("u") !== 0) {
-          cloud.db.ref("roomMessages/" + room.id + "/" + msgKey).remove().catch(function () { /* */ });
-        }
-        saveLocal(); renderRoomChat(); toast("تم الحذف");
-      });
-    };
+    $("room-seats").onclick = function (e) { var st = e.target.closest("[data-seat]"); if (st) seatClick(Number(st.getAttribute("data-seat"))); };
 
     $("chat-back").onclick = closeDM;
     $("chat-send").onclick = function () { var i = $("chat-input"); sendDM(i.value); i.value = ""; };
     $("chat-input").onkeydown = function (e) { if (e.key === "Enter") { sendDM(this.value); this.value = ""; } };
     $("chat-emoji").onclick = function () {
-      openSheet("<h3>اختر إيموجي</h3><div style='display:grid;grid-template-columns:repeat(6,1fr);gap:8px;font-size:26px;text-align:center'>" +
-        EMOJIS.map(function (em) { return '<button type="button" data-em="' + em + '" style="padding:6px">' + em + "</button>"; }).join("") + "</div>");
+      openSheet("<h3>إيموجي</h3><div style='display:grid;grid-template-columns:repeat(6,1fr);gap:8px;font-size:24px;text-align:center'>" +
+        EMOJIS.map(function (em) { return '<button type="button" data-em="' + em + '">' + em + "</button>"; }).join("") + "</div>");
       $("sheet").onclick = function (e) {
         var b = e.target.closest("[data-em]");
-        if (b) { $("chat-input").value += b.getAttribute("data-em"); closeSheet(); $("chat-input").focus(); }
+        if (b) { $("chat-input").value += b.getAttribute("data-em"); closeSheet(); }
       };
     };
 
-    var dmRecorder = null, dmChunks = [];
-    $("chat-voice").onclick = async function () {
-      if (dmRecorder && dmRecorder.state === "recording") {
-        dmRecorder.stop();
-        return;
-      }
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        toast("المتصفح لا يدعم تسجيل الرسائل الصوتية");
-        return;
-      }
-      try {
-        var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        dmChunks = [];
-        dmRecorder = new MediaRecorder(stream);
-        dmRecorder.ondataavailable = function (ev) {
-          if (ev.data && ev.data.size > 0) dmChunks.push(ev.data);
-        };
-        dmRecorder.onstop = function () {
-          stream.getTracks().forEach(function (tr) { tr.stop(); });
-          var blob = new Blob(dmChunks, { type: "audio/webm" });
-          var reader = new FileReader();
-          reader.onload = function () { sendDM("", String(reader.result || "")); };
-          reader.readAsDataURL(blob);
-          $("chat-voice").textContent = "🎙️";
-          toast("تم إرسال الرسالة الصوتية 🎙️");
-        };
-        dmRecorder.start();
-        $("chat-voice").textContent = "⏹️";
-        toast("جاري التسجيل... اضغط مرة أخرى للإرسال");
-      } catch (err) {
-        toast("تعذر الوصول للميكروفون");
-      }
-    };
-
-    $("chat-menu").onclick = function () {
-      var id = UI.dmId; if (!id) return;
-      actionList(getUser(id).name, [
-        { label: "👤 عرض الملف الشخصي", fn: function () { openUserProfile(id); } },
-        { label: "🧹 مسح المحادثة", fn: function () {
-          S.dms[id] = [];
-          if (cloud.on && cloud.db) cloud.db.ref("dms/" + dmThreadId(S.me.id, id)).remove().catch(function () { /* */ });
-          saveLocal(); renderDM(); toast("تم المسح");
-        } },
-        { label: "🚫 حظر المستخدم", danger: true, fn: function () {
-          if (S.blocked.indexOf(id) < 0) S.blocked.push(id);
-          if (cloud.on && cloud.db) cloud.db.ref("social/" + S.me.id + "/blocked/" + id).set(true).catch(function () { /* */ });
-          saveLocal(); closeDM(); toast("تم الحظر");
-        } }
-      ]);
-    };
-
-    attachFloatingOrbDragAndClick();
-
-    global.addEventListener("beforeunload", function () {
-      if (UI.roomId) {
-        var room = getRoom(UI.roomId);
-        if (room) {
-          var si = seatIndexOf(room, S.me.id);
-          if (si >= 0) { room.seats[si].uid = null; room.seats[si].muted = false; }
-          room.listeners = room.listeners.filter(function (x) { return x !== S.me.id; });
-          if (cloud.on && cloud.db) {
-            var ups = {};
-            if (si >= 0) {
-              ups["rooms/" + room.id + "/seats/" + si + "/uid"] = null;
-              ups["rooms/" + room.id + "/seats/" + si + "/muted"] = false;
-            }
-            ups["rooms/" + room.id + "/listeners/" + S.me.id] = null;
-            cloud.db.ref().update(ups).catch(function () { /* */ });
-          }
-          saveLocal();
-        }
-      }
-      if (cloud.on && cloud.db && S && S.me) {
-        cloud.db.ref("users/" + S.me.id + "/online").set(false).catch(function () { /* */ });
-      }
-      leaveVoiceChannel();
-    });
+    var orb = $("floating-room-orb");
+    if (orb) {
+      orb.onclick = function () {
+        var nextR = S.rooms.filter(function (x) { return x.id !== UI.floatingRoomId; })[0];
+        if (!nextR) { toast("لا توجد غرفة أخرى متاحة"); return; }
+        UI.floatingRoomId = null; renderFloatingOrb(); enterRoom(nextR.id);
+      };
+    }
   }
 
-  /* ========= 23. بدء التشغيل ========= */
   async function boot() {
     loadLocal();
     bindEvents();
     renderAll();
     initCloud();
-
-    var loggedIn = hasLocalSession() || !!(cloud.auth && cloud.auth.currentUser);
-    UI.authReady = loggedIn;
-    showAuthGate(!loggedIn);
-
+    var logged = hasLocalSession() || !!(cloud.auth && cloud.auth.currentUser);
+    UI.authReady = logged;
+    showAuthGate(!logged);
     await startCloudSync();
-    await ensureSequentialSpecialId(S.me.id, S.me.name);
+    await ensureSequentialSpecialId(S.me.id);
     save();
     renderAll();
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
-  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
 })(window);
