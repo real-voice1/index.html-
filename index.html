@@ -146,10 +146,11 @@
     }
     .row:hover{border-color:var(--border-hi);transform:translateY(-1px)}
     .roomcover{
-      width:52px;height:52px;border-radius:15px;display:grid;place-items:center;font-size:24px;flex-shrink:0;
+      width:54px;height:54px;border-radius:15px;display:grid;place-items:center;font-size:24px;flex-shrink:0;overflow:hidden;
       border:1px solid rgba(255,255,255,.28);
       box-shadow:0 10px 20px rgba(0,0,0,.38), inset 0 2px 4px rgba(255,255,255,.35)
     }
+    .roomcover img{width:100%;height:100%;object-fit:cover;display:block}
     .avatar{
       width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));
       display:grid;place-items:center;font-weight:800;font-size:15px;flex-shrink:0;position:relative;overflow:hidden;
@@ -329,28 +330,51 @@
     }
     .room-view.open{display:flex;animation:fadeIn .2s ease}
     .room-top{
-      display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;
-      background:rgba(10,6,22,.62);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)
+      display:flex;align-items:center;justify-content:space-between;gap:6px;padding:8px 10px;
+      background:rgba(10,6,22,.68);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)
     }
+
+    /* مربع يمين الغرفة المكون من صورة واسم روم وID الحساب */
+    .room-right-card{
+      display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:14px;
+      background:linear-gradient(145deg,rgba(255,255,255,.13),rgba(255,255,255,.05));
+      border:1px solid var(--border-hi);flex:1;min-width:0;
+      box-shadow:0 6px 16px rgba(0,0,0,.32)
+    }
+    .room-top-thumb-wrap{
+      position:relative;width:40px;height:40px;border-radius:12px;overflow:hidden;
+      background:linear-gradient(135deg,var(--acc),var(--acc2));
+      border:1.5px solid rgba(255,255,255,.35);display:grid;place-items:center;
+      font-size:18px;flex-shrink:0;cursor:pointer
+    }
+    .room-top-thumb-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+    .room-top-thumb-edit{
+      position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.62);
+      color:#fff;font-size:8.5px;font-weight:800;text-align:center;line-height:1.25
+    }
+    .room-right-meta{flex:1;min-width:0}
+    .room-right-title{font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
+    .room-right-id{font-size:10.5px;color:#e9d5ff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+
     .room-presence-btn{
-      display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;
+      display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;
       background:rgba(255,255,255,.09);border:1px solid var(--border);font-size:11px;font-weight:800;
-      box-shadow:0 4px 12px rgba(0,0,0,.28);transition:transform .15s
+      box-shadow:0 4px 12px rgba(0,0,0,.28);transition:transform .15s;flex-shrink:0
     }
     .room-presence-btn:active{transform:scale(.94)}
     .room-avatars-strip{display:inline-flex;align-items:center;margin-right:2px}
     .room-mini-av{
-      width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.65);
+      width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(255,255,255,.65);
       background:linear-gradient(135deg,var(--acc),var(--acc2));
-      display:inline-grid;place-items:center;font-size:9px;font-weight:800;color:#fff;
+      display:inline-grid;place-items:center;font-size:8.5px;font-weight:800;color:#fff;
       overflow:hidden;margin-right:-6px;box-shadow:0 2px 6px rgba(0,0,0,.4)
     }
     .room-mini-av:first-child{margin-right:0}
     .room-mini-av img{width:100%;height:100%;object-fit:cover;display:block}
     .room-mini-more{
-      display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:999px;
+      display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 4px;border-radius:999px;
       background:rgba(236,72,153,.35);border:1px solid rgba(255,255,255,.35);
-      font-size:9.5px;font-weight:800;color:#fff;margin-right:4px
+      font-size:9px;font-weight:800;color:#fff;margin-right:4px
     }
 
     .voice-status-bar{
@@ -495,24 +519,12 @@
       background:linear-gradient(135deg,rgba(124,58,237,.58),rgba(236,72,153,.42));
       border-color:rgba(255,255,255,.28)
     }
-    .msg.col-gold{border-color:#fbbf24;box-shadow:0 0 12px rgba(251,191,36,.22)}
-    .msg.col-cyan{border-color:#22d3ee;box-shadow:0 0 12px rgba(34,211,238,.22)}
-    .msg.col-pink{border-color:#f472b6;box-shadow:0 0 12px rgba(244,114,182,.22)}
     .msg .who{font-size:10.5px;font-weight:700;color:#e9d5ff;margin-bottom:2px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
     .msg .tm{font-size:9.5px;color:var(--muted);margin-top:3px;text-align:left}
     .msg.sys{
       align-self:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
       color:#e2dcf5;font-size:11px;padding:4px 12px;border-radius:999px
     }
-
-    .quick-emo{display:flex;gap:4px;padding:5px 10px;overflow-x:auto;scrollbar-width:none;border-top:1px solid rgba(255,255,255,.08);background:rgba(10,6,22,.45)}
-    .quick-emo::-webkit-scrollbar{display:none}
-    .quick-emo button{font-size:17px;padding:2px 5px;border-radius:8px;transition:transform .14s}
-    .quick-emo button:active{transform:scale(1.25)}
-
-    .color-dots{display:flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(10,6,22,.35)}
-    .cdot{width:16px;height:16px;border-radius:50%;border:2px solid transparent}
-    .cdot.sel{border-color:#fff;transform:scale(1.15)}
 
     .room-bar{
       display:flex;align-items:center;gap:6px;padding:8px 10px;
@@ -550,6 +562,29 @@
     .round.spk-muted{
       background:linear-gradient(135deg,rgba(239,68,68,.55),rgba(153,27,27,.65));
       border-color:rgba(252,165,165,.5);color:#fff
+    }
+
+    /* فقاعة الغرفة الدائرية القابلة للسحب */
+    .floating-room-orb{
+      position:fixed;left:22px;bottom:145px;z-index:50;
+      width:68px;height:68px;border-radius:50%;
+      background:linear-gradient(135deg,var(--acc),var(--acc2));
+      border:2px solid #fff;
+      box-shadow:0 16px 32px rgba(124,58,237,.55), 0 6px 16px rgba(0,0,0,.55);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      color:#fff;font-weight:800;cursor:grab;touch-action:none;
+      transition:box-shadow .2s,transform .15s
+    }
+    .floating-room-orb:active{cursor:grabbing;transform:scale(1.04)}
+    .floating-room-orb .orb-avatar{
+      width:44px;height:44px;border-radius:50%;overflow:hidden;
+      display:grid;place-items:center;background:rgba(0,0,0,.25);font-size:18px;
+      border:1.5px solid rgba(255,255,255,.65)
+    }
+    .floating-room-orb .orb-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+    .floating-room-orb .orb-label{
+      font-size:9.5px;line-height:1.15;margin-top:2px;max-width:62px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(0,0,0,.7)
     }
 
     /* حركة طيران الهدية باتجاه المقعد المستهدف */
@@ -685,7 +720,7 @@
   </header>
 
   <main class="page active" id="page-home">
-    <div class="searchbox"><span class="ic">🔍</span><input id="search-input" type="search" placeholder="ابحث عن غرفة أو مستخدم بالاسم أو الـ ID..." /></div>
+    <div class="searchbox"><span class="ic">🔍</span><input id="search-input" type="search" placeholder="ابحث عن غرفة أو مستخدم بالاسم أو الـ ID أو الصورة..." /></div>
     <div class="banner">
       <div><h3>مرحباً بك في REAL VOICE</h3><p>أنشئ غرفتك الصوتية أو انضم للأصدقاء الآن</p></div>
       <button class="btn sm" id="banner-create" type="button">+ غرفة</button>
@@ -819,16 +854,25 @@
   <section class="room-view" id="room-view">
     <div class="room-top">
       <button class="iconbtn" id="room-back" type="button" title="خروج">→</button>
-      <div style="flex:1;min-width:0">
-        <div class="name" id="room-title">الغرفة</div>
-        <div class="meta" id="room-sub-meta">ID: -</div>
+
+      <!-- مربع يمين الغرفة: صورة + اسم روم + ID الحساب -->
+      <div class="room-right-card" id="room-right-card">
+        <div class="room-top-thumb-wrap" id="room-top-thumb" title="تغيير صورة الغرفة">
+          <span id="room-top-thumb-inner">🎙️</span>
+          <span class="room-top-thumb-edit">صورة</span>
+        </div>
+        <input id="room-photo-input" type="file" accept="image/*" class="hidden" />
+        <div class="room-right-meta">
+          <div class="room-right-title" id="room-title">الغرفة</div>
+          <div class="room-right-id" id="room-right-id">ID: 0001000</div>
+        </div>
       </div>
+
       <button class="room-presence-btn" id="room-presence-btn" type="button" title="المتواجدون في الغرفة">
         <span>🎧</span>
         <span id="room-online-count">0</span>
         <span class="room-avatars-strip" id="room-avatars-strip"></span>
       </button>
-      <button class="iconbtn" id="room-hand" type="button" title="طلب المايك">✋</button>
       <button class="iconbtn" id="room-music" type="button" title="الموسيقى">🎵</button>
       <button class="iconbtn" id="room-menu" type="button" title="خيارات">⋮</button>
     </div>
@@ -862,14 +906,6 @@
       <div class="entry-banner-wrap" id="entry-banner-wrap"></div>
     </div>
 
-    <div class="quick-emo" id="room-emojis"></div>
-    <div class="color-dots" id="room-colors">
-      <span class="small">لون الرسالة:</span>
-      <button class="cdot sel" data-color="" style="background:#7c3aed" type="button" title="افتراضي"></button>
-      <button class="cdot" data-color="gold" style="background:#f59e0b" type="button" title="ذهبي"></button>
-      <button class="cdot" data-color="cyan" style="background:#22d3ee" type="button" title="سماوي"></button>
-      <button class="cdot" data-color="pink" style="background:#f472b6" type="button" title="وردي"></button>
-    </div>
     <div class="room-bar">
       <button class="round mic-idle" id="mic-btn" type="button" title="المايك">🎙️</button>
       <input id="room-input" type="text" maxlength="240" placeholder="اكتب رسالة..." />
@@ -896,6 +932,12 @@
       <button class="round" id="chat-send" type="button">➤</button>
     </div>
   </section>
+
+  <!-- دائرة الغرفة العائمة القابلة للسحب -->
+  <div class="floating-room-orb hidden" id="floating-room-orb" title="اسحب لتحريكها أو اضغط للانتقال لغرفة أخرى">
+    <div class="orb-avatar" id="floating-orb-avatar">🎙️</div>
+    <span class="orb-label" id="floating-orb-label">روم</span>
+  </div>
 
   <div class="scrim" id="scrim"></div>
   <div class="sheet" id="sheet"></div>
