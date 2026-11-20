@@ -1,4 +1,4 @@
-/* REAL VOICE — نسخة كاملة ومصححة مع دعم تسجيل الدخول عبر Gmail / Google */
+/* REAL VOICE — نسخة كاملة ومصححة مع صوت جماعي واضح، شات جلسة، متابعة وصداقة، وهدايا غير مكررة */
 (function (global) {
   "use strict";
 
@@ -13,7 +13,7 @@
   var TOKEN_URL = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";
 
   var CONFIG = {
-    storageKey: "rv_state_v11",
+    storageKey: "rv_state_v12",
     fixedUidKey: "rv_fixed_uid_v1",
     authSessionKey: "rv_auth_logged_v1",
     onboardDoneKey: "rv_onboard_done_v1",
@@ -34,6 +34,13 @@
     { id: "vip", e: "🦁", n: "أسد VIP", p: 1500 },
     { id: "castle", e: "🏰", n: "قصر متحرك", p: 3000 }
   ];
+
+  var GIFT_BY_ID = {};
+  var GIFT_BY_EMOJI = {};
+  GIFTS.forEach(function (g) {
+    GIFT_BY_ID[g.id] = g;
+    GIFT_BY_EMOJI[g.e] = g;
+  });
 
   var EMOJIS = ["😀", "😂", "😍", "🔥", "👏", "❤️", "😎", "🎉", "🙏", "😢", "👍", "💎"];
   var CATEGORIES = { chat: "دردشة", games: "ألعاب", vip: "VIP", music: "موسيقى", friends: "أصدقاء" };
@@ -196,7 +203,7 @@
   function setVoiceStatusUI(connected, label) {
     var dot = $("voice-status-dot"), txt = $("voice-status-text");
     if (dot) dot.classList.toggle("live", !!connected);
-    if (txt) txt.textContent = label || (connected ? "الصوت المباشر متصل 🔊" : "غير متصل");
+    if (txt) txt.textContent = label || (connected ? "الجميع يسمع بعضه الآن 🔊" : "غير متصل");
   }
   function showAudioUnlockBar(show) { var bar = $("audio-unlock-bar"); if (bar) bar.classList.toggle("hidden", !show); }
   function applyRoomSpeakerMuteState() {
@@ -236,7 +243,10 @@
       AgoraRTC.onAutoplayFailed = function () { showAudioUnlockBar(true); };
       voice.client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
       voice.client.enableAudioVolumeIndicator();
-      voice.client.on("user-published", async function (user, mediaType) { await subscribeAndPlayRemoteUser(user, mediaType); });
+      voice.client.on("user-published", async function (user, mediaType) {
+        await subscribeAndPlayRemoteUser(user, mediaType);
+        updateSpeakingIndicators();
+      });
       voice.client.on("user-unpublished", function (user) {
         if (user && user.audioTrack) { try { user.audioTrack.stop(); } catch (e) { /* */ } }
         if (user) delete voice.speakingNums[user.uid];
@@ -248,7 +258,9 @@
       });
       voice.client.on("volume-indicator", function (volumes) {
         var active = {};
-        (volumes || []).forEach(function (v) { if (v.level > 6) active[v.uid === 0 ? voice.uidNum : v.uid] = true; });
+        (volumes || []).forEach(function (v) {
+          if (v.level > 4) active[v.uid === 0 ? voice.uidNum : v.uid] = true;
+        });
         voice.speakingNums = active;
         updateSpeakingIndicators();
       });
@@ -304,17 +316,18 @@
       voice.uidNum = targetUid;
       if (voice.client.connectionState !== "DISCONNECTED") await leaveVoiceChannel();
       if (!UI.roomId && !UI.floatingRoomId) { voice.joining = false; return false; }
-      var tokenData = await fetchRtcToken(channelName, targetUid, desiredRole === "publisher" ? "publisher" : "subscriber");
+      var tokenData = await fetchRtcToken(channelName, targetUid, "publisher");
       await voice.client.join(tokenData.appId, channelName, tokenData.token, tokenData.uid || targetUid);
       voice.channel = channelName;
-      voice.role = desiredRole;
+      voice.role = desiredRole || "publisher";
       if (Array.isArray(voice.client.remoteUsers)) {
         for (var i = 0; i < voice.client.remoteUsers.length; i++) {
           if (voice.client.remoteUsers[i] && voice.client.remoteUsers[i].hasAudio) await subscribeAndPlayRemoteUser(voice.client.remoteUsers[i], "audio");
         }
       }
-      if (desiredRole === "publisher") await publishLocalMic();
-      setVoiceStatusUI(true, "الصوت المباشر متصل 🔊");
+      var room = getRoom(channelName);
+      if (room && seatIndexOf(room, S.me.id) >= 0) await publishLocalMic();
+      setVoiceStatusUI(true, "الجميع يسمع بعضه الآن 🔊");
       return true;
     } catch (e) { setVoiceStatusUI(false, "تعذر ربط الصوت"); return false; }
     finally { voice.joining = false; }
@@ -360,7 +373,7 @@
   var S = null;
   var UI = {
     page: "home", filter: "all", rfilter: "mine", ftab: "friends",
-    query: "", findQ: "", roomId: null, floatingRoomId: null, dmId: null,
+    query: "", findQ: "", roomId: null, roomSessionStart: 0, floatingRoomId: null, dmId: null,
     micMuted: false, roomSpeakerMuted: false, giftSel: "heart", giftTarget: "",
     authReady: false, authSigningIn: false, onboardPhoto: "", onboardGender: "ذكر"
   };
@@ -384,9 +397,9 @@
 
   function demoUsers() {
     return [
-      { id: "RV-1001", num: 1001, specialId: "0001001", name: "ليلى", gender: "أنثى", age: 21, photo: "", online: true, bio: "أحب الموسيقى 🎵", vip: 2, verified: true, wealth: 1850, charm: 2400, followers: 120, following: 45, friendsCount: 18, gifts: 32, xp: 1140, level: 12 },
-      { id: "RV-1002", num: 1002, specialId: "0001002", name: "أحمد", gender: "ذكر", age: 24, photo: "", online: true, bio: "لاعب محترف 🎮", vip: 0, verified: false, wealth: 620, charm: 310, followers: 40, following: 22, friendsCount: 9, gifts: 11, xp: 420, level: 5 },
-      { id: "RV-1003", num: 1003, specialId: "0001003", name: "سارة", gender: "أنثى", age: 22, photo: "", online: false, bio: "هنا للدردشة ☕", vip: 1, verified: true, wealth: 1200, charm: 1650, followers: 85, following: 30, friendsCount: 14, gifts: 21, xp: 750, level: 8 }
+      { id: "RV-1001", num: 1001, specialId: "0001001", name: "ليلى", gender: "أنثى", age: 21, photo: "", online: true, bio: "أحب الموسيقى 🎵", vip: 2, verified: true, wealth: 1850, charm: 2400, followers: 120, following: 45, friendsCount: 18, gifts: 32, receivedGifts: { rose: 4, crown: 2 }, xp: 1140, level: 12 },
+      { id: "RV-1002", num: 1002, specialId: "0001002", name: "أحمد", gender: "ذكر", age: 24, photo: "", online: true, bio: "لاعب محترف 🎮", vip: 0, verified: false, wealth: 620, charm: 310, followers: 40, following: 22, friendsCount: 9, gifts: 11, receivedGifts: { heart: 6 }, xp: 420, level: 5 },
+      { id: "RV-1003", num: 1003, specialId: "0001003", name: "سارة", gender: "أنثى", age: 22, photo: "", online: false, bio: "هنا للدردشة ☕", vip: 1, verified: true, wealth: 1200, charm: 1650, followers: 85, following: 30, friendsCount: 14, gifts: 21, receivedGifts: { diamond: 1, heart: 3 }, xp: 750, level: 8 }
     ];
   }
   function makeSeats(n) {
@@ -409,7 +422,7 @@
         id: id, num: hashNum(id), specialId: "", name: "", gender: "ذكر", age: "", email: "", photo: "",
         bio: "مرحباً بك في REAL VOICE", coins: CONFIG.startCoins, xp: 0, level: 1,
         wealth: 0, wealthLevel: 1, charm: 0, charmLevel: 1, vip: 0, verified: false,
-        followers: 0, following: 0, friendsCount: 0, gifts: 0, daily: 0, joined: now()
+        followers: 0, following: 0, friendsCount: 0, gifts: 0, receivedGifts: {}, daily: 0, joined: now()
       },
       users: demoUsers(), rooms: demoRooms(),
       friends: [], requests: [], sentReq: [], blocked: [], follows: [],
@@ -429,6 +442,7 @@
           S = p;
           if (!S.me.id) S.me.id = fixedId;
           if (!S.me.num) S.me.num = hashNum(S.me.id);
+          if (!S.me.receivedGifts || typeof S.me.receivedGifts !== "object") S.me.receivedGifts = {};
           if (!Array.isArray(S.banners)) S.banners = [];
           if (!S.friends) S.friends = [];
           if (!S.requests) S.requests = [];
@@ -462,6 +476,7 @@
     S.me.level = lv;
     S.me.wealthLevel = wLv;
     S.me.charmLevel = cLv;
+    if (!S.me.receivedGifts || typeof S.me.receivedGifts !== "object") S.me.receivedGifts = {};
 
     var userPayload = {
       id: S.me.id, num: S.me.num, specialId: S.me.specialId || "",
@@ -476,6 +491,7 @@
       followers: Number(S.me.followers || 0),
       following: S.follows.length || 0,
       friendsCount: S.friends.length || 0,
+      receivedGifts: S.me.receivedGifts,
       online: true
     };
     cloud.usersMap[S.me.id] = Object.assign({}, cloud.usersMap[S.me.id] || {}, userPayload);
@@ -486,7 +502,7 @@
   }
 
   function resolveLiveUser(id) {
-    if (!id) return { id: "", num: 0, specialId: "0001000", name: "مستخدم", gender: "", age: "", photo: "", online: false, level: 1 };
+    if (!id) return { id: "", num: 0, specialId: "0001000", name: "مستخدم", gender: "", age: "", photo: "", online: false, level: 1, receivedGifts: {} };
     if (id === S.me.id) {
       return Object.assign({}, cloud.usersMap[id] || {}, S.me, { level: computeLevelFromXp(S.me.xp || 0), me: true });
     }
@@ -496,7 +512,7 @@
       if (S.users[i].id === id) { fromLocal = S.users[i]; break; }
     }
     var base = Object.assign({
-      id: id, num: hashNum(id), specialId: "", name: "مستخدم", gender: "", age: "", photo: "", online: false, level: 1
+      id: id, num: hashNum(id), specialId: "", name: "مستخدم", gender: "", age: "", photo: "", online: false, level: 1, receivedGifts: {}
     }, fromLocal || {}, fromCloud || {});
     if (!base.name) base.name = "مستخدم";
     return base;
@@ -614,6 +630,21 @@
     };
   }
 
+  function attachDmThreadListener(myId, peerId) {
+    if (!cloud.on || !cloud.db || !peerId) return;
+    var tid = dmThreadId(myId, peerId);
+    cloud.db.ref("dms/" + tid).limitToLast(100).off("value");
+    cloud.db.ref("dms/" + tid).limitToLast(100).on("value", function (ms) {
+      var v = ms.val() || {};
+      var arr = Object.keys(v).map(function (k) { return Object.assign({ key: k }, v[k]); });
+      arr.sort(function (a, b) { return (a.t || 0) - (b.t || 0); });
+      S.dms[peerId] = arr;
+      saveLocal();
+      if (UI.page === "messages") renderMessages();
+      if (UI.dmId === peerId) renderDM();
+    });
+  }
+
   function attachRealtimeListeners(myId) {
     if (!cloud.on || !cloud.db || cloud.synced) return;
     cloud.synced = true;
@@ -627,6 +658,19 @@
     onDb("app", cloud.db.ref("users"), "value", function (us) {
       var val = us.val() || {};
       cloud.usersMap = val;
+      if (val[myId]) {
+        var cloudMe = val[myId];
+        if (typeof cloudMe.followers === "number") S.me.followers = cloudMe.followers;
+        if (typeof cloudMe.charm === "number") S.me.charm = Math.max(Number(S.me.charm || 0), cloudMe.charm);
+        if (cloudMe.receivedGifts && typeof cloudMe.receivedGifts === "object") {
+          var mergedGifts = Object.assign({}, S.me.receivedGifts || {});
+          Object.keys(cloudMe.receivedGifts).forEach(function (gk) {
+            mergedGifts[gk] = Math.max(Number(mergedGifts[gk] || 0), Number(cloudMe.receivedGifts[gk] || 0));
+          });
+          S.me.receivedGifts = mergedGifts;
+        }
+        saveLocal();
+      }
       S.users = Object.keys(val).filter(function (k) { return k !== S.me.id; }).map(function (k) {
         return Object.assign({ id: k }, val[k]);
       });
@@ -658,19 +702,15 @@
       S.sentReq = Object.keys(sv.sentReq || {});
       S.follows = Object.keys(sv.follows || {});
       S.blocked = Object.keys(sv.blocked || {});
+      S.friends.forEach(function (fid) { attachDmThreadListener(myId, fid); });
+      saveLocal();
       renderAll();
     });
 
     onDb("app", cloud.db.ref("userDms/" + myId), "value", function (ds) {
       var threads = ds.val() || {};
       Object.keys(threads).forEach(function (peerId) {
-        cloud.db.ref("dms/" + dmThreadId(myId, peerId)).limitToLast(50).once("value").then(function (ms) {
-          var v = ms.val() || {};
-          S.dms[peerId] = Object.keys(v).map(function (k) { return Object.assign({ key: k }, v[k]); });
-          saveLocal();
-          if (UI.page === "messages") renderMessages();
-          if (UI.dmId === peerId) renderDM();
-        }).catch(function () { /* */ });
+        attachDmThreadListener(myId, peerId);
       });
     });
   }
@@ -691,8 +731,9 @@
           id: myId,
           num: p.num || S.me.num,
           name: p.name || S.me.name || "",
-          email: S.me.email || p.email || "",
-          photo: S.me.photo || p.photo || ""
+          email: p.email || p.email || "",
+          photo: p.photo || p.photo || "",
+          receivedGifts: Object.assign({}, (S.me && S.me.receivedGifts) || {}, p.receivedGifts || {})
         });
         if (S.me.name && String(S.me.name).trim()) setOnboardDone(true);
       }
@@ -817,6 +858,55 @@
   }
 
   function isFriendWith(otherId) { return !!(otherId && otherId !== S.me.id && Array.isArray(S.friends) && S.friends.indexOf(otherId) >= 0); }
+  function isFollowingUser(otherId) { return !!(otherId && otherId !== S.me.id && Array.isArray(S.follows) && S.follows.indexOf(otherId) >= 0); }
+
+  function addFriendMutual(otherId) {
+    if (!otherId || otherId === S.me.id) return;
+    if (S.friends.indexOf(otherId) < 0) S.friends.push(otherId);
+    if (S.follows.indexOf(otherId) < 0) S.follows.push(otherId);
+    S.requests = S.requests.filter(function (x) { return x !== otherId; });
+    S.sentReq = S.sentReq.filter(function (x) { return x !== otherId; });
+    attachDmThreadListener(S.me.id, otherId);
+    if (cloud.on && cloud.db) {
+      var ups = {};
+      ups["social/" + S.me.id + "/friends/" + otherId] = true;
+      ups["social/" + S.me.id + "/follows/" + otherId] = true;
+      ups["social/" + S.me.id + "/requests/" + otherId] = null;
+      ups["social/" + S.me.id + "/sentReq/" + otherId] = null;
+      ups["social/" + otherId + "/friends/" + S.me.id] = true;
+      ups["social/" + otherId + "/follows/" + S.me.id] = true;
+      ups["social/" + otherId + "/sentReq/" + S.me.id] = null;
+      ups["userDms/" + S.me.id + "/" + otherId] = true;
+      ups["userDms/" + otherId + "/" + S.me.id] = true;
+      cloud.db.ref().update(ups).catch(function () { /* */ });
+      cloud.db.ref("users/" + otherId + "/followers").transaction(function (c) { return (Number(c) || 0) + 1; }).catch(function () { /* */ });
+    }
+    save();
+  }
+
+  function toggleFollowUser(otherId) {
+    if (!otherId || otherId === S.me.id) return false;
+    var idx = S.follows.indexOf(otherId);
+    var nowFollowing = false;
+    if (idx >= 0) {
+      S.follows.splice(idx, 1);
+      if (cloud.on && cloud.db) {
+        cloud.db.ref("social/" + S.me.id + "/follows/" + otherId).set(null).catch(function () { /* */ });
+        cloud.db.ref("users/" + otherId + "/followers").transaction(function (c) { return Math.max(0, (Number(c) || 0) - 1); }).catch(function () { /* */ });
+      }
+      toast("تم إلغاء المتابعة");
+    } else {
+      S.follows.push(otherId);
+      nowFollowing = true;
+      if (cloud.on && cloud.db) {
+        cloud.db.ref("social/" + S.me.id + "/follows/" + otherId).set(true).catch(function () { /* */ });
+        cloud.db.ref("users/" + otherId + "/followers").transaction(function (c) { return (Number(c) || 0) + 1; }).catch(function () { /* */ });
+      }
+      toast("تمت المتابعة ✅");
+    }
+    save();
+    return nowFollowing;
+  }
 
   function avatarInnerHTML(u) {
     if (u && u.photo) return '<img src="' + esc(u.photo) + '" alt="' + esc(u.name || "avatar") + '" />';
@@ -1043,7 +1133,8 @@
     if (UI.ftab === "friends") {
       var fr = S.friends.map(resolveLiveUser);
       html = fr.length ? fr.map(function (u) {
-        return personRow(u, '<button class="btn sm ghost" data-dm="' + esc(u.id) + '" type="button">💬 خاص</button>');
+        var fBtn = '<button class="btn sm ghost" data-follow-user="' + esc(u.id) + '" type="button">' + (isFollowingUser(u.id) ? "متابَع ✔" : "+ متابعة") + "</button>";
+        return personRow(u, fBtn + '<button class="btn sm" data-dm="' + esc(u.id) + '" type="button">💬 خاص</button>');
       }).join("") : '<div class="empty">لا يوجد أصدقاء بعد</div>';
     } else if (UI.ftab === "requests") {
       html = S.requests.length ? S.requests.map(function (id) {
@@ -1057,23 +1148,68 @@
       });
       html = res.length ? res.map(function (u) {
         var live = resolveLiveUser(u.id);
-        var btn = S.friends.indexOf(live.id) >= 0 ? '<span class="tag verified">صديق ✔</span>'
-          : (S.sentReq.indexOf(live.id) >= 0 ? '<span class="tag">تم الإرسال</span>'
-          : '<button class="btn sm" data-addfriend="' + esc(live.id) + '" type="button">+ إضافة</button>');
-        return personRow(live, btn);
+        var fBtn = '<button class="btn sm ghost" data-follow-user="' + esc(live.id) + '" type="button">' + (isFollowingUser(live.id) ? "متابَع ✔" : "+ متابعة") + "</button>";
+        var btn = S.friends.indexOf(live.id) >= 0
+          ? '<button class="btn sm" data-dm="' + esc(live.id) + '" type="button">💬 خاص</button>'
+          : '<button class="btn sm" data-addfriend="' + esc(live.id) + '" type="button">+ إضافة</button>';
+        return personRow(live, fBtn + btn);
       }).join("") : '<div class="empty">لا نتائج</div>';
     }
     $("friends-list").innerHTML = html;
   }
 
   function renderMessages() {
-    var ids = Object.keys(S.dms).filter(function (id) { return isFriendWith(id) && S.dms[id] && S.dms[id].length; });
+    var ids = Object.keys(S.dms).filter(function (id) { return isFriendWith(id); });
     $("dm-list").innerHTML = ids.length ? ids.map(function (id) {
-      var u = resolveLiveUser(id), last = S.dms[id][S.dms[id].length - 1];
+      var u = resolveLiveUser(id), thread = S.dms[id] || [], last = thread[thread.length - 1];
       return '<div class="row glass" data-dm="' + esc(id) + '">' + avatarHTML(u) +
-        '<div class="info"><div class="name">' + esc(u.name) + '</div><div class="meta">' + esc(last.text || "رسالة") + '</div></div>' +
-        '<div class="meta">' + timeStr(last.t) + "</div></div>";
-    }).join("") : '<div class="empty">لا توجد رسائل خاصة للأصدقاء حالياً</div>';
+        '<div class="info"><div class="name">' + esc(u.name) + '</div><div class="meta">' + esc(last ? (last.text || "رسالة") : "ابدأ المحادثة الخاصة الثابتة") + '</div></div>' +
+        '<div class="meta">' + (last ? timeStr(last.t) : "ثابت") + "</div></div>";
+    }).join("") : '<div class="empty">لا توجد محادثات خاصة للأصدقاء حالياً</div>';
+  }
+
+  /* تجميع الهدايا الفريدة بدون تكرار في قائمة الهدايا بالملف الشخصي */
+  function renderProfileGifts(m) {
+    var grid = $("pf-gifts-grid");
+    var badge = $("pf-gifts-total-badge");
+    if (!grid) return;
+
+    var rawMap = (m && m.receivedGifts && typeof m.receivedGifts === "object") ? m.receivedGifts : {};
+    var uniqueMap = {};
+    var totalCount = 0;
+
+    Object.keys(rawMap).forEach(function (key) {
+      var qty = Math.max(0, Math.floor(Number(rawMap[key] || 0)));
+      if (!qty) return;
+      var giftDef = GIFT_BY_ID[key] || GIFT_BY_EMOJI[key] || null;
+      var canonicalKey = giftDef ? giftDef.id : String(key);
+      if (!uniqueMap[canonicalKey]) {
+        uniqueMap[canonicalKey] = {
+          id: canonicalKey,
+          e: giftDef ? giftDef.e : "🎁",
+          n: giftDef ? giftDef.n : String(key),
+          qty: 0
+        };
+      }
+      uniqueMap[canonicalKey].qty += qty;
+      totalCount += qty;
+    });
+
+    if (badge) badge.textContent = totalCount + " هدية";
+
+    var items = Object.keys(uniqueMap).map(function (k) { return uniqueMap[k]; });
+    if (!items.length) {
+      grid.innerHTML = '<div class="gift-showcase-empty">لم تصلك هدايا بعد — الهدايا المستلمة تظهر هنا دون تكرار 🎁</div>';
+      return;
+    }
+
+    grid.innerHTML = items.map(function (it) {
+      return '<div class="gift-showcase-item">' +
+        '<span class="gift-showcase-qty">x' + it.qty + "</span>" +
+        '<span class="gift-showcase-emoji">' + esc(it.e) + "</span>" +
+        '<div class="gift-showcase-name">' + esc(it.n) + "</div>" +
+      "</div>";
+    }).join("");
   }
 
   function renderProfile() {
@@ -1092,6 +1228,7 @@
     $("pf-friends-count").textContent = String((S.friends || []).length);
     $("pf-followers-count").textContent = String(Number(m.followers || 0));
     $("pf-wallet-coins").textContent = String(Number(m.coins || 0));
+    renderProfileGifts(m);
   }
 
   function renderCurrentPage() {
@@ -1248,6 +1385,14 @@
     var room = getRoom(id);
     if (!room) { toast("الغرفة غير موجودة"); return; }
     offDb("room");
+
+    UI.roomId = id;
+    UI.roomSessionStart = now();
+    UI.floatingRoomId = null;
+    UI.micMuted = false;
+    renderFloatingOrb();
+    $("room-view").classList.add("open");
+
     if (!inRoom(room, S.me.id)) {
       if (!Array.isArray(room.listeners)) room.listeners = [];
       if (room.listeners.indexOf(S.me.id) < 0) room.listeners.push(S.me.id);
@@ -1259,11 +1404,7 @@
       pushRoomMsg(room, { sys: true, joinUser: { uid: S.me.id, name: S.me.name || "مستخدم" }, text: (S.me.name || "مستخدم") + " دخل الغرفة 👋" });
       showEntryBanner(S.me);
     }
-    UI.roomId = id;
-    UI.floatingRoomId = null;
-    UI.micMuted = false;
-    renderFloatingOrb();
-    $("room-view").classList.add("open");
+
     renderRoom();
     renderHome();
 
@@ -1292,6 +1433,7 @@
     offDb("room");
     var targetRoomId = UI.roomId || UI.floatingRoomId;
     UI.roomId = null;
+    UI.roomSessionStart = 0;
     UI.floatingRoomId = null;
     $("room-view").classList.remove("open");
     renderFloatingOrb();
@@ -1377,7 +1519,11 @@
     if (!room) return;
     var box = $("room-chat");
     var stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 48;
-    box.innerHTML = (room.msgs || []).map(function (m) {
+    var sessStart = UI.roomSessionStart || 0;
+    var sessionMsgs = (room.msgs || []).filter(function (m) {
+      return Number(m.t || 0) >= sessStart - 1500;
+    });
+    box.innerHTML = sessionMsgs.map(function (m) {
       if (m.sys) return '<div class="msg sys">' + esc(m.text) + "</div>";
       var u = resolveLiveUser(m.from), me = m.from === S.me.id;
       var body = m.sticker ? '<div style="font-size:36px">' + esc(m.sticker) + "</div>"
@@ -1440,29 +1586,20 @@
   }
 
   function openDM(id) {
-    if (!isFriendWith(id)) { toast("الدردشة الخاصة متاحة للأصدقاء فقط 👥"); return; }
+    if (!isFriendWith(id)) { toast("أضف المستخدم كصديق أولاً للتحدث في الخاص 👥"); return; }
     closeSheet();
     UI.dmId = id;
     if (!S.dms[id]) S.dms[id] = [];
     var u = resolveLiveUser(id);
     setAvatarEl($("chat-avatar"), u);
     $("chat-title").textContent = u.name;
-    $("chat-sub").textContent = "صديق • ID: " + displayUserId(u);
+    $("chat-sub").textContent = "صديق • شات ثابت • ID: " + displayUserId(u);
     $("chat-view").classList.add("open");
     renderDM();
-    offDb("dm");
-    if (cloud.on && cloud.db) {
-      onDb("dm", cloud.db.ref("dms/" + dmThreadId(S.me.id, id)).limitToLast(100), "value", function (snap) {
-        var v = snap.val() || {};
-        S.dms[id] = Object.keys(v).map(function (k) { return Object.assign({ key: k }, v[k]); });
-        saveLocal();
-        renderDM();
-      });
-    }
+    attachDmThreadListener(S.me.id, id);
   }
 
   function closeDM() {
-    offDb("dm");
     UI.dmId = null;
     $("chat-view").classList.remove("open");
     renderAll();
@@ -1472,10 +1609,11 @@
     var id = UI.dmId;
     if (!id) return;
     var box = $("chat-msgs");
-    box.innerHTML = (S.dms[id] || []).map(function (m) {
+    var list = S.dms[id] || [];
+    box.innerHTML = list.length ? list.map(function (m) {
       var me = m.from === S.me.id;
       return '<div class="msg ' + (me ? "me" : "") + '"><div>' + esc(m.text) + '</div><div class="tm">' + timeStr(m.t) + "</div></div>";
-    }).join("");
+    }).join("") : '<div class="empty">شات خاص ثابت — رسائلك هنا محفوظة ولن تُمسح عند الخروج</div>';
     box.scrollTop = box.scrollHeight;
   }
 
@@ -1488,12 +1626,13 @@
       closeDM();
       return;
     }
-    var msgObj = { from: S.me.id, to: id, text: clean(text), t: now() };
+    var tsVal = now();
+    var msgObj = { from: S.me.id, to: id, text: clean(text), t: tsVal };
     if (!S.dms[id]) S.dms[id] = [];
     S.dms[id].push(msgObj);
     if (cloud.on && cloud.db) {
       var tid = dmThreadId(S.me.id, id);
-      cloud.db.ref("dms/" + tid).push(Object.assign({}, msgObj, { t: serverTs() })).catch(function () { /* */ });
+      cloud.db.ref("dms/" + tid).push({ from: S.me.id, to: id, text: clean(text), t: tsVal }).catch(function () { /* */ });
       cloud.db.ref("userDms/" + S.me.id + "/" + id).set(true).catch(function () { /* */ });
       cloud.db.ref("userDms/" + id + "/" + S.me.id).set(true).catch(function () { /* */ });
     }
@@ -1505,30 +1644,45 @@
     var u = resolveLiveUser(id);
     if (!u || !u.id || id === S.me.id) return;
     var isF = isFriendWith(id);
+    var isFol = isFollowingUser(id);
     var details = ["ID: " + displayUserId(u)];
     if (u.gender) details.push(u.gender);
     if (u.age) details.push(u.age + " سنة");
-    details.push(isF ? "صديق ✔" : "ليس صديقاً");
+    details.push(isF ? "صديق ✔" : "غير مضاف");
+
     var html = '<div style="display:flex;gap:12px;align-items:center">' + avatarHTML(u, "lg") +
       '<div class="info"><div class="name">' + esc(u.name) + '</div><div class="meta">' + esc(details.join(" • ")) + "</div></div></div>" +
       '<div class="social-grid">' +
+        '<button class="btn ghost" id="up-follow" type="button">' + (isFol ? "✓ متابَع" : "➕ متابعة") + "</button>" +
         (isF
           ? '<button class="btn" id="up-dm" type="button">💬 رسالة خاصة</button>'
-          : '<button class="btn" id="up-add" type="button">+ إضافة صديق</button>') +
-        '<button class="btn ghost" id="up-close" type="button">إغلاق</button>' +
-      "</div>";
+          : '<button class="btn" id="up-add" type="button">🤝 إضافة صديق</button>') +
+      "</div>" +
+      '<button class="btn ghost block" id="up-close" type="button">إغلاق</button>';
+
     openSheet(html);
-    if ($("up-dm")) $("up-dm").onclick = function () { closeSheet(); if (UI.roomId) leaveRoom(true); openDM(id); };
-    if ($("up-add")) $("up-add").onclick = function () {
-      if (S.friends.indexOf(id) < 0) S.friends.push(id);
-      if (cloud.on && cloud.db) {
-        var ups = {};
-        ups["social/" + S.me.id + "/friends/" + id] = true;
-        ups["social/" + id + "/friends/" + S.me.id] = true;
-        cloud.db.ref().update(ups).catch(function () { /* */ });
-      }
-      save(); closeSheet(); renderAll(); toast("تمت الإضافة كصديق ✅");
-    };
+
+    if ($("up-follow")) {
+      $("up-follow").onclick = function () {
+        toggleFollowUser(id);
+        openUserProfile(id);
+      };
+    }
+    if ($("up-dm")) {
+      $("up-dm").onclick = function () {
+        closeSheet();
+        if (UI.roomId) leaveRoom(true);
+        openDM(id);
+      };
+    }
+    if ($("up-add")) {
+      $("up-add").onclick = function () {
+        addFriendMutual(id);
+        renderAll();
+        openUserProfile(id);
+        toast("تمت الإضافة وقبول الصداقة ✅ يمكنك الآن مراسلته في الخاص");
+      };
+    }
     if ($("up-close")) $("up-close").onclick = closeSheet;
   }
 
@@ -1634,10 +1788,16 @@
         S.me.coins -= giftObj.p;
         S.me.wealth = Number(S.me.wealth || 0) + giftObj.p;
         S.me.xp = Number(S.me.xp || 0) + Math.max(10, Math.floor(giftObj.p / 2));
-        if (UI.giftTarget === S.me.id) S.me.charm = Number(S.me.charm || 0) + giftObj.p;
-        else if (cloud.on && cloud.db) {
+
+        if (UI.giftTarget === S.me.id) {
+          S.me.charm = Number(S.me.charm || 0) + giftObj.p;
+          if (!S.me.receivedGifts || typeof S.me.receivedGifts !== "object") S.me.receivedGifts = {};
+          S.me.receivedGifts[giftObj.id] = Number(S.me.receivedGifts[giftObj.id] || 0) + 1;
+        } else if (cloud.on && cloud.db) {
           cloud.db.ref("users/" + UI.giftTarget + "/charm").transaction(function (c) { return (Number(c) || 0) + giftObj.p; }).catch(function () { /* */ });
+          cloud.db.ref("users/" + UI.giftTarget + "/receivedGifts/" + giftObj.id).transaction(function (q) { return (Number(q) || 0) + 1; }).catch(function () { /* */ });
         }
+
         pushRoomMsg(room, { from: S.me.id, text: "أرسل " + giftObj.e + " " + giftObj.n + " إلى " + recU.name, giftAnim: { e: giftObj.e, fromName: S.me.name, toUid: UI.giftTarget, toName: recU.name } });
         save(); closeSheet(); renderAll();
         showFlyGiftToSeat(giftObj.e, S.me.name, UI.giftTarget, recU.name);
@@ -1673,16 +1833,22 @@
       var en = e.target.closest("[data-enter]"); if (en) { enterRoom(en.getAttribute("data-enter")); return; }
       var pr = e.target.closest("[data-profile]"); if (pr) { openUserProfile(pr.getAttribute("data-profile")); return; }
       var dm = e.target.closest("[data-dm]"); if (dm) { openDM(dm.getAttribute("data-dm")); return; }
+      var fu = e.target.closest("[data-follow-user]"); if (fu) {
+        toggleFollowUser(fu.getAttribute("data-follow-user"));
+        renderAll();
+        return;
+      }
       var af = e.target.closest("[data-addfriend]"); if (af) {
-        var fid = af.getAttribute("data-addfriend");
-        if (S.friends.indexOf(fid) < 0) S.friends.push(fid);
-        save(); renderAll(); toast("تمت الإضافة كصديق ✅");
+        addFriendMutual(af.getAttribute("data-addfriend"));
+        renderAll();
+        toast("تمت الإضافة وقبول الصداقة ✅ يمكنك الآن فتح الشات الخاص");
+        return;
       }
       var ac = e.target.closest("[data-accept]"); if (ac) {
-        var aid = ac.getAttribute("data-accept");
-        S.requests = S.requests.filter(function (x) { return x !== aid; });
-        if (S.friends.indexOf(aid) < 0) S.friends.push(aid);
-        save(); renderAll(); toast("أصبحتما صديقين ✅");
+        addFriendMutual(ac.getAttribute("data-accept"));
+        renderAll();
+        toast("أصبحتما صديقين ✅");
+        return;
       }
       var rj = e.target.closest("[data-reject]"); if (rj) {
         var rid = rj.getAttribute("data-reject");
@@ -1693,7 +1859,11 @@
 
     $("scrim").onclick = closeSheet;
     $("room-back").onclick = function () { leaveRoom(false); };
-    $("room-rename-quick").onclick = function () { var r = getRoom(UI.roomId); if (r) openRenameRoomSheet(r); };
+    $("room-friends-btn").onclick = function () {
+      if (UI.roomId) leaveRoom(true);
+      UI.ftab = "friends";
+      go("friends");
+    };
     $("room-presence-btn").onclick = function () { var r = getRoom(UI.roomId); if (r) openRoomPresenceSheet(r); };
     $("room-top-thumb").onclick = function () { $("room-photo-input").click(); };
     $("room-photo-input").onchange = async function () {
@@ -1776,12 +1946,8 @@
     $("chat-voice").onclick = function () { toast("الرسائل الصوتية الخاصة قيد التطوير 🎙️"); };
     $("chat-menu").onclick = function () {
       if (!UI.dmId) return;
-      openSheet("<h3>خيارات المحادثة</h3><div class='actlist'><button class='danger' id='dm-clear-btn' type='button'>🗑️ مسح المحادثة محلياً</button></div>");
-      $("dm-clear-btn").onclick = function () {
-        S.dms[UI.dmId] = [];
-        saveLocal(); closeSheet(); renderDM(); renderMessages();
-        toast("تم مسح المحادثة");
-      };
+      openSheet("<h3>معلومات المحادثة</h3><div class='actlist'><button id='dm-info-btn' type='button'>📌 الشات الخاص ثابت ومحفوظ تلقائياً</button></div>");
+      $("dm-info-btn").onclick = closeSheet;
     };
     $("chat-emoji").onclick = function () {
       openSheet("<h3>إيموجي</h3><div style='display:grid;grid-template-columns:repeat(6,1fr);gap:8px;font-size:24px;text-align:center'>" +
