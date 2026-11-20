@@ -1,4 +1,4 @@
-/* REAL VOICE — نسخة مستقرة ومربوطة بالكامل */
+/* REAL VOICE — نسخة كاملة ومصححة مع دعم تسجيل الدخول عبر Gmail / Google */
 (function (global) {
   "use strict";
 
@@ -13,7 +13,7 @@
   var TOKEN_URL = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";
 
   var CONFIG = {
-    storageKey: "rv_state_v10",
+    storageKey: "rv_state_v11",
     fixedUidKey: "rv_fixed_uid_v1",
     authSessionKey: "rv_auth_logged_v1",
     onboardDoneKey: "rv_onboard_done_v1",
@@ -102,7 +102,7 @@
     t.textContent = String(msg || "");
     t.classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2200);
+    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2400);
   }
 
   function normWord(w) {
@@ -304,7 +304,7 @@
       voice.uidNum = targetUid;
       if (voice.client.connectionState !== "DISCONNECTED") await leaveVoiceChannel();
       if (!UI.roomId && !UI.floatingRoomId) { voice.joining = false; return false; }
-      var tokenData = await fetchRtcToken(channelName, targetUid, "publisher");
+      var tokenData = await fetchRtcToken(channelName, targetUid, desiredRole === "publisher" ? "publisher" : "subscriber");
       await voice.client.join(tokenData.appId, channelName, tokenData.token, tokenData.uid || targetUid);
       voice.channel = channelName;
       voice.role = desiredRole;
@@ -356,7 +356,7 @@
   }
 
   /* ========= الحالة والمزامنة وقاعدة البيانات ========= */
-  var cloud = { on: false, db: null, auth: null, usersMap: {}, roomMsgs: {} };
+  var cloud = { on: false, db: null, auth: null, usersMap: {}, roomMsgs: {}, synced: false };
   var S = null;
   var UI = {
     page: "home", filter: "all", rfilter: "mine", ftab: "friends",
@@ -365,6 +365,13 @@
     authReady: false, authSigningIn: false, onboardPhoto: "", onboardGender: "ذكر"
   };
   var listenersMap = {};
+
+  function setGoogleLoginLoading(loading, label) {
+    var btn = $("google-login-btn");
+    var txt = $("google-login-text");
+    if (btn) btn.disabled = !!loading;
+    if (txt) txt.textContent = label || (loading ? "جاري تسجيل الدخول عبر Gmail..." : "تسجيل الدخول عبر Gmail");
+  }
 
   function onDb(key, ref, ev, fn) {
     ref.on(ev, fn);
@@ -419,8 +426,9 @@
       if (raw) {
         var p = JSON.parse(raw);
         if (p && p.me && Array.isArray(p.rooms)) {
-          S = p; S.me.id = fixedId;
-          if (!S.me.num) S.me.num = hashNum(fixedId);
+          S = p;
+          if (!S.me.id) S.me.id = fixedId;
+          if (!S.me.num) S.me.num = hashNum(S.me.id);
           if (!Array.isArray(S.banners)) S.banners = [];
           if (!S.friends) S.friends = [];
           if (!S.requests) S.requests = [];
@@ -510,8 +518,8 @@
     loginBox.classList.toggle("hidden", targetStep !== "login");
     obBox.classList.toggle("hidden", targetStep !== "onboard");
     if (targetStep === "onboard") {
-      if ($("ob-name") && !$("ob-name").value) $("ob-name").value = S.me.name || "";
-      if ($("ob-age") && !$("ob-age").value) $("ob-age").value = S.me.age || "";
+      if ($("ob-name")) $("ob-name").value = S.me.name || "";
+      if ($("ob-age")) $("ob-age").value = S.me.age || "";
       UI.onboardPhoto = S.me.photo || "";
       UI.onboardGender = S.me.gender || "ذكر";
       renderOnboardPreview();
@@ -544,7 +552,7 @@
     if (!userId) return "0001000";
     if (S.me.specialId && /^\d{7}$/.test(S.me.specialId)) return S.me.specialId;
     if (!cloud.on || !cloud.db) {
-      S.me.specialId = formatSpecialId(CONFIG.initialSpecialIdNumber);
+      S.me.specialId = formatSpecialId((hashNum(userId) % 8999) + CONFIG.initialSpecialIdNumber);
       return S.me.specialId;
     }
     try {
@@ -563,7 +571,7 @@
       }
       return S.me.specialId || "0001000";
     } catch (e) {
-      if (!S.me.specialId) S.me.specialId = formatSpecialId((hashNum(userId) % 8999) + 1000);
+      if (!S.me.specialId) S.me.specialId = formatSpecialId((hashNum(userId) % 8999) + CONFIG.initialSpecialIdNumber);
       return S.me.specialId;
     }
   }
@@ -606,117 +614,178 @@
     };
   }
 
-  function startCloudSync() {
-    if (!cloud.on) return Promise.resolve();
-    return new Promise(function (resolve) {
-      var done = false;
-      function finish() { if (!done) { done = true; resolve(); } }
-      setTimeout(finish, 2000);
-      var myId = getOrCreateFixedUid();
-      S.me.id = myId;
-      S.me.num = hashNum(myId);
+  function attachRealtimeListeners(myId) {
+    if (!cloud.on || !cloud.db || cloud.synced) return;
+    cloud.synced = true;
 
+    try {
       var uRef = cloud.db.ref("users/" + myId);
-      uRef.once("value").then(async function (snap) {
-        var p = snap.val();
-        if (p && p.id) {
-          S.me = Object.assign({}, S.me, p, { id: myId, num: p.num || S.me.num });
-          if (S.me.name && String(S.me.name).trim()) setOnboardDone(true);
-        }
-        await ensureSequentialSpecialId(myId);
-        try { uRef.child("online").onDisconnect().set(false); } catch (e) { /* */ }
-        uRef.update({ online: true, specialId: S.me.specialId }).catch(function () { /* */ });
+      uRef.child("online").onDisconnect().set(false);
+      uRef.update({ online: true, specialId: S.me.specialId || "" }).catch(function () { /* */ });
+    } catch (e) { /* */ }
 
-        onDb("app", cloud.db.ref("users"), "value", function (us) {
-          var val = us.val() || {};
-          cloud.usersMap = val;
-          S.users = Object.keys(val).filter(function (k) { return k !== S.me.id; }).map(function (k) {
-            return Object.assign({ id: k }, val[k]);
-          });
-          renderAll();
-          if (UI.roomId) renderRoom();
-        });
-
-        onDb("app", cloud.db.ref("rooms"), "value", function (rs) {
-          var val = rs.val() || {};
-          var list = Object.keys(val).map(function (rid) { return normalizeRoom(rid, val[rid]); });
-          if (list.length) {
-            var localOnly = (S.rooms || []).filter(function (lr) { return !val[lr.id]; });
-            S.rooms = list.concat(localOnly);
-          }
-          if (UI.roomId) {
-            var cur = getRoom(UI.roomId);
-            if (!cur) { leaveRoom(false); }
-            else { syncMicHardwareState(); renderRoom(); }
-          }
-          renderFloatingOrb();
-          if (UI.page === "home") renderHome();
-          else if (UI.page === "rooms") renderRooms();
-        });
-
-        onDb("app", cloud.db.ref("social/" + S.me.id), "value", function (ss) {
-          var sv = ss.val() || {};
-          S.friends = Object.keys(sv.friends || {});
-          S.requests = Object.keys(sv.requests || {});
-          S.sentReq = Object.keys(sv.sentReq || {});
-          S.follows = Object.keys(sv.follows || {});
-          S.blocked = Object.keys(sv.blocked || {});
-          renderAll();
-        });
-
-        onDb("app", cloud.db.ref("userDms/" + myId), "value", function (ds) {
-          var threads = ds.val() || {};
-          Object.keys(threads).forEach(function (peerId) {
-            cloud.db.ref("dms/" + dmThreadId(myId, peerId)).limitToLast(50).once("value").then(function (ms) {
-              var v = ms.val() || {};
-              S.dms[peerId] = Object.keys(v).map(function (k) { return Object.assign({ key: k }, v[k]); });
-              saveLocal();
-              if (UI.page === "messages") renderMessages();
-              if (UI.dmId === peerId) renderDM();
-            }).catch(function () { /* */ });
-          });
-        });
-
-        finish();
-      }).catch(finish);
+    onDb("app", cloud.db.ref("users"), "value", function (us) {
+      var val = us.val() || {};
+      cloud.usersMap = val;
+      S.users = Object.keys(val).filter(function (k) { return k !== S.me.id; }).map(function (k) {
+        return Object.assign({ id: k }, val[k]);
+      });
+      renderAll();
+      if (UI.roomId) renderRoom();
     });
+
+    onDb("app", cloud.db.ref("rooms"), "value", function (rs) {
+      var val = rs.val() || {};
+      var list = Object.keys(val).map(function (rid) { return normalizeRoom(rid, val[rid]); });
+      if (list.length) {
+        var localOnly = (S.rooms || []).filter(function (lr) { return !val[lr.id]; });
+        S.rooms = list.concat(localOnly);
+      }
+      if (UI.roomId) {
+        var cur = getRoom(UI.roomId);
+        if (!cur) { leaveRoom(false); }
+        else { syncMicHardwareState(); renderRoom(); }
+      }
+      renderFloatingOrb();
+      if (UI.page === "home") renderHome();
+      else if (UI.page === "rooms") renderRooms();
+    });
+
+    onDb("app", cloud.db.ref("social/" + myId), "value", function (ss) {
+      var sv = ss.val() || {};
+      S.friends = Object.keys(sv.friends || {});
+      S.requests = Object.keys(sv.requests || {});
+      S.sentReq = Object.keys(sv.sentReq || {});
+      S.follows = Object.keys(sv.follows || {});
+      S.blocked = Object.keys(sv.blocked || {});
+      renderAll();
+    });
+
+    onDb("app", cloud.db.ref("userDms/" + myId), "value", function (ds) {
+      var threads = ds.val() || {};
+      Object.keys(threads).forEach(function (peerId) {
+        cloud.db.ref("dms/" + dmThreadId(myId, peerId)).limitToLast(50).once("value").then(function (ms) {
+          var v = ms.val() || {};
+          S.dms[peerId] = Object.keys(v).map(function (k) { return Object.assign({ key: k }, v[k]); });
+          saveLocal();
+          if (UI.page === "messages") renderMessages();
+          if (UI.dmId === peerId) renderDM();
+        }).catch(function () { /* */ });
+      });
+    });
+  }
+
+  async function syncUserCloudProfile(targetId) {
+    var myId = targetId || S.me.id || getOrCreateFixedUid();
+    S.me.id = myId;
+    S.me.num = hashNum(myId);
+    if (!cloud.on || !cloud.db) {
+      await ensureSequentialSpecialId(myId);
+      return;
+    }
+    try {
+      var snap = await cloud.db.ref("users/" + myId).once("value");
+      var p = snap.val();
+      if (p && p.id) {
+        S.me = Object.assign({}, S.me, p, {
+          id: myId,
+          num: p.num || S.me.num,
+          name: p.name || S.me.name || "",
+          email: S.me.email || p.email || "",
+          photo: S.me.photo || p.photo || ""
+        });
+        if (S.me.name && String(S.me.name).trim()) setOnboardDone(true);
+      }
+    } catch (e) { /* */ }
+    await ensureSequentialSpecialId(myId);
+    attachRealtimeListeners(myId);
+  }
+
+  async function handleAuthenticatedGoogleUser(gUser) {
+    if (!gUser) return;
+    var uidVal = gUser.uid || getOrCreateFixedUid();
+    try { localStorage.setItem(CONFIG.fixedUidKey, uidVal); } catch (e) { /* */ }
+    S.me.id = uidVal;
+    S.me.num = hashNum(uidVal);
+    if (gUser.email) S.me.email = gUser.email;
+    if (gUser.displayName && !S.me.name) S.me.name = clean(gUser.displayName);
+    if (gUser.photoURL && !S.me.photo) S.me.photo = gUser.photoURL;
+
+    setLocalSession(true);
+    await syncUserCloudProfile(uidVal);
+    save();
+    renderAll();
+
+    if (isOnboardDone()) {
+      UI.authReady = true;
+      showAuthGate(false);
+      toast("تم تسجيل الدخول عبر Gmail بنجاح ✅");
+    } else {
+      showAuthGate(true, "onboard");
+    }
   }
 
   async function signInWithGoogle() {
     if (UI.authSigningIn) return;
     UI.authSigningIn = true;
+    setGoogleLoginLoading(true, "جاري فتح نافذة Gmail...");
+
     try {
-      if (cloud.on && cloud.auth && global.firebase && firebase.auth.GoogleAuthProvider) {
-        var prov = new firebase.auth.GoogleAuthProvider();
-        prov.setCustomParameters({ prompt: "select_account" });
+      if (!cloud.on || !cloud.auth || !global.firebase || !firebase.auth || !firebase.auth.GoogleAuthProvider) {
+        setLocalSession(true);
+        await ensureSequentialSpecialId(S.me.id);
+        showAuthGate(true, isOnboardDone() ? null : "onboard");
+        if (isOnboardDone()) { UI.authReady = true; showAuthGate(false); }
+        toast("تم المتابعة محلياً ✅");
+        return;
+      }
+
+      var prov = new firebase.auth.GoogleAuthProvider();
+      prov.addScope("email");
+      prov.addScope("profile");
+      prov.setCustomParameters({ prompt: "select_account" });
+
+      try {
         var res = await cloud.auth.signInWithPopup(prov);
         if (res && res.user) {
-          if (res.user.displayName && !S.me.name) S.me.name = clean(res.user.displayName);
-          if (res.user.email) S.me.email = res.user.email;
-          if (res.user.photoURL && !S.me.photo) S.me.photo = res.user.photoURL;
+          await handleAuthenticatedGoogleUser(res.user);
+          return;
         }
+      } catch (popupErr) {
+        var code = popupErr && popupErr.code ? String(popupErr.code) : "";
+        if (
+          code === "auth/popup-blocked" ||
+          code === "auth/popup-closed-by-user" ||
+          code === "auth/cancelled-popup-request" ||
+          code === "auth/operation-not-supported-in-this-environment"
+        ) {
+          setGoogleLoginLoading(true, "جاري التحويل إلى صفحة Gmail...");
+          await cloud.auth.signInWithRedirect(prov);
+          return;
+        }
+        throw popupErr;
       }
-      setLocalSession(true);
-      await ensureSequentialSpecialId(S.me.id);
-      if (isOnboardDone()) {
-        UI.authReady = true;
-        showAuthGate(false);
-        save(); renderAll();
-        toast("مرحباً بعودتك ✅");
+    } catch (e) {
+      var errMsg = (e && e.message) ? String(e.message) : "تعذر تسجيل الدخول عبر Gmail";
+      if (errMsg.indexOf("auth/configuration-not-found") >= 0 || errMsg.indexOf("auth/operation-not-allowed") >= 0) {
+        toast("فعّل Google Sign-In في إعدادات Firebase Authentication");
       } else {
-        showAuthGate(true, "onboard");
+        toast(errMsg);
       }
-    } catch (e) { toast((e && e.message) || "تعذر تسجيل الدخول"); }
-    finally { UI.authSigningIn = false; }
+    } finally {
+      UI.authSigningIn = false;
+      setGoogleLoginLoading(false);
+    }
   }
 
   async function signInAsGuest() {
     setLocalSession(true);
-    await ensureSequentialSpecialId(S.me.id);
+    await syncUserCloudProfile(S.me.id);
     if (isOnboardDone()) {
       UI.authReady = true;
       showAuthGate(false);
-      save(); renderAll();
+      save();
+      renderAll();
     } else {
       showAuthGate(true, "onboard");
     }
@@ -733,6 +802,7 @@
     S.me.gender = UI.onboardGender || "ذكر";
     if (UI.onboardPhoto) S.me.photo = UI.onboardPhoto;
     setOnboardDone(true);
+    setLocalSession(true);
     UI.authReady = true;
     showAuthGate(false);
     save();
@@ -893,7 +963,8 @@
       var u = resolveLiveUser(id);
       var sid = displayUserId(u).toLowerCase();
       var rawId = String(u.id || "").toLowerCase();
-      if (sid.indexOf(q) >= 0 || rawId.indexOf(q) >= 0) {
+      var nm = String(u.name || "").toLowerCase();
+      if (sid.indexOf(q) >= 0 || rawId.indexOf(q) >= 0 || nm.indexOf(q) >= 0) {
         matched.push(u);
       }
     });
@@ -1053,7 +1124,7 @@
     openSheet("<h3>⚙️ إعدادات الملف الشخصي</h3>" +
       '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">' +
         '<div class="avatar lg" id="set-av-live">' + (nextPhoto ? '<img src="' + esc(nextPhoto) + '" alt="" />' : esc(initials(m.name))) + "</div>" +
-        '<div class="info"><div class="name">' + esc(m.name || "مستخدم") + '</div><div class="meta">ID: ' + esc(displayUserId(m)) + "</div></div>" +
+        '<div class="info"><div class="name">' + esc(m.name || "مستخدم") + '</div><div class="meta">ID: ' + esc(displayUserId(m)) + (m.email ? " • " + esc(m.email) : "") + "</div></div>" +
       "</div>" +
       "<label>الاسم</label><input id='set-name' maxlength='24' value='" + esc(m.name) + "' />" +
       "<label>العمر</label><input id='set-age' type='number' min='10' max='99' value='" + esc(m.age || "") + "' />" +
@@ -1066,7 +1137,7 @@
         '<button class="btn ghost" style="flex:1" id="set-topup" type="button">+ شحن 500 عملة</button>' +
       "</div>" +
       '<div class="switchrow" style="margin-top:8px"><span>الوضع النهاري</span><input type="checkbox" id="set-theme" ' + (S.settings.lightTheme ? "checked" : "") + " /></div>" +
-      '<button class="btn ghost block" id="set-google" type="button">🔄 تبديل / تسجيل دخول Google</button>' +
+      '<button class="btn ghost block" id="set-google" type="button">🔄 تبديل / تسجيل دخول Gmail</button>' +
       '<button class="btn red block" id="set-reset" type="button">إعادة ضبط البيانات</button>');
 
     $("set-photo-file").onchange = async function () {
@@ -1120,7 +1191,12 @@
     $("set-reset").onclick = function () {
       localStorage.removeItem(CONFIG.storageKey);
       localStorage.removeItem(CONFIG.onboardDoneKey);
-      location.reload();
+      localStorage.removeItem(CONFIG.authSessionKey);
+      if (cloud.on && cloud.auth && cloud.auth.currentUser) {
+        cloud.auth.signOut().finally(function () { location.reload(); });
+      } else {
+        location.reload();
+      }
     };
   }
 
@@ -1723,7 +1799,16 @@
     }
 
     window.addEventListener("beforeunload", function () {
-      if (UI.roomId || UI.floatingRoomId) leaveRoom(true);
+      var targetRoomId = UI.roomId || UI.floatingRoomId;
+      if (targetRoomId && cloud.on && cloud.db) {
+        var room = getRoom(targetRoomId);
+        var si = room ? seatIndexOf(room, S.me.id) : -1;
+        var ups = {};
+        if (si >= 0) ups["rooms/" + targetRoomId + "/seats/" + si + "/uid"] = null;
+        ups["rooms/" + targetRoomId + "/listeners/" + S.me.id] = null;
+        ups["users/" + S.me.id + "/online"] = false;
+        try { cloud.db.ref().update(ups); } catch (e) { /* */ }
+      }
     });
   }
 
@@ -1733,27 +1818,46 @@
     bindEvents();
     renderAll();
 
-    var logged = hasLocalSession();
-    if (!logged) {
+    initCloud();
+
+    if (cloud.on && cloud.auth) {
+      try {
+        var redRes = await cloud.auth.getRedirectResult();
+        if (redRes && redRes.user) {
+          await handleAuthenticatedGoogleUser(redRes.user);
+          return;
+        }
+      } catch (e) { /* */ }
+
+      cloud.auth.onAuthStateChanged(async function (user) {
+        if (user) {
+          await handleAuthenticatedGoogleUser(user);
+        } else if (!hasLocalSession()) {
+          showAuthGate(true, "login");
+        }
+      });
+    }
+
+    if (!hasLocalSession()) {
       showAuthGate(true, "login");
-    } else if (!isOnboardDone()) {
+      await ensureSequentialSpecialId(S.me.id);
+      attachRealtimeListeners(S.me.id);
+      return;
+    }
+
+    if (!isOnboardDone()) {
       showAuthGate(true, "onboard");
     } else {
       UI.authReady = true;
       showAuthGate(false);
     }
 
-    initCloud();
-    await startCloudSync();
-    await ensureSequentialSpecialId(S.me.id);
-
+    await syncUserCloudProfile(S.me.id);
     if (hasLocalSession() && isOnboardDone()) {
       UI.authReady = true;
       showAuthGate(false);
       save();
       renderAll();
-    } else if (hasLocalSession() && !isOnboardDone()) {
-      showAuthGate(true, "onboard");
     }
   }
 
