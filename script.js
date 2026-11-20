@@ -13,9 +13,10 @@
   var TOKEN_URL = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";
 
   var CONFIG = {
-    storageKey: "rv_state_v12",
+    storageKey: "rv_state_v13",
     fixedUidKey: "rv_fixed_uid_v1",
     authSessionKey: "rv_auth_logged_v1",
+    googleAuthedKey: "rv_google_authed_v1",
     onboardDoneKey: "rv_onboard_done_v1",
     startCoins: 1000,
     maxLevel: 100,
@@ -196,8 +197,18 @@
     } catch (e) { /* */ }
   }
 
-  /* ========= الصوت (Agora RTC) ========= */
-  var voice = { client: null, localTrack: null, channel: null, role: null, uidNum: 0, joining: false, speakingNums: {} };
+  /* ========= الصوت (Agora RTC) — الجميع يسمع بعضه + هالة صوت حول المقعد ========= */
+  var voice = {
+    client: null,
+    localTrack: null,
+    channel: null,
+    role: null,
+    uidNum: 0,
+    joining: false,
+    speakingNums: {},
+    localSpeaking: false,
+    localLevelTimer: null
+  };
   var musicState = { roomAudio: null, currentTitle: "" };
 
   function setVoiceStatusUI(connected, label) {
@@ -223,7 +234,12 @@
       await voice.client.subscribe(user, mediaType);
       if (mediaType === "audio" && user.audioTrack) {
         user.audioTrack.setVolume(UI.roomSpeakerMuted ? 0 : 100);
-        try { user.audioTrack.play(); showAudioUnlockBar(false); } catch (e) { showAudioUnlockBar(true); }
+        try {
+          user.audioTrack.play();
+          showAudioUnlockBar(false);
+        } catch (e) {
+          showAudioUnlockBar(true);
+        }
       }
     } catch (e) { /* */ }
   }
@@ -232,10 +248,39 @@
     voice.client.remoteUsers.forEach(function (u) {
       if (u && u.hasAudio) {
         if (u.audioTrack) {
-          try { u.audioTrack.setVolume(UI.roomSpeakerMuted ? 0 : 100); u.audioTrack.play(); showAudioUnlockBar(false); } catch (e) { /* */ }
-        } else { subscribeAndPlayRemoteUser(u, "audio"); }
+          try {
+            u.audioTrack.setVolume(UI.roomSpeakerMuted ? 0 : 100);
+            u.audioTrack.play();
+            showAudioUnlockBar(false);
+          } catch (e) { showAudioUnlockBar(true); }
+        } else {
+          subscribeAndPlayRemoteUser(u, "audio");
+        }
       }
     });
+  }
+  function startLocalVoiceMeter() {
+    stopLocalVoiceMeter();
+    voice.localLevelTimer = setInterval(function () {
+      var active = false;
+      if (voice.localTrack && !UI.micMuted && voice.client && voice.client.connectionState === "CONNECTED") {
+        try {
+          var lvl = typeof voice.localTrack.getVolumeLevel === "function" ? voice.localTrack.getVolumeLevel() : 0;
+          active = lvl > 0.025;
+        } catch (e) { active = false; }
+      }
+      if (active !== voice.localSpeaking) {
+        voice.localSpeaking = active;
+        updateSpeakingIndicators();
+      }
+    }, 120);
+  }
+  function stopLocalVoiceMeter() {
+    if (voice.localLevelTimer) {
+      clearInterval(voice.localLevelTimer);
+      voice.localLevelTimer = null;
+    }
+    voice.localSpeaking = false;
   }
   function setupAgoraClient() {
     if (voice.client || !global.AgoraRTC) return;
@@ -259,7 +304,7 @@
       voice.client.on("volume-indicator", function (volumes) {
         var active = {};
         (volumes || []).forEach(function (v) {
-          if (v.level > 4) active[v.uid === 0 ? voice.uidNum : v.uid] = true;
+          if (v.level > 1.5) active[v.uid === 0 ? voice.uidNum : v.uid] = true;
         });
         voice.speakingNums = active;
         updateSpeakingIndicators();
@@ -277,6 +322,7 @@
     return data;
   }
   async function stopLocalMic() {
+    stopLocalVoiceMeter();
     if (voice.localTrack) {
       try { if (voice.client && voice.client.connectionState === "CONNECTED") await voice.client.unpublish([voice.localTrack]); } catch (e) { /* */ }
       try { voice.localTrack.stop(); voice.localTrack.close(); } catch (e) { /* */ }
@@ -292,6 +338,7 @@
       var muted = UI.micMuted || (mySeatIdx >= 0 && room.seats[mySeatIdx].muted);
       await voice.localTrack.setEnabled(!muted);
       await voice.client.publish([voice.localTrack]);
+      startLocalVoiceMeter();
       resumeAllRemoteAudioTracks();
       return true;
     } catch (e) { toast("اسمح للمتصفح بالوصول للميكروفون 🎤"); return false; }
@@ -300,10 +347,12 @@
     var room = getRoom(UI.roomId || UI.floatingRoomId);
     if (!room) return;
     var mySeatIdx = seatIndexOf(room, S.me.id);
-    if (mySeatIdx < 0) { await stopLocalMic(); return; }
+    if (mySeatIdx < 0) { await stopLocalMic(); updateSpeakingIndicators(); return; }
     var muted = UI.micMuted || !!room.seats[mySeatIdx].muted;
-    if (!voice.localTrack && !muted) { await publishLocalMic(); return; }
+    if (!voice.localTrack && !muted) { await publishLocalMic(); }
     if (voice.localTrack) { try { await voice.localTrack.setEnabled(!muted); } catch (e) { /* */ } }
+    if (muted) { voice.localSpeaking = false; }
+    updateSpeakingIndicators();
   }
   async function joinVoiceChannel(channelName, desiredRole) {
     if (!global.AgoraRTC) { setVoiceStatusUI(false, "مكتبة الصوت غير متاحة"); return false; }
@@ -322,11 +371,13 @@
       voice.role = desiredRole || "publisher";
       if (Array.isArray(voice.client.remoteUsers)) {
         for (var i = 0; i < voice.client.remoteUsers.length; i++) {
-          if (voice.client.remoteUsers[i] && voice.client.remoteUsers[i].hasAudio) await subscribeAndPlayRemoteUser(voice.client.remoteUsers[i], "audio");
+          var ru = voice.client.remoteUsers[i];
+          if (ru && ru.hasAudio) await subscribeAndPlayRemoteUser(ru, "audio");
         }
       }
       var room = getRoom(channelName);
       if (room && seatIndexOf(room, S.me.id) >= 0) await publishLocalMic();
+      applyRoomSpeakerMuteState();
       setVoiceStatusUI(true, "الجميع يسمع بعضه الآن 🔊");
       return true;
     } catch (e) { setVoiceStatusUI(false, "تعذر ربط الصوت"); return false; }
@@ -334,6 +385,7 @@
   }
   async function leaveVoiceChannel() {
     showAudioUnlockBar(false);
+    stopLocalVoiceMeter();
     if (musicState.roomAudio) {
       try { musicState.roomAudio.pause(); musicState.roomAudio.src = ""; } catch (e) { /* */ }
       musicState.roomAudio = null;
@@ -364,7 +416,9 @@
       if (!s.uid) { el.classList.remove("speak"); return; }
       var u = resolveLiveUser(s.uid);
       var muted = s.muted || (s.uid === S.me.id && UI.micMuted);
-      el.classList.toggle("speak", !muted && !!voice.speakingNums[u.num || hashNum(s.uid)]);
+      var isSelfSpeaking = (s.uid === S.me.id && !muted && voice.localSpeaking);
+      var isRemoteSpeaking = (!muted && !!voice.speakingNums[u.num || hashNum(s.uid)]);
+      el.classList.toggle("speak", !muted && (isSelfSpeaking || isRemoteSpeaking));
     });
   }
 
@@ -518,10 +572,33 @@
     return base;
   }
 
-  function hasLocalSession() { try { return localStorage.getItem(CONFIG.authSessionKey) === "1"; } catch (e) { return false; } }
-  function setLocalSession(v) { try { if (v) localStorage.setItem(CONFIG.authSessionKey, "1"); else localStorage.removeItem(CONFIG.authSessionKey); } catch (e) { /* */ } }
-  function isOnboardDone() { try { return localStorage.getItem(CONFIG.onboardDoneKey) === "1" && !!(S && S.me && S.me.name && String(S.me.name).trim()); } catch (e) { return false; } }
-  function setOnboardDone(v) { try { if (v) localStorage.setItem(CONFIG.onboardDoneKey, "1"); else localStorage.removeItem(CONFIG.onboardDoneKey); } catch (e) { /* */ } }
+  function hasLocalSession() {
+    try {
+      return localStorage.getItem(CONFIG.authSessionKey) === "1" || localStorage.getItem(CONFIG.googleAuthedKey) === "1";
+    } catch (e) { return false; }
+  }
+  function setLocalSession(v, isGoogle) {
+    try {
+      if (v) {
+        localStorage.setItem(CONFIG.authSessionKey, "1");
+        if (isGoogle) localStorage.setItem(CONFIG.googleAuthedKey, "1");
+      } else {
+        localStorage.removeItem(CONFIG.authSessionKey);
+        localStorage.removeItem(CONFIG.googleAuthedKey);
+      }
+    } catch (e) { /* */ }
+  }
+  function isOnboardDone() {
+    try {
+      return localStorage.getItem(CONFIG.onboardDoneKey) === "1" && !!(S && S.me && S.me.name && String(S.me.name).trim());
+    } catch (e) { return false; }
+  }
+  function setOnboardDone(v) {
+    try {
+      if (v) localStorage.setItem(CONFIG.onboardDoneKey, "1");
+      else localStorage.removeItem(CONFIG.onboardDoneKey);
+    } catch (e) { /* */ }
+  }
 
   function showAuthGate(show, step) {
     var g = $("auth-gate");
@@ -633,8 +710,8 @@
   function attachDmThreadListener(myId, peerId) {
     if (!cloud.on || !cloud.db || !peerId) return;
     var tid = dmThreadId(myId, peerId);
-    cloud.db.ref("dms/" + tid).limitToLast(100).off("value");
-    cloud.db.ref("dms/" + tid).limitToLast(100).on("value", function (ms) {
+    cloud.db.ref("dms/" + tid).limitToLast(150).off("value");
+    cloud.db.ref("dms/" + tid).limitToLast(150).on("value", function (ms) {
       var v = ms.val() || {};
       var arr = Object.keys(v).map(function (k) { return Object.assign({ key: k }, v[k]); });
       arr.sort(function (a, b) { return (a.t || 0) - (b.t || 0); });
@@ -721,6 +798,7 @@
     S.me.num = hashNum(myId);
     if (!cloud.on || !cloud.db) {
       await ensureSequentialSpecialId(myId);
+      attachRealtimeListeners(myId);
       return;
     }
     try {
@@ -731,8 +809,8 @@
           id: myId,
           num: p.num || S.me.num,
           name: p.name || S.me.name || "",
-          email: p.email || p.email || "",
-          photo: p.photo || p.photo || "",
+          email: p.email || S.me.email || "",
+          photo: p.photo || S.me.photo || "",
           receivedGifts: Object.assign({}, (S.me && S.me.receivedGifts) || {}, p.receivedGifts || {})
         });
         if (S.me.name && String(S.me.name).trim()) setOnboardDone(true);
@@ -752,7 +830,7 @@
     if (gUser.displayName && !S.me.name) S.me.name = clean(gUser.displayName);
     if (gUser.photoURL && !S.me.photo) S.me.photo = gUser.photoURL;
 
-    setLocalSession(true);
+    setLocalSession(true, true);
     await syncUserCloudProfile(uidVal);
     save();
     renderAll();
@@ -760,7 +838,6 @@
     if (isOnboardDone()) {
       UI.authReady = true;
       showAuthGate(false);
-      toast("تم تسجيل الدخول عبر Gmail بنجاح ✅");
     } else {
       showAuthGate(true, "onboard");
     }
@@ -773,11 +850,11 @@
 
     try {
       if (!cloud.on || !cloud.auth || !global.firebase || !firebase.auth || !firebase.auth.GoogleAuthProvider) {
-        setLocalSession(true);
+        setLocalSession(true, true);
         await ensureSequentialSpecialId(S.me.id);
         showAuthGate(true, isOnboardDone() ? null : "onboard");
         if (isOnboardDone()) { UI.authReady = true; showAuthGate(false); }
-        toast("تم المتابعة محلياً ✅");
+        toast("تم المتابعة ✅");
         return;
       }
 
@@ -790,6 +867,7 @@
         var res = await cloud.auth.signInWithPopup(prov);
         if (res && res.user) {
           await handleAuthenticatedGoogleUser(res.user);
+          toast("تم تسجيل الدخول عبر Gmail بنجاح ✅");
           return;
         }
       } catch (popupErr) {
@@ -820,7 +898,7 @@
   }
 
   async function signInAsGuest() {
-    setLocalSession(true);
+    setLocalSession(true, false);
     await syncUserCloudProfile(S.me.id);
     if (isOnboardDone()) {
       UI.authReady = true;
@@ -843,7 +921,7 @@
     S.me.gender = UI.onboardGender || "ذكر";
     if (UI.onboardPhoto) S.me.photo = UI.onboardPhoto;
     setOnboardDone(true);
-    setLocalSession(true);
+    setLocalSession(true, true);
     UI.authReady = true;
     showAuthGate(false);
     save();
@@ -866,6 +944,7 @@
     if (S.follows.indexOf(otherId) < 0) S.follows.push(otherId);
     S.requests = S.requests.filter(function (x) { return x !== otherId; });
     S.sentReq = S.sentReq.filter(function (x) { return x !== otherId; });
+    if (!S.dms[otherId]) S.dms[otherId] = [];
     attachDmThreadListener(S.me.id, otherId);
     if (cloud.on && cloud.db) {
       var ups = {};
@@ -902,7 +981,7 @@
         cloud.db.ref("social/" + S.me.id + "/follows/" + otherId).set(true).catch(function () { /* */ });
         cloud.db.ref("users/" + otherId + "/followers").transaction(function (c) { return (Number(c) || 0) + 1; }).catch(function () { /* */ });
       }
-      toast("تمت المتابعة ✅");
+      toast("تم تفعيل المتابعة ✅");
     }
     save();
     return nowFollowing;
@@ -941,10 +1020,11 @@
 
   function pushRoomMsg(room, msgObj) {
     if (!room) return;
+    var tNow = now();
     if (!Array.isArray(room.msgs)) room.msgs = [];
-    room.msgs.push(Object.assign({ key: uid() }, msgObj, { t: now() }));
+    room.msgs.push(Object.assign({ key: uid() }, msgObj, { t: tNow }));
     if (UI.roomId === room.id) renderRoomChat();
-    if (cloud.on && cloud.db) cloud.db.ref("roomMessages/" + room.id).push(Object.assign({}, msgObj, { t: serverTs() })).catch(function () { /* */ });
+    if (cloud.on && cloud.db) cloud.db.ref("roomMessages/" + room.id).push(Object.assign({}, msgObj, { t: tNow })).catch(function () { /* */ });
   }
 
   function showEntryBanner(userObj) {
@@ -1329,6 +1409,7 @@
       localStorage.removeItem(CONFIG.storageKey);
       localStorage.removeItem(CONFIG.onboardDoneKey);
       localStorage.removeItem(CONFIG.authSessionKey);
+      localStorage.removeItem(CONFIG.googleAuthedKey);
       if (cloud.on && cloud.auth && cloud.auth.currentUser) {
         cloud.auth.signOut().finally(function () { location.reload(); });
       } else {
@@ -1487,7 +1568,7 @@
       if (s.uid) {
         var u = resolveLiveUser(s.uid);
         var muted = s.muted || (s.uid === S.me.id && UI.micMuted);
-        var speaking = !muted && !!voice.speakingNums[u.num || hashNum(s.uid)];
+        var speaking = !muted && ((s.uid === S.me.id && voice.localSpeaking) || !!voice.speakingNums[u.num || hashNum(s.uid)]);
         cls += " occ" + (speaking ? " speak" : "");
         inner = avatarInnerHTML(u);
         fullName = esc(u.name || "مستخدم");
@@ -1519,9 +1600,9 @@
     if (!room) return;
     var box = $("room-chat");
     var stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 48;
-    var sessStart = UI.roomSessionStart || 0;
+    var sessStart = UI.roomSessionStart || now();
     var sessionMsgs = (room.msgs || []).filter(function (m) {
-      return Number(m.t || 0) >= sessStart - 1500;
+      return Number(m.t || 0) >= sessStart - 1000;
     });
     box.innerHTML = sessionMsgs.map(function (m) {
       if (m.sys) return '<div class="msg sys">' + esc(m.text) + "</div>";
@@ -1986,6 +2067,16 @@
 
     initCloud();
 
+    var hasSavedSession = hasLocalSession();
+    if (hasSavedSession && isOnboardDone()) {
+      UI.authReady = true;
+      showAuthGate(false);
+    } else if (!hasSavedSession) {
+      showAuthGate(true, "login");
+    } else {
+      showAuthGate(true, "onboard");
+    }
+
     if (cloud.on && cloud.auth) {
       try {
         var redRes = await cloud.auth.getRedirectResult();
@@ -2002,20 +2093,6 @@
           showAuthGate(true, "login");
         }
       });
-    }
-
-    if (!hasLocalSession()) {
-      showAuthGate(true, "login");
-      await ensureSequentialSpecialId(S.me.id);
-      attachRealtimeListeners(S.me.id);
-      return;
-    }
-
-    if (!isOnboardDone()) {
-      showAuthGate(true, "onboard");
-    } else {
-      UI.authReady = true;
-      showAuthGate(false);
     }
 
     await syncUserCloudProfile(S.me.id);
