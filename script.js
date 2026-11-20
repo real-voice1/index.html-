@@ -1,4 +1,4 @@
-/* REAL VOICE — الملف الكامل المتكامل (الواجهة + Firebase Realtime + Agora RTC + مشغل موسيقى مشترك + صورة من المعرض) */
+/* REAL VOICE — نسخة محسّنة وسلسة (الواجهة + Firebase Realtime + Agora RTC + مشغل موسيقى مشترك + صورة من المعرض) */
 (function (global) {
   "use strict";
 
@@ -43,51 +43,18 @@
     { id: "lvl3", t: "⭐ وصلت المستوى 3" }
   ];
 
-  // مقترحات أغاني MP3 للمشغل المشترك
   var DEFAULT_TRACKS = [
-    {
-      id: "t1",
-      title: "Night Chill Beat",
-      artist: "SoundHelix",
-      cover: "🎵",
-      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-    },
-    {
-      id: "t2",
-      title: "Acoustic Vibes",
-      artist: "SoundHelix",
-      cover: "🎸",
-      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
-    },
-    {
-      id: "t3",
-      title: "Midnight Lounge",
-      artist: "SoundHelix",
-      cover: "🌙",
-      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
-    },
-    {
-      id: "t4",
-      title: "Energy Pulse",
-      artist: "SoundHelix",
-      cover: "⚡",
-      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"
-    }
+    { id: "t1", title: "Night Chill Beat", artist: "SoundHelix", cover: "🎵", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+    { id: "t2", title: "Acoustic Vibes", artist: "SoundHelix", cover: "🎸", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+    { id: "t3", title: "Midnight Lounge", artist: "SoundHelix", cover: "🌙", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
+    { id: "t4", title: "Energy Pulse", artist: "SoundHelix", cover: "⚡", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" }
   ];
 
   var STICKERS = [
-    { id: "s1", e: "🥳", n: "حفلة" },
-    { id: "s2", e: "🎤", n: "غناء" },
-    { id: "s3", e: "👑", n: "ملكي" },
-    { id: "s4", e: "🔥", n: "نار" },
-    { id: "s5", e: "💖", n: "حب" },
-    { id: "s6", e: "😂", n: "ضحك" },
-    { id: "s7", e: "🎮", n: "جيمر" },
-    { id: "s8", e: "☕", n: "قهوة" },
-    { id: "s9", e: "🌙", n: "سهرة" },
-    { id: "s10", e: "👏", n: "تصفيق" },
-    { id: "s11", e: "💎", n: "ألماس" },
-    { id: "s12", e: "🚀", n: "انطلاق" }
+    { id: "s1", e: "🥳", n: "حفلة" }, { id: "s2", e: "🎤", n: "غناء" }, { id: "s3", e: "👑", n: "ملكي" },
+    { id: "s4", e: "🔥", n: "نار" }, { id: "s5", e: "💖", n: "حب" }, { id: "s6", e: "😂", n: "ضحك" },
+    { id: "s7", e: "🎮", n: "جيمر" }, { id: "s8", e: "☕", n: "قهوة" }, { id: "s9", e: "🌙", n: "سهرة" },
+    { id: "s10", e: "👏", n: "تصفيق" }, { id: "s11", e: "💎", n: "ألماس" }, { id: "s12", e: "🚀", n: "انطلاق" }
   ];
 
   var ROOM_THEMES = [
@@ -138,7 +105,7 @@
     t.textContent = msg;
     t.classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2600);
+    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2400);
   }
 
   function normWord(w) {
@@ -163,7 +130,6 @@
     return [String(a), String(b)].sort().join("__");
   }
 
-  /* ضغط صورة من المعرض وتحويلها إلى DataURL صغير ومناسب */
   function readImageFileAsDataUrl(file, maxSize, quality) {
     maxSize = maxSize || 320;
     quality = quality || 0.78;
@@ -320,18 +286,16 @@
 
   async function stopMusicBroadcast() {
     if (musicState.bufferTrack) {
-      try {
-        musicState.bufferTrack.stopProcessAudioBuffer();
-      } catch (e) { /* */ }
+      try { musicState.bufferTrack.stopProcessAudioBuffer(); } catch (e0) { /* */ }
       try {
         if (voice.client && voice.client.connectionState === "CONNECTED") {
           await voice.client.unpublish([musicState.bufferTrack]);
         }
-      } catch (e) { /* */ }
+      } catch (e1) { /* */ }
       try {
         musicState.bufferTrack.stop();
         musicState.bufferTrack.close();
-      } catch (e) { /* */ }
+      } catch (e2) { /* */ }
       musicState.bufferTrack = null;
     }
     if (musicState.roomAudio) {
@@ -339,7 +303,7 @@
         musicState.roomAudio.pause();
         musicState.roomAudio.removeAttribute("src");
         musicState.roomAudio.load();
-      } catch (e) { /* */ }
+      } catch (e3) { /* */ }
       musicState.roomAudio = null;
     }
   }
@@ -359,14 +323,12 @@
     }
   }
 
-  /* تشغيل متزامن للجميع داخل الغرفة + بث Agora للـ DJ */
   async function syncRoomMusicForEveryone(m) {
     if (!UI.roomId || !m || !m.url) {
       await stopMusicBroadcast();
       return;
     }
 
-    // إذا كان المستخدم هو الـ DJ وحالة التشغيل نشطة، نحاول نشر مسار صوتي عبر Agora أيضاً
     var isDj = m.djUid === S.me.id;
     var publishedViaAgora = false;
 
@@ -389,7 +351,6 @@
           bTrack.startProcessAudioBuffer();
           publishedViaAgora = true;
         } catch (err) {
-          console.warn("Agora BufferSource fallback:", err);
           publishedViaAgora = false;
         }
       }
@@ -406,7 +367,6 @@
       }
     }
 
-    // تشغيل متزامن عبر عنصر Audio للجميع (باستثناء الـ DJ إذا تم البث عبر Agora لتجنب التكرار)
     try {
       if (!musicState.roomAudio) {
         musicState.roomAudio = new Audio();
@@ -436,7 +396,7 @@
         if (Math.abs((audio.currentTime || 0) - expectedSec) > 1.5) {
           try { audio.currentTime = expectedSec; } catch (eSeek) { /* */ }
         }
-        audio.play().catch(function () { /* قد ينتظر تفاعل المستخدم */ });
+        audio.play().catch(function () { /* */ });
       };
 
       if (audio.readyState >= 1) {
@@ -660,11 +620,8 @@
       btn.onclick = async function () {
         var found = DEFAULT_TRACKS.filter(function (x) { return x.id === btn.getAttribute("data-sug"); })[0];
         if (found) {
-          if (isStaff) {
-            await startTrackNow(room, found);
-          } else {
-            await addTrackToQueue(room, found);
-          }
+          if (isStaff) await startTrackNow(room, found);
+          else await addTrackToQueue(room, found);
           openMusicSheet();
         }
       };
@@ -796,7 +753,7 @@
       }
       return true;
     } catch (err) {
-      console.error("Agora join error:", err);
+      console.warn("Agora join error:", err);
       toast("تعذر الاتصال بالصوت: " + (err && err.message ? err.message : "خطأ شبكة"));
       return false;
     } finally {
@@ -819,7 +776,7 @@
       await voice.client.publish([voice.localTrack]);
       return true;
     } catch (err) {
-      console.error("Mic publish error:", err);
+      console.warn("Mic publish error:", err);
       toast("لم يتم السماح بالوصول إلى الميكروفون 🎤");
       return false;
     }
@@ -904,7 +861,7 @@
       cloud.auth = firebase.auth();
       cloud.on = true;
     } catch (e) {
-      console.error("Firebase init failed", e);
+      console.warn("Firebase init failed", e);
       cloud.on = false;
     }
     return cloud.on;
@@ -984,6 +941,8 @@
         if (S && S.me && S.rooms) {
           if (!S.me.num) S.me.num = hashNum(S.me.id);
           if (S.me.photo == null) S.me.photo = "";
+          if (!S.unread) S.unread = {};
+          if (!S.dms) S.dms = {};
           ensureDailyTasks();
           return;
         }
@@ -1053,6 +1012,33 @@
     }
   }
 
+  function attachDmInboxListener(myId) {
+    if (!cloud.on || !cloud.db) return;
+    trackListener("app", cloud.db.ref("userDms/" + myId), "value", function (snap) {
+      var threads = snap.val() || {};
+      Object.keys(threads).forEach(function (peerId) {
+        if (S.blocked.indexOf(peerId) >= 0) return;
+        var tid = dmThreadId(myId, peerId);
+        cloud.db.ref("dms/" + tid).limitToLast(50).once("value").then(function (msnap) {
+          var v = msnap.val() || {};
+          var msgs = Object.keys(v).map(function (k) { return Object.assign({ key: k }, v[k]); });
+          var prevLen = (S.dms[peerId] && S.dms[peerId].length) || 0;
+          S.dms[peerId] = msgs;
+          if (msgs.length > prevLen && UI.dmId !== peerId) {
+            var last = msgs[msgs.length - 1];
+            if (last && last.from !== myId) {
+              S.unread[peerId] = (S.unread[peerId] || 0) + (msgs.length - prevLen);
+            }
+          }
+          saveLocal();
+          renderTop();
+          if (UI.page === "messages") renderMessages();
+          if (UI.dmId === peerId) renderDM();
+        }).catch(function () { /* */ });
+      });
+    });
+  }
+
   function startCloudSync() {
     if (!cloud.on) return Promise.resolve();
     return new Promise(function (resolve) {
@@ -1100,7 +1086,10 @@
               if (k !== S.me.id) list.push(Object.assign({ id: k }, val[k]));
             });
             S.users = list;
-            renderAll();
+            renderTop();
+            if (UI.page === "home" && UI.query.trim()) renderHome();
+            if (UI.page === "friends") renderFriends();
+            if (UI.page === "messages") renderMessages();
             if (UI.roomId) renderRoom();
           });
 
@@ -1125,7 +1114,9 @@
                 renderRoom();
               }
             }
-            renderAll();
+            if (UI.page === "home") renderHome();
+            else if (UI.page === "rooms") renderRooms();
+            else if (UI.page === "friends") renderFriends();
           });
 
           trackListener("app", cloud.db.ref("social/" + S.me.id), "value", function (ssnap) {
@@ -1135,7 +1126,9 @@
             S.sentReq = Object.keys(sv.sentReq || {});
             S.follows = Object.keys(sv.follows || {});
             S.blocked = Object.keys(sv.blocked || {});
-            renderAll();
+            renderTop();
+            if (UI.page === "friends") renderFriends();
+            if (UI.page === "profile") renderProfile();
           });
 
           trackListener("app", cloud.db.ref("notifications/" + S.me.id).limitToLast(50), "value", function (nsnap) {
@@ -1146,6 +1139,8 @@
             S.notifs = arr;
             renderTop();
           });
+
+          attachDmInboxListener(myId);
 
           saveLocal();
           finish();
@@ -1277,7 +1272,7 @@
     document.querySelectorAll(".navbtn").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-page") === page); });
     var pg = $("page-" + page);
     if (pg) pg.scrollTop = 0;
-    renderAll();
+    renderCurrentPage();
   }
 
   function renderTop() {
@@ -1434,13 +1429,17 @@
     }).join("");
   }
 
-  function renderAll() {
-    renderTop();
+  function renderCurrentPage() {
     if (UI.page === "home") renderHome();
     else if (UI.page === "rooms") renderRooms();
     else if (UI.page === "friends") renderFriends();
     else if (UI.page === "messages") renderMessages();
     else if (UI.page === "profile") renderProfile();
+  }
+
+  function renderAll() {
+    renderTop();
+    renderCurrentPage();
   }
 
   /* ========= 8. النوافذ السفلية ========= */
@@ -1705,19 +1704,24 @@
 
     if (room) {
       var si = seatIndexOf(room, S.me.id);
+      if (si >= 0) {
+        room.seats[si].uid = null;
+        room.seats[si].muted = false;
+      }
+      room.listeners = room.listeners.filter(function (x) { return x !== S.me.id; });
       if (cloud.on && cloud.db) {
         var ups = {};
-        if (si >= 0) ups["rooms/" + rid + "/seats/" + si + "/uid"] = null;
+        if (si >= 0) {
+          ups["rooms/" + rid + "/seats/" + si + "/uid"] = null;
+          ups["rooms/" + rid + "/seats/" + si + "/muted"] = false;
+        }
         ups["rooms/" + rid + "/listeners/" + S.me.id] = null;
         ups["rooms/" + rid + "/micQueue/" + S.me.id] = null;
         if (musicState.data && musicState.data.djUid === S.me.id) {
           ups["rooms/" + rid + "/music/djUid"] = null;
           ups["rooms/" + rid + "/music/paused"] = true;
         }
-        await cloud.db.ref().update(ups);
-      } else {
-        if (si >= 0) room.seats[si].uid = null;
-        room.listeners = room.listeners.filter(function (x) { return x !== S.me.id; });
+        try { await cloud.db.ref().update(ups); } catch (e) { /* */ }
       }
       pushRoomMsg(room, { sys: true, text: S.me.name + " غادر الغرفة" });
     }
@@ -1783,7 +1787,7 @@
     var room = getRoom(UI.roomId);
     if (!room) return;
     var box = $("room-chat");
-    var stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 40;
+    var stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 48;
     box.innerHTML = room.msgs.map(function (m, i) {
       if (m.sys) return '<div class="msg sys">' + esc(m.text) + "</div>";
       var u = getUser(m.from), me = m.from === S.me.id;
@@ -1972,7 +1976,7 @@
             ups["rooms/" + room.id + "/seats/" + i + "/uid"] = null;
             ups["rooms/" + room.id + "/seats/" + i + "/muted"] = false;
             ups["rooms/" + room.id + "/listeners/" + S.me.id] = true;
-            await cloud.db.ref().update(ups);
+            try { await cloud.db.ref().update(ups); } catch (e) { /* */ }
           } else {
             saveLocal();
           }
@@ -2004,7 +2008,7 @@
             ups["rooms/" + room.id + "/seats/" + i + "/uid"] = null;
             ups["rooms/" + room.id + "/seats/" + i + "/muted"] = false;
             ups["rooms/" + room.id + "/listeners/" + kickedUid] = true;
-            await cloud.db.ref().update(ups);
+            try { await cloud.db.ref().update(ups); } catch (e) { /* */ }
           } else {
             saveLocal();
           }
@@ -2024,7 +2028,7 @@
             ups["rooms/" + room.id + "/seats/" + i + "/uid"] = null;
             ups["rooms/" + room.id + "/seats/" + i + "/locked"] = true;
             ups["rooms/" + room.id + "/listeners/" + kickedUid] = true;
-            await cloud.db.ref().update(ups);
+            try { await cloud.db.ref().update(ups); } catch (e) { /* */ }
           } else {
             saveLocal();
           }
@@ -2539,7 +2543,10 @@
       trackListener("dm", cloud.db.ref("dms/" + tid).limitToLast(100), "value", function (snap) {
         var v = snap.val() || {};
         S.dms[id] = Object.keys(v).map(function (k) { return Object.assign({ key: k }, v[k]); });
+        S.unread[id] = 0;
+        saveLocal();
         renderDM();
+        renderTop();
       });
     } else {
       renderDM();
@@ -2568,6 +2575,10 @@
 
     if (cloud.on && cloud.db) {
       var tid = dmThreadId(S.me.id, UI.dmId);
+      var ups = {};
+      ups["userDms/" + S.me.id + "/" + UI.dmId] = true;
+      ups["userDms/" + UI.dmId + "/" + S.me.id] = true;
+      cloud.db.ref().update(ups).catch(function () { /* */ });
       cloud.db.ref("dms/" + tid).push(msgObj);
     } else {
       if (!S.dms[UI.dmId]) S.dms[UI.dmId] = [];
@@ -2977,7 +2988,7 @@
   try {
     init();
   } catch (err) {
-    console.error(err);
+    console.warn(err);
     document.body.insertAdjacentHTML("afterbegin", '<div style="padding:20px;color:#fca5a5">حدث خطأ في تشغيل التطبيق. جرّب مسح بيانات الموقع وإعادة التحميل.</div>');
   }
 })(window);
