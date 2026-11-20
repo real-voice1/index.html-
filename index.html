@@ -65,6 +65,7 @@
       position: relative; width: 34px; height: 34px; border-radius: 12px;
       border: 1px solid var(--border); background: var(--glass); color: var(--txt);
       display: grid; place-items: center; cursor: pointer; font-size: 15px;
+      pointer-events: auto;
     }
     .badge {
       position: absolute; top: -5px; left: -5px; min-width: 17px; height: 17px;
@@ -150,6 +151,7 @@
       border: none; border-radius: 12px; padding: 8px 14px; font-weight: 700;
       font-size: 12px; cursor: pointer; color: #fff;
       background: linear-gradient(135deg, var(--acc), var(--acc2));
+      pointer-events: auto;
     }
     .btn.sm { padding: 6px 10px; font-size: 11px; border-radius: 10px; }
     .btn.ghost { background: var(--glass-2); border: 1px solid var(--border); color: var(--txt); }
@@ -198,13 +200,43 @@
       transform: translateX(-100%); transition: transform 0.2s ease; pointer-events: none;
     }
     .overlay-view.open { transform: translateX(0); pointer-events: auto; }
+    .overlay-view.open * { pointer-events: auto; }
     .ohead {
       display: flex; align-items: center; gap: 8px; padding: 10px 12px;
-      background: rgba(10, 7, 20, 0.9); border-bottom: 1px solid var(--border);
+      background: rgba(10, 7, 20, 0.92); border-bottom: 1px solid var(--border);
+      position: relative; z-index: 5;
     }
     .ohead .info { flex: 1; min-width: 0; }
     .ohead .title-r { font-weight: 800; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .ohead .sub-r { font-size: 11px; color: var(--muted); }
+    .ohead .sub-r {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--muted); margin-top: 2px;
+    }
+
+    /* شريط صور المتواجدين في الغرفة بشكل احترافي جنب عدد الأشخاص */
+    .room-presence {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      padding: 2px 7px 2px 5px; border-radius: 999px; cursor: pointer;
+    }
+    .room-avatars-strip {
+      display: inline-flex; align-items: center; flex-direction: row-reverse;
+    }
+    .room-mini-av {
+      width: 20px; height: 20px; border-radius: 50%; overflow: hidden;
+      border: 1.5px solid #150d2b; margin-right: -6px;
+      background: linear-gradient(135deg, var(--acc), var(--acc2));
+      display: inline-grid; place-items: center; font-size: 9px; font-weight: 800; color: #fff;
+      flex-shrink: 0;
+    }
+    .room-mini-av:last-child { margin-right: 0; }
+    .room-mini-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .room-mini-more {
+      background: rgba(139,92,246,0.45); color: #fff; font-size: 9px; font-weight: 800;
+      padding: 0 4px; height: 20px; border-radius: 999px; display: inline-flex;
+      align-items: center; justify-content: center; margin-right: -4px;
+      border: 1.5px solid #150d2b;
+    }
 
     .pinned {
       margin: 8px 12px 0; padding: 8px 12px; border-radius: 12px; font-size: 12px;
@@ -227,11 +259,16 @@
     }
     .quiz-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
 
-    .seats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px; }
+    .seats {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px;
+      position: relative; z-index: 4;
+    }
     .seat {
       background: var(--glass); border: 1px solid var(--border); border-radius: 16px;
-      padding: 8px 4px; text-align: center; cursor: pointer; transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      padding: 8px 4px; text-align: center; cursor: pointer;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
     }
+    .seat:active { transform: scale(0.97); }
     .seat.vip { border-color: rgba(245,158,11,0.45); }
     .seat.locked { opacity: 0.65; }
     .seat.speak { border-color: var(--ok); box-shadow: 0 0 12px rgba(34,197,94,0.42); }
@@ -252,6 +289,7 @@
     .chatbox {
       flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
       padding: 8px 12px; display: flex; flex-direction: column; gap: 6px;
+      position: relative; z-index: 3;
     }
     .msg {
       max-width: 82%; padding: 8px 11px; border-radius: 14px; font-size: 13px;
@@ -265,16 +303,17 @@
     .msg.col-cyan { border-color: #22d3ee; box-shadow: inset 0 0 12px rgba(34,211,238,0.22); }
     .msg.col-gold { border-color: #fbbf24; box-shadow: inset 0 0 12px rgba(251,191,36,0.22); }
 
-    .colors-bar { display: flex; gap: 6px; padding: 4px 12px; align-items: center; }
+    .colors-bar { display: flex; gap: 6px; padding: 4px 12px; align-items: center; position: relative; z-index: 5; }
     .colors-bar button { width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
     .colors-bar button.sel { border-color: #fff; transform: scale(1.15); }
-    .emojis-bar { display: flex; gap: 6px; overflow-x: auto; padding: 4px 12px; scrollbar-width: none; }
+    .emojis-bar { display: flex; gap: 6px; overflow-x: auto; padding: 4px 12px; scrollbar-width: none; position: relative; z-index: 5; }
     .emojis-bar::-webkit-scrollbar { display: none; }
     .emojis-bar button { background: none; border: none; font-size: 18px; cursor: pointer; padding: 0; }
 
     .footbar {
       display: flex; align-items: center; gap: 6px; padding: 8px 10px 12px;
       background: rgba(10, 7, 20, 0.95); border-top: 1px solid var(--border);
+      position: relative; z-index: 6;
     }
     .footbar input {
       flex: 1; padding: 9px 12px; border-radius: 12px; border: 1px solid var(--border);
@@ -299,7 +338,9 @@
       background: #140d29; border-top: 1px solid var(--border); border-radius: 22px 22px 0 0;
       padding: 16px 14px 26px; z-index: 70;
       transform: translateY(100%); transition: transform 0.2s ease;
+      pointer-events: auto;
     }
+    .sheet * { pointer-events: auto; }
     .scrim.open .sheet { transform: translateY(0); }
     .sheet h3 { margin: 0 0 12px; font-size: 15px; }
     .sheet label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
@@ -503,7 +544,13 @@
         <button class="iconbtn" id="room-back" type="button" title="خروج">➔</button>
         <div class="info">
           <div class="title-r" id="room-title">غرفة</div>
-          <div class="sub-r" id="room-sub">ID</div>
+          <div class="sub-r">
+            <span id="room-sub-meta">ID: -</span>
+            <div class="room-presence" id="room-presence-btn" title="المتواجدون في الغرفة">
+              <span>🎧 <b id="room-online-count">0</b></span>
+              <div class="room-avatars-strip" id="room-avatars-strip"></div>
+            </div>
+          </div>
         </div>
         <button class="iconbtn" id="room-hand" type="button" title="رفع اليد / طابور المايك">✋</button>
         <button class="iconbtn" id="room-music" type="button" title="مشغل الموسيقى">🎵</button>
