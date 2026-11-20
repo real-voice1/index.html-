@@ -1,6 +1,6 @@
 <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.22.0.js"></script>
 <script>
-  const tokenServerUrl = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";[span_1](start_span)[span_1](end_span)
+  const tokenServerUrl = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";
 
   let agoraClient = null;
   let localAudioTrack = null;
@@ -22,12 +22,18 @@
   }
 
   async function joinVoiceRoom(channelName, uid = 0) {
-    if (!channelName || !channelName.trim()) {
+    if (!channelName || !String(channelName).trim()) {
       throw new Error("اسم الغرفة مطلوب");
     }
 
-    const cleanChannel = channelName.trim();
-    const tokenData = await fetchRtcToken(cleanChannel, uid, "publisher");
+    const cleanChannel = String(channelName).trim();
+    const cleanUid = Number.isInteger(Number(uid)) && Number(uid) >= 0 ? Number(uid) : 0;
+
+    if (agoraClient && agoraClient.connectionState === "CONNECTED") {
+      await leaveVoiceRoom();
+    }
+
+    const tokenData = await fetchRtcToken(cleanChannel, cleanUid, "publisher");
 
     if (!agoraClient) {
       agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
@@ -50,7 +56,7 @@
       tokenData.appId,
       cleanChannel,
       tokenData.token,
-      tokenData.uid ?? uid
+      tokenData.uid ?? cleanUid
     );
 
     if (!localAudioTrack) {
