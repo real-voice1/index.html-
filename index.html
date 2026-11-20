@@ -147,10 +147,9 @@
     .row:hover{border-color:var(--border-hi);transform:translateY(-1px)}
     .roomcover{
       width:52px;height:52px;border-radius:15px;display:grid;place-items:center;font-size:24px;flex-shrink:0;
-      border:1px solid rgba(255,255,255,.28);overflow:hidden;
+      border:1px solid rgba(255,255,255,.28);
       box-shadow:0 10px 20px rgba(0,0,0,.38), inset 0 2px 4px rgba(255,255,255,.35)
     }
-    .roomcover img{width:100%;height:100%;object-fit:cover;display:block}
     .avatar{
       width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));
       display:grid;place-items:center;font-weight:800;font-size:15px;flex-shrink:0;position:relative;overflow:hidden;
@@ -331,22 +330,7 @@
     .room-view.open{display:flex;animation:fadeIn .2s ease}
     .room-top{
       display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;
-      background:rgba(10,6,22,.68);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)
-    }
-    .room-right-badge{
-      display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;cursor:pointer
-    }
-    .room-top-pic{
-      width:40px;height:40px;border-radius:12px;
-      background:linear-gradient(135deg,var(--acc),var(--acc2));
-      border:1.5px solid var(--border-hi);
-      display:grid;place-items:center;font-size:18px;font-weight:800;overflow:hidden;
-      box-shadow:0 6px 14px rgba(0,0,0,.35)
-    }
-    .room-top-pic img{width:100%;height:100%;object-fit:cover;display:block}
-    .room-top-id{
-      font-size:9.5px;font-weight:800;color:var(--muted);line-height:1.1;
-      max-width:64px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+      background:rgba(10,6,22,.62);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)
     }
     .room-presence-btn{
       display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;
@@ -511,12 +495,24 @@
       background:linear-gradient(135deg,rgba(124,58,237,.58),rgba(236,72,153,.42));
       border-color:rgba(255,255,255,.28)
     }
+    .msg.col-gold{border-color:#fbbf24;box-shadow:0 0 12px rgba(251,191,36,.22)}
+    .msg.col-cyan{border-color:#22d3ee;box-shadow:0 0 12px rgba(34,211,238,.22)}
+    .msg.col-pink{border-color:#f472b6;box-shadow:0 0 12px rgba(244,114,182,.22)}
     .msg .who{font-size:10.5px;font-weight:700;color:#e9d5ff;margin-bottom:2px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
     .msg .tm{font-size:9.5px;color:var(--muted);margin-top:3px;text-align:left}
     .msg.sys{
       align-self:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
       color:#e2dcf5;font-size:11px;padding:4px 12px;border-radius:999px
     }
+
+    .quick-emo{display:flex;gap:4px;padding:5px 10px;overflow-x:auto;scrollbar-width:none;border-top:1px solid rgba(255,255,255,.08);background:rgba(10,6,22,.45)}
+    .quick-emo::-webkit-scrollbar{display:none}
+    .quick-emo button{font-size:17px;padding:2px 5px;border-radius:8px;transition:transform .14s}
+    .quick-emo button:active{transform:scale(1.25)}
+
+    .color-dots{display:flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(10,6,22,.35)}
+    .cdot{width:16px;height:16px;border-radius:50%;border:2px solid transparent}
+    .cdot.sel{border-color:#fff;transform:scale(1.15)}
 
     .room-bar{
       display:flex;align-items:center;gap:6px;padding:8px 10px;
@@ -554,30 +550,6 @@
     .round.spk-muted{
       background:linear-gradient(135deg,rgba(239,68,68,.55),rgba(153,27,27,.65));
       border-color:rgba(252,165,165,.5);color:#fff
-    }
-
-    /* الدائرة العائمة المصغرة للغرفة القابلة للسحب */
-    .floating-room-bubble{
-      position:fixed;bottom:92px;right:18px;z-index:35;
-      width:62px;height:62px;border-radius:50%;
-      background:linear-gradient(135deg,var(--acc),var(--acc2));
-      border:2px solid rgba(255,255,255,.55);
-      box-shadow:0 14px 28px rgba(0,0,0,.55), 0 0 18px rgba(124,58,237,.55);
-      display:flex;align-items:center;justify-content:center;
-      cursor:grab;touch-action:none;overflow:visible;
-      transition:box-shadow .18s,transform .15s
-    }
-    .floating-room-bubble:active{cursor:grabbing;transform:scale(.96)}
-    .floating-room-bubble .frb-inner{
-      width:100%;height:100%;border-radius:50%;overflow:hidden;
-      display:grid;place-items:center;font-size:24px;color:#fff;font-weight:800
-    }
-    .floating-room-bubble .frb-inner img{width:100%;height:100%;object-fit:cover;display:block}
-    .floating-room-bubble .frb-cnt{
-      position:absolute;top:-5px;left:-5px;min-width:22px;height:22px;padding:0 5px;
-      border-radius:999px;background:#090612;color:#fff;border:1.5px solid #4ade80;
-      font-size:10.5px;font-weight:800;display:grid;place-items:center;
-      box-shadow:0 4px 10px rgba(0,0,0,.5)
     }
 
     /* حركة طيران الهدية باتجاه المقعد المستهدف */
@@ -843,19 +815,13 @@
     <button class="navbtn" data-page="profile" type="button"><span>👤</span><span>حسابي</span></button>
   </nav>
 
-  <!-- دائرة الغرفة المصغرة العائمة القابلة للسحب -->
-  <div class="floating-room-bubble hidden" id="floating-room-bubble" title="اضغط للعودة إلى الغرفة أو اسحب لتحريكها">
-    <span class="frb-cnt" id="frb-count">0</span>
-    <div class="frb-inner" id="frb-avatar">🎙️</div>
-  </div>
-
   <!-- غرفة الدردشة الصوتية 3D -->
   <section class="room-view" id="room-view">
     <div class="room-top">
       <button class="iconbtn" id="room-back" type="button" title="خروج">→</button>
       <div style="flex:1;min-width:0">
         <div class="name" id="room-title">الغرفة</div>
-        <div class="meta" id="room-sub-meta">المتواجدون في الغرفة: 0</div>
+        <div class="meta" id="room-sub-meta">ID: -</div>
       </div>
       <button class="room-presence-btn" id="room-presence-btn" type="button" title="المتواجدون في الغرفة">
         <span>🎧</span>
@@ -865,11 +831,6 @@
       <button class="iconbtn" id="room-hand" type="button" title="طلب المايك">✋</button>
       <button class="iconbtn" id="room-music" type="button" title="الموسيقى">🎵</button>
       <button class="iconbtn" id="room-menu" type="button" title="خيارات">⋮</button>
-      <div class="room-right-badge" id="room-right-badge" title="تغيير صورة الغرفة">
-        <div class="room-top-pic" id="room-top-pic">🎙️</div>
-        <div class="room-top-id" id="room-top-id">ID: -</div>
-      </div>
-      <input id="room-pic-input" type="file" accept="image/*" class="hidden" />
     </div>
 
     <div class="voice-status-bar">
@@ -901,6 +862,14 @@
       <div class="entry-banner-wrap" id="entry-banner-wrap"></div>
     </div>
 
+    <div class="quick-emo" id="room-emojis"></div>
+    <div class="color-dots" id="room-colors">
+      <span class="small">لون الرسالة:</span>
+      <button class="cdot sel" data-color="" style="background:#7c3aed" type="button" title="افتراضي"></button>
+      <button class="cdot" data-color="gold" style="background:#f59e0b" type="button" title="ذهبي"></button>
+      <button class="cdot" data-color="cyan" style="background:#22d3ee" type="button" title="سماوي"></button>
+      <button class="cdot" data-color="pink" style="background:#f472b6" type="button" title="وردي"></button>
+    </div>
     <div class="room-bar">
       <button class="round mic-idle" id="mic-btn" type="button" title="المايك">🎙️</button>
       <input id="room-input" type="text" maxlength="240" placeholder="اكتب رسالة..." />
