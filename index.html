@@ -19,7 +19,24 @@
       --ok: #22c55e;
       --warn: #f59e0b;
       --red: #ef4444;
+      --app-bg: rgba(9, 6, 20, 0.84);
+      --bar-bg: rgba(10, 7, 22, 0.96);
+      --sheet-bg: linear-gradient(180deg, #191033, #0f0921);
       --shadow-3d: 0 12px 28px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.22);
+    }
+
+    body.light-theme {
+      --bg1: #eef2ff;
+      --bg2: #fae8ff;
+      --glass: rgba(255, 255, 255, 0.72);
+      --glass-2: rgba(255, 255, 255, 0.92);
+      --border: rgba(15, 23, 42, 0.12);
+      --txt: #0f172a;
+      --muted: #475569;
+      --app-bg: rgba(255, 255, 255, 0.86);
+      --bar-bg: rgba(255, 255, 255, 0.95);
+      --sheet-bg: linear-gradient(180deg, #ffffff, #f3e8ff);
+      --shadow-3d: 0 10px 24px rgba(79, 70, 229, 0.14), inset 0 1px 1px rgba(255, 255, 255, 0.9);
     }
 
     * {
@@ -50,22 +67,22 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: rgba(9, 6, 20, 0.82);
+      background: var(--app-bg);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
-      border-inline: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 0 50px rgba(0, 0, 0, 0.75);
+      border-inline: 1px solid var(--border);
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.55);
       perspective: 1000px;
     }
 
     .hidden { display: none !important; }
     .small { font-size: 12px; color: var(--muted); }
     .title { font-size: 15px; font-weight: 800; margin: 12px 0 8px; letter-spacing: 0.2px; }
-    .empty { text-align: center; color: var(--muted); padding: 28px 14px; font-size: 13px; line-height: 1.8; }
+    .empty { text-align: center; color: var(--muted); padding: 24px 14px; font-size: 13px; line-height: 1.8; }
 
     /* بطاقات زجاجية 3D */
     .glass {
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
+      background: linear-gradient(145deg, var(--glass-2), var(--glass));
       border: 1px solid var(--border);
       border-radius: 18px;
       box-shadow: var(--shadow-3d);
@@ -73,6 +90,7 @@
       -webkit-backdrop-filter: blur(12px);
       transition: transform 0.18s ease, box-shadow 0.18s ease;
     }
+    .glass:hover { box-shadow: 0 14px 30px rgba(139, 92, 246, 0.22), var(--shadow-3d); }
 
     /* Topbar 3D */
     .topbar {
@@ -81,12 +99,12 @@
       justify-content: space-between;
       gap: 8px;
       padding: 10px 12px;
-      background: linear-gradient(180deg, rgba(18, 12, 38, 0.96), rgba(10, 7, 22, 0.92));
+      background: var(--bar-bg);
       border-bottom: 1px solid var(--border);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
       z-index: 20;
     }
-    .brand { display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 15px; text-shadow: 0 2px 10px rgba(139, 92, 246, 0.5); }
+    .brand { display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 15px; text-shadow: 0 2px 10px rgba(139, 92, 246, 0.35); }
     .brand-badge {
       width: 32px;
       height: 32px;
@@ -96,6 +114,7 @@
       background: linear-gradient(135deg, var(--acc), var(--acc2));
       box-shadow: 0 4px 12px rgba(236, 72, 153, 0.45), inset 0 1px 2px rgba(255,255,255,0.4);
       font-size: 16px;
+      color: #fff;
     }
     .top-pills { display: flex; align-items: center; gap: 6px; }
     .pill {
@@ -104,9 +123,9 @@
       gap: 4px;
       padding: 5px 10px;
       border-radius: 999px;
-      background: linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05));
+      background: var(--glass-2);
       border: 1px solid var(--border);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 1px 1px rgba(255,255,255,0.2);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.18), inset 0 1px 1px rgba(255,255,255,0.2);
       font-size: 12px;
       font-weight: 800;
     }
@@ -116,8 +135,8 @@
       height: 34px;
       border-radius: 11px;
       border: 1px solid var(--border);
-      background: linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
-      box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 1px 1px rgba(255,255,255,0.2);
+      background: var(--glass-2);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.18), inset 0 1px 1px rgba(255,255,255,0.2);
       color: var(--txt);
       display: grid;
       place-items: center;
@@ -154,18 +173,19 @@
       -webkit-overflow-scrolling: touch;
       padding: 12px 12px 84px;
       opacity: 0;
+      transform: translateY(10px);
       pointer-events: none;
-      transition: opacity 0.18s ease;
+      transition: opacity 0.22s ease, transform 0.22s ease;
     }
-    .page.active { opacity: 1; pointer-events: auto; }
+    .page.active { opacity: 1; transform: translateY(0); pointer-events: auto; }
 
     .searchbox input {
       width: 100%;
       padding: 11px 14px;
       border-radius: 15px;
       border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.07);
-      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+      background: var(--glass);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.2);
       color: var(--txt);
       font-size: 13px;
       outline: none;
@@ -184,7 +204,7 @@
       gap: 10px;
     }
     .banner h3 { margin: 0 0 4px; font-size: 15px; font-weight: 800; }
-    .banner p { margin: 0; font-size: 12px; color: #e2e8f0; }
+    .banner p { margin: 0; font-size: 12px; opacity: 0.9; }
 
     .tabs {
       display: flex;
@@ -204,8 +224,10 @@
       font-weight: 700;
       white-space: nowrap;
       cursor: pointer;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.16);
+      transition: all 0.16s ease;
     }
+    .tab:active { transform: scale(0.95); }
     .tab.active {
       background: linear-gradient(135deg, var(--acc), var(--acc2));
       color: #fff;
@@ -246,19 +268,34 @@
       place-items: center;
       font-size: 23px;
       flex-shrink: 0;
-      box-shadow: 0 6px 14px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.35);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.35);
     }
     .tag {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
       font-size: 10px;
       font-weight: 800;
       padding: 2px 8px;
       border-radius: 999px;
-      background: rgba(139, 92, 246, 0.26);
-      color: #ddd6fe;
-      margin-right: 6px;
+      background: rgba(139, 92, 246, 0.24);
+      color: var(--acc);
+      margin-right: 5px;
+      border: 1px solid rgba(139, 92, 246, 0.3);
     }
-    .tag.vip { background: rgba(245, 158, 11, 0.28); color: #fde68a; }
+    body:not(.light-theme) .tag { color: #ddd6fe; }
+    .tag.vip {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.28), rgba(236, 72, 153, 0.22));
+      color: #d97706;
+      border-color: rgba(245, 158, 11, 0.45);
+    }
+    body:not(.light-theme) .tag.vip { color: #fde68a; }
+    .tag.verified {
+      background: rgba(34, 211, 238, 0.2);
+      color: #0284c7;
+      border-color: rgba(34, 211, 238, 0.45);
+    }
+    body:not(.light-theme) .tag.verified { color: #67e8f9; }
 
     .avatar {
       position: relative;
@@ -273,27 +310,40 @@
       font-size: 14px;
       color: #fff;
       overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.45), inset 0 1px 2px rgba(255,255,255,0.35);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.35);
     }
     .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .avatar.sm { width: 32px; height: 32px; font-size: 12px; }
-    .avatar.lg { width: 78px; height: 78px; font-size: 24px; }
+    .avatar.lg { width: 84px; height: 84px; font-size: 26px; }
+
+    @keyframes frameSpin3D {
+      0% { filter: hue-rotate(0deg); transform: rotate(0deg) scale(1); }
+      50% { filter: hue-rotate(25deg); transform: rotate(3deg) scale(1.03); }
+      100% { filter: hue-rotate(0deg); transform: rotate(0deg) scale(1); }
+    }
     .frame {
       position: relative;
-      padding: 3px;
+      padding: 3.5px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--warn), var(--acc2), var(--cyan));
-      box-shadow: 0 6px 18px rgba(236, 72, 153, 0.4);
+      box-shadow: 0 8px 22px rgba(236, 72, 153, 0.45);
+      animation: frameSpin3D 4s ease-in-out infinite;
+    }
+    .frame.vip-frame {
+      padding: 4px;
+      background: conic-gradient(from 0deg, #fbbf24, #ec4899, #22d3ee, #8b5cf6, #fbbf24);
+      box-shadow: 0 0 24px rgba(251, 191, 36, 0.6), 0 8px 24px rgba(236, 72, 153, 0.45);
     }
     .pf-photo-badge {
       position: absolute;
       bottom: -2px;
       left: -2px;
-      background: #140d29;
+      background: var(--bar-bg);
       border: 1px solid var(--border);
       border-radius: 999px;
       padding: 3px 7px;
       font-size: 11px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.35);
     }
     .dot {
       position: absolute;
@@ -303,7 +353,7 @@
       height: 11px;
       border-radius: 50%;
       background: #64748b;
-      border: 2px solid #120d24;
+      border: 2px solid var(--bar-bg);
     }
     .dot.on { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
 
@@ -317,12 +367,14 @@
       color: #fff;
       background: linear-gradient(135deg, var(--acc), var(--acc2));
       box-shadow: 0 5px 14px rgba(139, 92, 246, 0.38), inset 0 1px 1px rgba(255,255,255,0.3);
-      transition: transform 0.14s ease, box-shadow 0.14s ease;
+      transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
     }
-    .btn:active { transform: scale(0.95); }
+    .btn:hover { filter: brightness(1.06); }
+    .btn:active { transform: scale(0.94); }
     .btn.sm { padding: 6px 11px; font-size: 11px; border-radius: 10px; }
-    .btn.ghost { background: var(--glass-2); border: 1px solid var(--border); color: var(--txt); box-shadow: 0 4px 10px rgba(0,0,0,0.28); }
+    .btn.ghost { background: var(--glass-2); border: 1px solid var(--border); color: var(--txt); box-shadow: 0 4px 10px rgba(0,0,0,0.14); }
     .btn.red { background: linear-gradient(135deg, #f43f5e, #dc2626); box-shadow: 0 5px 14px rgba(239, 68, 68, 0.4); }
+    .btn.gold { background: linear-gradient(135deg, #f59e0b, #ea580c); box-shadow: 0 5px 16px rgba(245, 158, 11, 0.45); }
     .btn.block { width: 100%; padding: 11px; margin-top: 10px; font-size: 13px; }
 
     .fab {
@@ -342,17 +394,99 @@
       z-index: 15;
     }
 
-    /* Profile */
-    .pf-card { padding: 14px; text-align: center; }
-    .pf-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
-    .stat { background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 14px; padding: 8px; box-shadow: inset 0 1px 1px rgba(255,255,255,0.12); }
-    .stat b { display: block; font-size: 15px; }
-    .stat span { font-size: 11px; color: var(--muted); }
-    .bar { height: 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); overflow: hidden; margin-top: 6px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
-    .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--acc), var(--acc2)); width: 0%; border-radius: 999px; }
+    /* ==========================================================
+       تصميم الملف الشخصي الفاخر (Yalla / WePlay / SoulChill)
+       ========================================================== */
+    .pf-hero-card {
+      padding: 0 0 14px;
+      overflow: hidden;
+      position: relative;
+    }
+    .pf-cover {
+      height: 112px;
+      width: 100%;
+      position: relative;
+      background: linear-gradient(135deg, #7c3aed, #db2777, #0891b2);
+      background-size: cover;
+      background-position: center;
+      cursor: pointer;
+    }
+    .pf-cover::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.1), rgba(9,6,20,0.72));
+    }
+    .pf-cover-btn {
+      position: relative;
+      z-index: 2;
+      float: left;
+      margin: 10px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.35);
+      background: rgba(10, 7, 22, 0.65);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .pf-body {
+      padding: 0 14px;
+      text-align: center;
+      margin-top: -42px;
+      position: relative;
+      z-index: 3;
+    }
+    .pf-id-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--muted);
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .pf-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .stat {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      padding: 9px 6px;
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.14);
+      transition: transform 0.15s ease;
+    }
+    .stat:hover { transform: translateY(-2px); }
+    .stat b { display: block; font-size: 14px; font-weight: 900; }
+    .stat span { font-size: 10.5px; color: var(--muted); }
+
+    .pf-subtabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      margin: 12px 0 8px;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .pf-subtabs::-webkit-scrollbar { display: none; }
+
+    .bar { height: 8px; border-radius: 999px; background: rgba(148, 163, 184, 0.25); overflow: hidden; margin-top: 6px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.35); }
+    .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--acc), var(--acc2), var(--cyan)); width: 0%; border-radius: 999px; transition: width 0.3s ease; }
+
     .ach-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-    .ach-list span { padding: 5px 10px; border-radius: 11px; background: var(--glass-2); border: 1px solid var(--border); font-size: 11px; }
+    .ach-list span { padding: 6px 10px; border-radius: 12px; background: var(--glass-2); border: 1px solid var(--border); font-size: 11px; font-weight: 700; }
     .ach-list span.off { opacity: 0.4; }
+
     .task-item {
       display: flex;
       align-items: center;
@@ -366,15 +500,70 @@
       font-size: 12px;
     }
 
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .show-item {
+      padding: 10px 6px;
+      border-radius: 15px;
+      background: linear-gradient(145deg, var(--glass-2), var(--glass));
+      border: 1px solid var(--border);
+      text-align: center;
+      box-shadow: var(--shadow-3d);
+      transition: transform 0.16s ease;
+    }
+    .show-item:hover { transform: translateY(-3px) scale(1.02); }
+    .show-item .ic { font-size: 24px; line-height: 1.2; }
+    .show-item b { display: block; font-size: 11px; margin-top: 4px; }
+    .show-item small { display: block; font-size: 10px; color: var(--muted); }
+
+    .vip-card-box {
+      padding: 14px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(236, 72, 153, 0.15), rgba(139, 92, 246, 0.18));
+      border: 1px solid rgba(251, 191, 36, 0.45);
+      box-shadow: 0 10px 25px rgba(245, 158, 11, 0.18);
+    }
+
+    .social-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    /* مؤثرات احتفالية عند فتح ملف مميز */
+    @keyframes celebPop {
+      0% { opacity: 0; transform: translateY(10px) scale(0.8); }
+      25% { opacity: 1; transform: translateY(0) scale(1.06); }
+      80% { opacity: 1; transform: translateY(-6px) scale(1); }
+      100% { opacity: 0; transform: translateY(-18px) scale(0.9); }
+    }
+    .celeb-banner {
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 900;
+      display: inline-block;
+      margin-bottom: 8px;
+      box-shadow: 0 6px 18px rgba(236, 72, 153, 0.45);
+      animation: celebPop 2.4s ease forwards;
+    }
+
     /* Bottom Nav */
     .bottomnav {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
       gap: 4px;
       padding: 6px 8px 10px;
-      background: rgba(10, 7, 22, 0.96);
+      background: var(--bar-bg);
       border-top: 1px solid var(--border);
-      box-shadow: 0 -6px 20px rgba(0,0,0,0.45);
+      box-shadow: 0 -6px 20px rgba(0,0,0,0.28);
       z-index: 20;
     }
     .navbtn {
@@ -399,6 +588,7 @@
       background: linear-gradient(145deg, rgba(139, 92, 246, 0.28), rgba(236, 72, 153, 0.18));
       box-shadow: inset 0 1px 1px rgba(255,255,255,0.2);
     }
+    body.light-theme .navbtn.active { color: #4c1d95; }
 
     /* ==========================================================
        Room View 3D
@@ -456,7 +646,9 @@
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
       position: relative;
       z-index: 6;
+      color: #f8fafc;
     }
+    .ohead .iconbtn { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); color: #fff; }
     .ohead .info { flex: 1; min-width: 0; }
     .ohead .title-r {
       font-weight: 900;
@@ -526,9 +718,6 @@
       border: 1.5px solid #150d2b;
     }
 
-    /* ==========================================================
-       شريط دخول الأعضاء الاحترافي (3 ثوانٍ ويختفي)
-       ========================================================== */
     .entry-banner-wrap {
       position: absolute;
       top: 56px;
@@ -582,6 +771,7 @@
       z-index: 5;
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
+      color: #fff;
     }
 
     .audio-unlock-bar {
@@ -607,7 +797,6 @@
       color: #fef3c7;
     }
 
-    /* شريط الموسيقى المصغر والأنيق */
     .music-mini {
       margin: 6px 12px 0;
       padding: 5px 10px;
@@ -653,9 +842,6 @@
     }
     .quiz-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
 
-    /* ==========================================================
-       مسرح المقاعد الدائرية 3D
-       ========================================================== */
     .stage-wrap {
       position: relative;
       z-index: 5;
@@ -667,6 +853,7 @@
       box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
+      color: #fff;
     }
 
     .voice-status-pill {
@@ -682,16 +869,8 @@
       color: #cbd5e1;
       margin: 0 auto 7px;
     }
-    .voice-status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--warn);
-    }
-    .voice-status-dot.live {
-      background: var(--ok);
-      box-shadow: 0 0 8px var(--ok);
-    }
+    .voice-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
+    .voice-status-dot.live { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
 
     .seats {
       display: grid;
@@ -725,46 +904,19 @@
       border-radius: 50%;
       padding: 3px;
       background: linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.04));
-      box-shadow:
-        0 10px 20px rgba(0, 0, 0, 0.6),
-        0 2px 6px rgba(139, 92, 246, 0.3),
-        inset 0 2px 3px rgba(255, 255, 255, 0.35),
-        inset 0 -3px 6px rgba(0, 0, 0, 0.55);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(139, 92, 246, 0.3), inset 0 2px 3px rgba(255, 255, 255, 0.35), inset 0 -3px 6px rgba(0, 0, 0, 0.55);
       display: grid;
       place-items: center;
       transition: all 0.22s ease;
     }
-
-    .seat-orb::after {
-      content: "";
-      position: absolute;
-      bottom: -5px;
-      left: 12%;
-      right: 12%;
-      height: 8px;
-      border-radius: 50%;
-      background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.55), transparent 72%);
-      filter: blur(2px);
-      z-index: -1;
-      transition: all 0.22s ease;
-    }
-
     .seat.vip .seat-orb {
       background: linear-gradient(135deg, #fbbf24, #f59e0b, #ec4899);
-      box-shadow:
-        0 10px 22px rgba(245, 158, 11, 0.42),
-        inset 0 2px 4px rgba(255, 255, 255, 0.55),
-        inset 0 -3px 6px rgba(120, 53, 15, 0.6);
+      box-shadow: 0 10px 22px rgba(245, 158, 11, 0.42), inset 0 2px 4px rgba(255, 255, 255, 0.55), inset 0 -3px 6px rgba(120, 53, 15, 0.6);
     }
-    .seat.occ .seat-orb {
-      background: linear-gradient(135deg, var(--acc), var(--acc2), var(--cyan));
-    }
+    .seat.occ .seat-orb { background: linear-gradient(135deg, var(--acc), var(--acc2), var(--cyan)); }
     .seat.locked { opacity: 0.72; }
-    .seat.locked .seat-orb {
-      background: linear-gradient(145deg, rgba(148, 163, 184, 0.22), rgba(15, 23, 42, 0.7));
-    }
+    .seat.locked .seat-orb { background: linear-gradient(145deg, rgba(148, 163, 184, 0.22), rgba(15, 23, 42, 0.7)); }
 
-    /* توهج استقبال الهدية فوق المقعد */
     @keyframes seatGiftGlow {
       0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.9); }
       40% { transform: scale(1.16); box-shadow: 0 0 0 14px rgba(236, 72, 153, 0); }
@@ -776,29 +928,10 @@
     }
 
     @keyframes speakingPulse3D {
-      0% {
-        box-shadow:
-          0 0 0 0 rgba(34, 197, 94, 0.75),
-          0 10px 22px rgba(34, 197, 94, 0.45),
-          inset 0 2px 3px rgba(255, 255, 255, 0.5);
-        transform: scale(1.03);
-      }
-      70% {
-        box-shadow:
-          0 0 0 11px rgba(34, 197, 94, 0),
-          0 12px 26px rgba(34, 197, 94, 0.55),
-          inset 0 2px 3px rgba(255, 255, 255, 0.5);
-        transform: scale(1.07);
-      }
-      100% {
-        box-shadow:
-          0 0 0 0 rgba(34, 197, 94, 0),
-          0 10px 22px rgba(34, 197, 94, 0.45),
-          inset 0 2px 3px rgba(255, 255, 255, 0.5);
-        transform: scale(1.03);
-      }
+      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.75), 0 10px 22px rgba(34, 197, 94, 0.45), inset 0 2px 3px rgba(255, 255, 255, 0.5); transform: scale(1.03); }
+      70% { box-shadow: 0 0 0 11px rgba(34, 197, 94, 0), 0 12px 26px rgba(34, 197, 94, 0.55), inset 0 2px 3px rgba(255, 255, 255, 0.5); transform: scale(1.07); }
+      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0), 0 10px 22px rgba(34, 197, 94, 0.45), inset 0 2px 3px rgba(255, 255, 255, 0.5); transform: scale(1.03); }
     }
-
     .seat.speak .seat-orb {
       background: linear-gradient(135deg, #22c55e, #10b981, #22d3ee);
       animation: speakingPulse3D 1.15s infinite ease-out;
@@ -818,16 +951,8 @@
       overflow: hidden;
       box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.55);
     }
-    .seatav img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      border-radius: 50%;
-    }
-    .seat.occ .seatav {
-      background: linear-gradient(135deg, #4f46e5, #db2777);
-    }
+    .seatav img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%; }
+    .seat.occ .seatav { background: linear-gradient(135deg, #4f46e5, #db2777); }
 
     .seat-num-badge {
       position: absolute;
@@ -846,7 +971,6 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.6);
       z-index: 3;
     }
-
     .mutedmark {
       position: absolute;
       bottom: -2px;
@@ -862,7 +986,6 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.65);
       z-index: 3;
     }
-
     .seat-meta-pill {
       margin-top: 4px;
       padding: 2px 8px;
@@ -875,23 +998,9 @@
       text-align: center;
       box-shadow: 0 3px 8px rgba(0,0,0,0.45);
     }
-    .seatname {
-      font-size: 10.5px;
-      font-weight: 800;
-      color: #f8fafc;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .seatsub {
-      font-size: 9px;
-      color: #cbd5e1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    .seatname { font-size: 10.5px; font-weight: 800; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .seatsub { font-size: 9px; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    /* الشات داخل الغرفة */
     .chatbox {
       flex: 1;
       overflow-y: auto;
@@ -909,6 +1018,7 @@
       border-radius: 15px;
       font-size: 13px;
       background: rgba(18, 13, 38, 0.78);
+      color: #f8fafc;
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.15);
@@ -918,7 +1028,7 @@
     }
     .msg.me {
       align-self: flex-end;
-      background: linear-gradient(135deg, rgba(139, 92, 246, 0.55), rgba(236, 72, 153, 0.45));
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.65), rgba(236, 72, 153, 0.55));
       border-color: rgba(255, 255, 255, 0.25);
     }
     .msg.sys {
@@ -937,38 +1047,13 @@
     .msg.col-cyan { border-color: #22d3ee; box-shadow: inset 0 0 12px rgba(34, 211, 238, 0.28); }
     .msg.col-gold { border-color: #fbbf24; box-shadow: inset 0 0 12px rgba(251, 191, 36, 0.28); }
 
-    .colors-bar {
-      display: flex;
-      gap: 6px;
-      padding: 3px 12px;
-      align-items: center;
-      position: relative;
-      z-index: 5;
-    }
-    .colors-bar button {
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      border: 2px solid transparent;
-      cursor: pointer;
-      padding: 0;
-    }
+    .colors-bar { display: flex; gap: 6px; padding: 3px 12px; align-items: center; position: relative; z-index: 5; }
+    .colors-bar button { width: 16px; height: 16px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
     .colors-bar button.sel { border-color: #fff; transform: scale(1.15); }
-    .emojis-bar {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      padding: 3px 12px;
-      scrollbar-width: none;
-      position: relative;
-      z-index: 5;
-    }
+    .emojis-bar { display: flex; gap: 6px; overflow-x: auto; padding: 3px 12px; scrollbar-width: none; position: relative; z-index: 5; }
     .emojis-bar::-webkit-scrollbar { display: none; }
     .emojis-bar button { background: none; border: none; font-size: 17px; cursor: pointer; padding: 0; }
 
-    /* ==========================================================
-       الشريط السفلي الاحترافي والمدمج داخل الغرفة
-       ========================================================== */
     .footbar {
       display: flex;
       align-items: center;
@@ -980,6 +1065,7 @@
       border-top: 1px solid rgba(255, 255, 255, 0.14);
       position: relative;
       z-index: 6;
+      color: #fff;
     }
     .footbar input {
       flex: 1;
@@ -987,9 +1073,9 @@
       height: 34px;
       padding: 0 11px;
       border-radius: 999px;
-      border: 1px solid var(--border);
+      border: 1px solid rgba(255,255,255,0.18);
       background: rgba(255, 255, 255, 0.08);
-      color: var(--txt);
+      color: #fff;
       font-size: 12.5px;
       outline: none;
     }
@@ -1009,48 +1095,15 @@
       transition: transform 0.14s ease, background 0.16s ease;
     }
     .dock-btn:active { transform: scale(0.9); }
+    .dock-btn.mic-on { background: linear-gradient(135deg, #22c55e, #16a34a); border-color: rgba(134, 239, 172, 0.6); box-shadow: 0 4px 12px rgba(34, 197, 94, 0.45); }
+    .dock-btn.mic-off { background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: rgba(252, 165, 165, 0.6); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.45); }
+    .dock-btn.mic-idle { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+    .dock-btn.spk-on { background: linear-gradient(135deg, #0ea5e9, #2563eb); border-color: rgba(125, 211, 252, 0.5); }
+    .dock-btn.spk-muted { background: linear-gradient(135deg, #f59e0b, #dc2626); border-color: rgba(253, 224, 71, 0.6); }
+    .dock-btn.gift-btn { background: linear-gradient(135deg, #ec4899, #f59e0b); border-color: rgba(253, 230, 138, 0.55); box-shadow: 0 4px 12px rgba(236, 72, 153, 0.45); }
+    .dock-btn.send-btn { background: linear-gradient(135deg, var(--acc), var(--acc2)); font-size: 13px; }
 
-    /* زر المايك الاحترافي الصغير في الأسفل */
-    .dock-btn.mic-on {
-      background: linear-gradient(135deg, #22c55e, #16a34a);
-      border-color: rgba(134, 239, 172, 0.6);
-      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.45);
-    }
-    .dock-btn.mic-off {
-      background: linear-gradient(135deg, #ef4444, #b91c1c);
-      border-color: rgba(252, 165, 165, 0.6);
-      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.45);
-    }
-    .dock-btn.mic-idle {
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    }
-
-    /* زر كتم / فك كتم صوت الغرفة بالكامل */
-    .dock-btn.spk-on {
-      background: linear-gradient(135deg, #0ea5e9, #2563eb);
-      border-color: rgba(125, 211, 252, 0.5);
-    }
-    .dock-btn.spk-muted {
-      background: linear-gradient(135deg, #f59e0b, #dc2626);
-      border-color: rgba(253, 224, 71, 0.6);
-    }
-
-    /* زر صندوق الهدايا */
-    .dock-btn.gift-btn {
-      background: linear-gradient(135deg, #ec4899, #f59e0b);
-      border-color: rgba(253, 230, 138, 0.55);
-      box-shadow: 0 4px 12px rgba(236, 72, 153, 0.45);
-    }
-
-    /* زر الإرسال الدائري */
-    .dock-btn.send-btn {
-      background: linear-gradient(135deg, var(--acc), var(--acc2));
-      font-size: 13px;
-    }
-
-    /* ==========================================================
-       Bottom Sheet & Scrim
-       ========================================================== */
+    /* Bottom Sheet & Scrim */
     .scrim {
       position: fixed;
       inset: 0;
@@ -1063,11 +1116,7 @@
       pointer-events: none;
       transition: opacity 0.16s ease;
     }
-    .scrim.open {
-      opacity: 1;
-      visibility: visible;
-      pointer-events: auto;
-    }
+    .scrim.open { opacity: 1; visibility: visible; pointer-events: auto; }
     .sheet {
       position: fixed;
       bottom: 0;
@@ -1075,11 +1124,12 @@
       right: 0;
       max-width: 540px;
       margin: 0 auto;
-      max-height: 82vh;
+      max-height: 84vh;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      background: linear-gradient(180deg, #191033, #0f0921);
-      border-top: 1px solid rgba(255, 255, 255, 0.22);
+      background: var(--sheet-bg);
+      color: var(--txt);
+      border-top: 1px solid var(--border);
       border-radius: 24px 24px 0 0;
       padding: 16px 14px 26px;
       z-index: 75;
@@ -1087,13 +1137,9 @@
       transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
       visibility: hidden;
       pointer-events: none;
-      box-shadow: 0 -12px 35px rgba(0,0,0,0.7);
+      box-shadow: 0 -12px 35px rgba(0,0,0,0.5);
     }
-    .sheet.open {
-      transform: translateY(0);
-      visibility: visible;
-      pointer-events: auto;
-    }
+    .sheet.open { transform: translateY(0); visibility: visible; pointer-events: auto; }
     .sheet h3 { margin: 0 0 12px; font-size: 15px; font-weight: 800; }
     .sheet label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
     .sheet input, .sheet select, .sheet textarea {
@@ -1119,13 +1165,13 @@
       font-weight: 700;
       cursor: pointer;
     }
-    .actlist button.danger { color: #fca5a5; border-color: rgba(239, 68, 68, 0.35); }
+    .actlist button.danger { color: #ef4444; border-color: rgba(239, 68, 68, 0.35); }
     .switchrow {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 10px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      border-bottom: 1px solid var(--border);
       font-size: 13px;
     }
 
@@ -1136,7 +1182,7 @@
       overflow-x: auto;
       padding: 4px 2px 10px;
       margin-bottom: 8px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid var(--border);
       scrollbar-width: none;
     }
     .gift-targets-bar::-webkit-scrollbar { display: none; }
@@ -1148,9 +1194,9 @@
       min-width: 58px;
       padding: 6px 4px;
       border-radius: 14px;
-      border: 1.5px solid rgba(255, 255, 255, 0.15);
-      background: rgba(255, 255, 255, 0.05);
-      color: #e2e8f0;
+      border: 1.5px solid var(--border);
+      background: var(--glass);
+      color: var(--txt);
       cursor: pointer;
       flex-shrink: 0;
       transition: all 0.15s ease;
@@ -1170,18 +1216,12 @@
       place-items: center;
       font-size: 13px;
       font-weight: 800;
+      color: #fff;
       overflow: hidden;
       border: 1.5px solid rgba(255,255,255,0.4);
     }
     .gt-chip-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .gt-chip span {
-      font-size: 10px;
-      font-weight: 800;
-      max-width: 54px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    .gt-chip span { font-size: 10px; font-weight: 800; max-width: 54px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .giftgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
     .gift {
@@ -1196,9 +1236,8 @@
     .gift.sel { border-color: var(--acc2); background: rgba(236, 72, 153, 0.22); }
     .gift .e { font-size: 22px; }
     .gift small { display: block; font-size: 11px; margin-top: 2px; }
-    .gift .p { font-size: 10px; color: #fde68a; margin-top: 2px; }
+    .gift .p { font-size: 10px; color: #f59e0b; font-weight: 800; margin-top: 2px; }
 
-    /* حركة الهدية الطائرة نحو المقعد المستهدف */
     .gift-projectile {
       position: fixed;
       z-index: 95;
@@ -1222,22 +1261,18 @@
       white-space: nowrap;
     }
 
-    /* مشغل الموسيقى البسيط */
     .track-row {
       display: flex;
       align-items: center;
       gap: 10px;
       padding: 9px 11px;
       border-radius: 14px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: var(--glass);
+      border: 1px solid var(--border);
       margin-bottom: 7px;
       cursor: pointer;
     }
-    .track-row.playing {
-      border-color: #ec4899;
-      background: linear-gradient(135deg, rgba(139, 92, 246, 0.28), rgba(236, 72, 153, 0.22));
-    }
+    .track-row.playing { border-color: #ec4899; background: linear-gradient(135deg, rgba(139, 92, 246, 0.28), rgba(236, 72, 153, 0.22)); }
 
     .toast {
       position: fixed;
@@ -1246,7 +1281,7 @@
       transform: translateX(-50%) translateY(12px);
       background: rgba(15, 10, 30, 0.96);
       color: #fff;
-      border: 1px solid var(--border);
+      border: 1px solid rgba(255,255,255,0.2);
       padding: 8px 16px;
       border-radius: 999px;
       font-size: 12px;
@@ -1272,6 +1307,7 @@
       <div class="top-pills">
         <div class="pill">🪙 <span id="coins-top">0</span></div>
         <div class="pill">⭐ <span id="level-top">1</span></div>
+        <button class="iconbtn" id="theme-toggle-btn" type="button" title="الوضع الليلي / النهاري">🌓</button>
         <button class="iconbtn" id="notif-btn" type="button" title="الإشعارات">
           🔔 <span class="badge hidden" id="notif-badge">0</span>
         </button>
@@ -1340,50 +1376,75 @@
 
       <!-- Profile -->
       <section class="page" id="page-profile">
-        <div class="glass pf-card">
-          <div class="frame" id="pf-photo-trigger" style="display:inline-block;cursor:pointer" title="اضغط لتغيير الصورة من المعرض">
-            <div class="avatar lg" id="pf-avatar">RV</div>
-            <span class="pf-photo-badge">📷</span>
+        <div class="glass pf-hero-card">
+          <div class="pf-cover" id="pf-cover" title="اضغط لتغيير الغلاف">
+            <button class="pf-cover-btn" id="pf-cover-btn" type="button">🖼️ تغيير الغلاف</button>
           </div>
-          <input id="pf-photo-input" type="file" accept="image/*" class="hidden" />
-          <div class="small" style="margin-top:4px">اضغط على الصورة لتغييرها من المعرض</div>
-          <h3 id="pf-name" style="margin:6px 0 2px">مستخدم</h3>
-          <div class="small" id="pf-id">ID: -</div>
-          <div id="pf-badges" style="margin-top:6px"></div>
-          <p class="small" id="pf-bio" style="margin:8px 0;line-height:1.6"></p>
-          <div class="small" id="pf-meta"></div>
+          <input id="pf-cover-input" type="file" accept="image/*" class="hidden" />
 
-          <div style="margin-top:10px;text-align:right">
-            <div style="display:flex;justify-content:space-between;font-size:12px">
-              <span>المستوى <b id="pf-level">1</b></span>
-              <span id="pf-xp">0 / 100 XP</span>
+          <div class="pf-body">
+            <div class="frame" id="pf-photo-trigger" style="display:inline-block;cursor:pointer" title="اضغط لتغيير الصورة من المعرض">
+              <div class="avatar lg" id="pf-avatar">RV</div>
+              <span class="pf-photo-badge">📷</span>
             </div>
-            <div class="bar"><i id="pf-bar"></i></div>
-          </div>
+            <input id="pf-photo-input" type="file" accept="image/*" class="hidden" />
 
-          <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;justify-content:center">
-            <button class="btn sm" id="pf-edit" type="button">✏️ تعديل</button>
-            <button class="btn sm ghost" id="pf-settings" type="button">⚙️ الإعدادات</button>
-            <button class="btn sm ghost" id="pf-leader" type="button">🏆 الترتيب</button>
-            <button class="btn sm ghost" id="pf-topup" type="button">+500 🪙</button>
-            <button class="btn sm" id="pf-daily" type="button">🎁 استلم 100 عملة اليوم</button>
-          </div>
+            <h3 id="pf-name" style="margin:8px 0 2px;font-size:18px;font-weight:900">مستخدم</h3>
+            <div class="pf-id-chip" id="pf-copy-id" title="اضغط لنسخ ID">
+              <span id="pf-id">ID: -</span>
+              <span>📋 نسخ</span>
+            </div>
+            <div id="pf-badges" style="margin-top:7px"></div>
+            <p class="small" id="pf-bio" style="margin:8px 0;line-height:1.6"></p>
+            <div class="small" id="pf-meta"></div>
 
-          <div class="pf-stats">
-            <div class="stat"><b id="pf-coins">0</b><span>العملات</span></div>
-            <div class="stat"><b id="pf-friends">0</b><span>الأصدقاء</span></div>
-            <div class="stat"><b id="pf-visits">0</b><span>الزيارات</span></div>
-            <div class="stat"><b id="pf-followers">0</b><span>المتابعون</span></div>
-            <div class="stat"><b id="pf-following">0</b><span>أتابع</span></div>
-            <div class="stat"><b id="pf-gifts">0</b><span>الهدايا</span></div>
+            <div style="margin-top:10px;text-align:right">
+              <div style="display:flex;justify-content:space-between;font-size:12px">
+                <span>المستوى <b id="pf-level">1</b></span>
+                <span id="pf-xp">0 / 100 XP</span>
+              </div>
+              <div class="bar"><i id="pf-bar"></i></div>
+            </div>
+
+            <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;justify-content:center">
+              <button class="btn sm" id="pf-edit" type="button">✏️ تعديل</button>
+              <button class="btn sm gold" id="pf-vip-btn" type="button">👑 VIP</button>
+              <button class="btn sm ghost" id="pf-share-btn" type="button">📤 مشاركة</button>
+              <button class="btn sm ghost" id="pf-settings" type="button">⚙️ الإعدادات</button>
+              <button class="btn sm ghost" id="pf-leader" type="button">🏆 الترتيب</button>
+              <button class="btn sm ghost" id="pf-topup" type="button">+500 🪙</button>
+              <button class="btn sm" id="pf-daily" type="button">🎁 استلم 100 عملة اليوم</button>
+            </div>
+
+            <div class="pf-stats">
+              <div class="stat"><b id="pf-followers">0</b><span>المتابعون</span></div>
+              <div class="stat"><b id="pf-following">0</b><span>أتابع</span></div>
+              <div class="stat"><b id="pf-friends">0</b><span>الأصدقاء</span></div>
+              <div class="stat"><b id="pf-visits">0</b><span>الزيارات</span></div>
+              <div class="stat"><b id="pf-rooms-cnt">0</b><span>الغرف</span></div>
+              <div class="stat"><b id="pf-time-cnt">0 د</b><span>وقت الغرف</span></div>
+              <div class="stat"><b id="pf-coins">0</b><span>العملات</span></div>
+              <div class="stat"><b id="pf-gifts">0</b><span>الهدايا</span></div>
+              <div class="stat"><b id="pf-xp-total">0</b><span>الخبرة XP</span></div>
+            </div>
           </div>
         </div>
 
-        <h2 class="title">المهام اليومية</h2>
-        <div id="pf-tasks"></div>
+        <div class="tabs pf-subtabs" id="pf-subtabs">
+          <button class="tab active" data-pftab="overview" type="button">📋 المهام والإنجازات</button>
+          <button class="tab" data-pftab="gifts" type="button">🎁 الهدايا والمقتنيات</button>
+          <button class="tab" data-pftab="vip" type="button">👑 عضوية VIP</button>
+        </div>
 
-        <h2 class="title">الإنجازات</h2>
-        <div class="ach-list" id="pf-ach"></div>
+        <div id="pf-section-overview">
+          <h2 class="title">المهام اليومية</h2>
+          <div id="pf-tasks"></div>
+          <h2 class="title">الإنجازات</h2>
+          <div class="ach-list" id="pf-ach"></div>
+        </div>
+
+        <div id="pf-section-gifts" class="hidden"></div>
+        <div id="pf-section-vip" class="hidden"></div>
       </section>
     </main>
 
@@ -1421,16 +1482,10 @@
         <button class="iconbtn" id="room-menu" type="button" title="خيارات">⋮</button>
       </div>
 
-      <!-- شريط دخول الأعضاء لمدة 3 ثوانٍ -->
       <div class="entry-banner-wrap" id="entry-banner-wrap"></div>
-
-      <div class="audio-unlock-bar hidden" id="audio-unlock-bar">
-        🔊 اضغط هنا لتفعيل صوت الغرفة وسماع المتحدثين
-      </div>
-
+      <div class="audio-unlock-bar hidden" id="audio-unlock-bar">🔊 اضغط هنا لتفعيل صوت الغرفة وسماع المتحدثين</div>
       <div class="pinned hidden" id="room-pinned"></div>
 
-      <!-- شريط الموسيقى المصغر السريع -->
       <div class="music-mini hidden" id="music-mini">
         <div class="music-mini-title" id="music-mini-title">🎵 أغنية</div>
         <div class="music-mini-btns">
@@ -1442,7 +1497,6 @@
 
       <div class="quiz-box hidden" id="quiz-box"></div>
 
-      <!-- مسرح المقاعد الدائرية 3D -->
       <div class="stage-wrap">
         <div style="text-align:center">
           <span class="voice-status-pill">
@@ -1464,7 +1518,6 @@
       </div>
       <div class="emojis-bar" id="room-emojis"></div>
 
-      <!-- الشريط السفلي الاحترافي والمدمج -->
       <div class="footbar">
         <button class="dock-btn mic-idle" id="mic-btn" type="button" title="فتح/كتم المايك">🎤</button>
         <button class="dock-btn spk-on" id="room-speaker-btn" type="button" title="كتم/تشغيل صوت الغرفة">🔊</button>
