@@ -131,7 +131,6 @@
   #toast.show{transform:translate(-50%,0)}
   .switchrow{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
   .small{font-size:12px;color:var(--sub)}
-  .voicenote{font-size:11px;color:var(--sub);text-align:center;padding:4px 12px}
 </style>
 </head>
 <body>
@@ -252,7 +251,6 @@
     </div>
     <div class="pinned hidden" id="room-pinned"></div>
     <div class="seats" id="room-seats"></div>
-    <div class="voicenote">المايك هنا يعمل كحالة داخل التطبيق. الصوت الحقيقي يُربط في المرحلة الثالثة (Agora).</div>
     <div class="chatbox" id="room-chat"></div>
     <div class="emojis" id="room-emojis"></div>
     <div class="colors" id="room-colors">لون الرسالة:
@@ -286,11 +284,21 @@
     </div>
   </div>
 
-  <!-- نافذة سفلية عامة (قوائم، إنشاء غرفة، إشعارات...) -->
+  <!-- نافذة سفلية عامة -->
   <div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
 
   <div id="toast"></div>
 </div>
+
+<!-- Firebase SDKs (Realtime Database & Auth) -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+
+<!-- Agora RTC SDK -->
+<script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.22.0.js"></script>
+
+<!-- التطبيق الكامل -->
 <script src="script.js"></script>
 </body>
 </html>
