@@ -112,9 +112,9 @@
     }
     .iconbtn {
       position: relative;
-      width: 35px;
-      height: 35px;
-      border-radius: 12px;
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
       border: 1px solid var(--border);
       background: linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
       box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 1px 1px rgba(255,255,255,0.2);
@@ -124,7 +124,7 @@
       cursor: pointer;
       font-size: 15px;
       flex-shrink: 0;
-      transition: transform 0.14s ease;
+      transition: transform 0.14s ease, background 0.15s ease;
     }
     .iconbtn:active { transform: scale(0.92); }
     .badge {
@@ -401,7 +401,7 @@
     }
 
     /* ==========================================================
-       Room View 3D + خلفية مخصصة منظمة + مقاعد دائرية احترافية
+       Room View 3D
        ========================================================== */
     .overlay-view {
       position: fixed;
@@ -447,9 +447,9 @@
     .ohead {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
       padding: 9px 10px;
-      background: rgba(10, 7, 22, 0.82);
+      background: rgba(10, 7, 22, 0.85);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.14);
@@ -460,7 +460,7 @@
     .ohead .info { flex: 1; min-width: 0; }
     .ohead .title-r {
       font-weight: 900;
-      font-size: 13.5px;
+      font-size: 14px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -469,11 +469,11 @@
     .ohead .sub-r {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
       flex-wrap: nowrap;
       font-size: 10.5px;
       color: #cbd5e1;
-      margin-top: 3px;
+      margin-top: 2px;
       overflow: hidden;
     }
 
@@ -495,8 +495,8 @@
       flex-direction: row-reverse;
     }
     .room-mini-av {
-      width: 19px;
-      height: 19px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       overflow: hidden;
       border: 1.5px solid #150d2b;
@@ -517,13 +517,64 @@
       font-size: 9px;
       font-weight: 800;
       padding: 0 5px;
-      height: 19px;
+      height: 18px;
       border-radius: 999px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       margin-right: -4px;
       border: 1.5px solid #150d2b;
+    }
+
+    /* ==========================================================
+       شريط دخول الأعضاء الاحترافي (3 ثوانٍ ويختفي)
+       ========================================================== */
+    .entry-banner-wrap {
+      position: absolute;
+      top: 56px;
+      right: 12px;
+      left: 12px;
+      z-index: 30;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-start;
+    }
+    .entry-ribbon {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px 6px 10px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.92), rgba(236, 72, 153, 0.88), rgba(34, 211, 238, 0.85));
+      border: 1.5px solid rgba(255, 255, 255, 0.55);
+      box-shadow: 0 8px 24px rgba(236, 72, 153, 0.55), inset 0 1px 2px rgba(255, 255, 255, 0.45);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+      animation: ribbonSlide3s 3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .entry-ribbon-av {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 1.5px solid #fff;
+      background: #1e1b4b;
+      display: grid;
+      place-items: center;
+      font-size: 10px;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+    .entry-ribbon-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    @keyframes ribbonSlide3s {
+      0% { opacity: 0; transform: translateX(40px) scale(0.9); }
+      12% { opacity: 1; transform: translateX(0) scale(1); }
+      85% { opacity: 1; transform: translateX(0) scale(1); }
+      100% { opacity: 0; transform: translateX(-30px) scale(0.92); }
     }
 
     .pinned, .music-mini, .quiz-box, .audio-unlock-bar {
@@ -534,44 +585,43 @@
     }
 
     .audio-unlock-bar {
-      margin: 8px 12px 0;
-      padding: 8px 12px;
+      margin: 6px 12px 0;
+      padding: 7px 12px;
       border-radius: 12px;
       background: linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(239, 68, 68, 0.35));
       border: 1px solid rgba(251, 191, 36, 0.55);
       color: #fef3c7;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 800;
       text-align: center;
       cursor: pointer;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
     }
 
     .pinned {
-      margin: 8px 12px 0;
-      padding: 7px 12px;
+      margin: 6px 12px 0;
+      padding: 6px 12px;
       border-radius: 12px;
-      font-size: 12px;
+      font-size: 11.5px;
       background: rgba(245, 158, 11, 0.22);
       border: 1px solid rgba(245, 158, 11, 0.42);
       color: #fef3c7;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
     }
 
+    /* شريط الموسيقى المصغر والأنيق */
     .music-mini {
-      margin: 8px 12px 0;
-      padding: 7px 10px;
-      border-radius: 14px;
-      background: rgba(139, 92, 246, 0.26);
-      border: 1px solid rgba(139, 92, 246, 0.45);
+      margin: 6px 12px 0;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.32), rgba(236, 72, 153, 0.24));
+      border: 1px solid rgba(255, 255, 255, 0.24);
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
     }
     .music-mini-title {
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 800;
       white-space: nowrap;
       overflow: hidden;
@@ -579,16 +629,29 @@
       flex: 1;
     }
     .music-mini-btns { display: flex; gap: 4px; }
+    .music-mini-btns button {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(15, 10, 30, 0.65);
+      color: #fff;
+      font-size: 11px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      padding: 0;
+    }
 
     .quiz-box {
-      margin: 8px 12px 0;
-      padding: 10px;
+      margin: 6px 12px 0;
+      padding: 9px;
       border-radius: 14px;
       background: rgba(34, 197, 94, 0.18);
       border: 1px solid rgba(34, 197, 94, 0.38);
       font-size: 12px;
     }
-    .quiz-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+    .quiz-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
 
     /* ==========================================================
        مسرح المقاعد الدائرية 3D
@@ -596,8 +659,8 @@
     .stage-wrap {
       position: relative;
       z-index: 5;
-      margin: 8px 10px 4px;
-      padding: 10px 8px 8px;
+      margin: 7px 10px 4px;
+      padding: 9px 8px 8px;
       border-radius: 24px;
       background: radial-gradient(ellipse at top, rgba(139, 92, 246, 0.22), rgba(10, 7, 24, 0.52) 75%);
       border: 1px solid rgba(255, 255, 255, 0.14);
@@ -617,7 +680,7 @@
       background: rgba(15, 10, 30, 0.72);
       border: 1px solid rgba(255, 255, 255, 0.14);
       color: #cbd5e1;
-      margin: 0 auto 8px;
+      margin: 0 auto 7px;
     }
     .voice-status-dot {
       width: 7px;
@@ -633,7 +696,7 @@
     .seats {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px 6px;
+      gap: 9px 6px;
       padding: 2px 4px;
       justify-items: center;
       align-items: start;
@@ -641,6 +704,7 @@
     }
 
     .seat {
+      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -656,8 +720,8 @@
 
     .seat-orb {
       position: relative;
-      width: 60px;
-      height: 60px;
+      width: 58px;
+      height: 58px;
       border-radius: 50%;
       padding: 3px;
       background: linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.04));
@@ -692,17 +756,23 @@
         inset 0 2px 4px rgba(255, 255, 255, 0.55),
         inset 0 -3px 6px rgba(120, 53, 15, 0.6);
     }
-    .seat.vip .seat-orb::after {
-      background: radial-gradient(ellipse at center, rgba(251, 191, 36, 0.65), transparent 72%);
-    }
-
     .seat.occ .seat-orb {
       background: linear-gradient(135deg, var(--acc), var(--acc2), var(--cyan));
     }
-
     .seat.locked { opacity: 0.72; }
     .seat.locked .seat-orb {
       background: linear-gradient(145deg, rgba(148, 163, 184, 0.22), rgba(15, 23, 42, 0.7));
+    }
+
+    /* توهج استقبال الهدية فوق المقعد */
+    @keyframes seatGiftGlow {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.9); }
+      40% { transform: scale(1.16); box-shadow: 0 0 0 14px rgba(236, 72, 153, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+    }
+    .seat.gift-hit .seat-orb {
+      background: linear-gradient(135deg, #fbbf24, #ec4899, #22d3ee) !important;
+      animation: seatGiftGlow 0.9s ease 2;
     }
 
     @keyframes speakingPulse3D {
@@ -784,8 +854,8 @@
       background: #dc2626;
       border: 1.5px solid #090612;
       border-radius: 50%;
-      width: 20px;
-      height: 20px;
+      width: 19px;
+      height: 19px;
       display: grid;
       place-items: center;
       font-size: 10px;
@@ -794,7 +864,7 @@
     }
 
     .seat-meta-pill {
-      margin-top: 5px;
+      margin-top: 4px;
       padding: 2px 8px;
       border-radius: 999px;
       background: rgba(10, 7, 22, 0.78);
@@ -870,14 +940,14 @@
     .colors-bar {
       display: flex;
       gap: 6px;
-      padding: 4px 12px;
+      padding: 3px 12px;
       align-items: center;
       position: relative;
       z-index: 5;
     }
     .colors-bar button {
-      width: 18px;
-      height: 18px;
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
       border: 2px solid transparent;
       cursor: pointer;
@@ -888,52 +958,98 @@
       display: flex;
       gap: 6px;
       overflow-x: auto;
-      padding: 4px 12px;
+      padding: 3px 12px;
       scrollbar-width: none;
       position: relative;
       z-index: 5;
     }
     .emojis-bar::-webkit-scrollbar { display: none; }
-    .emojis-bar button { background: none; border: none; font-size: 18px; cursor: pointer; padding: 0; }
+    .emojis-bar button { background: none; border: none; font-size: 17px; cursor: pointer; padding: 0; }
 
+    /* ==========================================================
+       الشريط السفلي الاحترافي والمدمج داخل الغرفة
+       ========================================================== */
     .footbar {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 8px 10px 12px;
-      background: rgba(10, 7, 22, 0.88);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border-top: 1px solid var(--border);
+      gap: 5px;
+      padding: 7px 8px 10px;
+      background: rgba(10, 7, 22, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
       position: relative;
       z-index: 6;
     }
     .footbar input {
       flex: 1;
-      padding: 9px 12px;
-      border-radius: 13px;
+      min-width: 0;
+      height: 34px;
+      padding: 0 11px;
+      border-radius: 999px;
       border: 1px solid var(--border);
       background: rgba(255, 255, 255, 0.08);
       color: var(--txt);
-      font-size: 13px;
+      font-size: 12.5px;
       outline: none;
     }
-    .micbtn {
-      width: 42px;
-      height: 42px;
+    .dock-btn {
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.25);
-      font-size: 18px;
-      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.05));
       color: #fff;
-      box-shadow: 0 5px 14px rgba(0,0,0,0.45), inset 0 1px 2px rgba(255,255,255,0.35);
+      font-size: 15px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
       flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+      transition: transform 0.14s ease, background 0.16s ease;
     }
-    .micbtn.on { background: linear-gradient(135deg, #22c55e, #16a34a); }
-    .micbtn.off { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+    .dock-btn:active { transform: scale(0.9); }
+
+    /* زر المايك الاحترافي الصغير في الأسفل */
+    .dock-btn.mic-on {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border-color: rgba(134, 239, 172, 0.6);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.45);
+    }
+    .dock-btn.mic-off {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      border-color: rgba(252, 165, 165, 0.6);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.45);
+    }
+    .dock-btn.mic-idle {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    }
+
+    /* زر كتم / فك كتم صوت الغرفة بالكامل */
+    .dock-btn.spk-on {
+      background: linear-gradient(135deg, #0ea5e9, #2563eb);
+      border-color: rgba(125, 211, 252, 0.5);
+    }
+    .dock-btn.spk-muted {
+      background: linear-gradient(135deg, #f59e0b, #dc2626);
+      border-color: rgba(253, 224, 71, 0.6);
+    }
+
+    /* زر صندوق الهدايا */
+    .dock-btn.gift-btn {
+      background: linear-gradient(135deg, #ec4899, #f59e0b);
+      border-color: rgba(253, 230, 138, 0.55);
+      box-shadow: 0 4px 12px rgba(236, 72, 153, 0.45);
+    }
+
+    /* زر الإرسال الدائري */
+    .dock-btn.send-btn {
+      background: linear-gradient(135deg, var(--acc), var(--acc2));
+      font-size: 13px;
+    }
 
     /* ==========================================================
-       Bottom Sheet & Scrim (إصلاح نهائي لمنع الشاشة الشفافة المعلقة)
+       Bottom Sheet & Scrim
        ========================================================== */
     .scrim {
       position: fixed;
@@ -1013,7 +1129,60 @@
       font-size: 13px;
     }
 
-    /* Gifts & Fly */
+    /* Gifts & Target Selector & Targeted Flight */
+    .gift-targets-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 4px 2px 10px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      scrollbar-width: none;
+    }
+    .gift-targets-bar::-webkit-scrollbar { display: none; }
+    .gt-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      min-width: 58px;
+      padding: 6px 4px;
+      border-radius: 14px;
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.05);
+      color: #e2e8f0;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+    .gt-chip.sel {
+      border-color: #fbbf24;
+      background: linear-gradient(145deg, rgba(236, 72, 153, 0.3), rgba(245, 158, 11, 0.25));
+      box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4);
+      transform: translateY(-2px);
+    }
+    .gt-chip-av {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--acc), var(--acc2));
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 800;
+      overflow: hidden;
+      border: 1.5px solid rgba(255,255,255,0.4);
+    }
+    .gt-chip-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .gt-chip span {
+      font-size: 10px;
+      font-weight: 800;
+      max-width: 54px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .giftgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
     .gift {
       background: var(--glass);
@@ -1029,33 +1198,45 @@
     .gift small { display: block; font-size: 11px; margin-top: 2px; }
     .gift .p { font-size: 10px; color: #fde68a; margin-top: 2px; }
 
-    .fly {
+    /* حركة الهدية الطائرة نحو المقعد المستهدف */
+    .gift-projectile {
       position: fixed;
-      top: 32%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 90;
+      z-index: 95;
       pointer-events: none;
       text-align: center;
-      font-size: 54px;
-      animation: flyAnim 2.4s ease forwards;
+      font-size: 46px;
+      transform: translate(-50%, -50%) scale(0.5);
+      transition: left 0.85s cubic-bezier(0.22, 1, 0.36, 1), top 0.85s cubic-bezier(0.22, 1, 0.36, 1), transform 0.85s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.45s ease;
+      filter: drop-shadow(0 8px 18px rgba(236, 72, 153, 0.75));
     }
-    .fly small {
+    .gift-projectile small {
       display: block;
-      font-size: 13px;
-      font-weight: 800;
+      font-size: 11px;
+      font-weight: 900;
       color: #fff;
-      background: rgba(15, 10, 30, 0.9);
-      padding: 4px 10px;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(236, 72, 153, 0.95));
+      padding: 3px 10px;
       border-radius: 999px;
-      border: 1px solid var(--border);
-      margin-top: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      margin-top: 2px;
+      white-space: nowrap;
     }
-    @keyframes flyAnim {
-      0% { opacity: 0; transform: translate(-50%, 20px) scale(0.7); }
-      20% { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
-      80% { opacity: 1; transform: translate(-50%, -25px) scale(1); }
-      100% { opacity: 0; transform: translate(-50%, -55px) scale(0.9); }
+
+    /* مشغل الموسيقى البسيط */
+    .track-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 11px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      margin-bottom: 7px;
+      cursor: pointer;
+    }
+    .track-row.playing {
+      border-color: #ec4899;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.28), rgba(236, 72, 153, 0.22));
     }
 
     .toast {
@@ -1108,7 +1289,7 @@
         <div class="banner">
           <div>
             <h3>أنشئ غرفتك الصوتية 3D الآن</h3>
-            <p>صوت مباشر نقي، مقاعد دائرية تفاعلية، وخلفيات مخصصة لغرفتك.</p>
+            <p>صوت مباشر نقي، مقاعد دائرية تفاعلية، وهدايا متحركة.</p>
           </div>
           <button class="btn" id="banner-create" type="button">+ غرفة</button>
         </div>
@@ -1235,10 +1416,13 @@
             </div>
           </div>
         </div>
-        <button class="iconbtn" id="room-hand" type="button" title="رفع اليد / طابور المايك">✋</button>
-        <button class="iconbtn" id="room-music" type="button" title="مشغل الموسيقى">🎵</button>
+        <button class="iconbtn" id="room-hand" type="button" title="رفع اليد">✋</button>
+        <button class="iconbtn" id="room-music" type="button" title="الموسيقى">🎵</button>
         <button class="iconbtn" id="room-menu" type="button" title="خيارات">⋮</button>
       </div>
+
+      <!-- شريط دخول الأعضاء لمدة 3 ثوانٍ -->
+      <div class="entry-banner-wrap" id="entry-banner-wrap"></div>
 
       <div class="audio-unlock-bar hidden" id="audio-unlock-bar">
         🔊 اضغط هنا لتفعيل صوت الغرفة وسماع المتحدثين
@@ -1246,12 +1430,13 @@
 
       <div class="pinned hidden" id="room-pinned"></div>
 
+      <!-- شريط الموسيقى المصغر السريع -->
       <div class="music-mini hidden" id="music-mini">
-        <div class="music-mini-title" id="music-mini-title">🎵 لا توجد أغنية</div>
+        <div class="music-mini-title" id="music-mini-title">🎵 أغنية</div>
         <div class="music-mini-btns">
-          <button class="btn sm ghost" id="mmini-toggle" type="button">⏯</button>
-          <button class="btn sm ghost" id="mmini-skip" type="button">⏭</button>
-          <button class="btn sm" id="mmini-open" type="button">📋</button>
+          <button id="mmini-toggle" type="button" title="تشغيل/إيقاف">⏯</button>
+          <button id="mmini-skip" type="button" title="التالي">⏭</button>
+          <button id="mmini-open" type="button" title="الأغاني">🎵</button>
         </div>
       </div>
 
@@ -1271,7 +1456,7 @@
       <div class="chatbox" id="room-chat"></div>
 
       <div class="colors-bar" id="room-colors">
-        <span class="small">لون الرسالة:</span>
+        <span class="small">لون:</span>
         <button data-color="" class="sel" style="background:#94a3b8" type="button"></button>
         <button data-color="pink" style="background:#f472b6" type="button"></button>
         <button data-color="cyan" style="background:#22d3ee" type="button"></button>
@@ -1279,13 +1464,15 @@
       </div>
       <div class="emojis-bar" id="room-emojis"></div>
 
+      <!-- الشريط السفلي الاحترافي والمدمج -->
       <div class="footbar">
-        <button class="iconbtn" id="room-sticker" type="button" title="ملصقات">🎭</button>
-        <button class="iconbtn" id="room-photo" type="button" title="صورة">📷</button>
-        <input id="room-input" type="text" maxlength="240" placeholder="اكتب رسالة في الغرفة..." />
-        <button class="btn sm" id="room-send" type="button">إرسال</button>
-        <button class="iconbtn" id="room-gift" type="button" title="هدية">🎁</button>
-        <button class="micbtn on hidden" id="mic-btn" type="button" title="المايك">🎤</button>
+        <button class="dock-btn mic-idle" id="mic-btn" type="button" title="فتح/كتم المايك">🎤</button>
+        <button class="dock-btn spk-on" id="room-speaker-btn" type="button" title="كتم/تشغيل صوت الغرفة">🔊</button>
+        <input id="room-input" type="text" maxlength="240" placeholder="اكتب رسالة..." />
+        <button class="dock-btn send-btn" id="room-send" type="button" title="إرسال">➤</button>
+        <button class="dock-btn" id="room-sticker" type="button" title="ملصقات">🎭</button>
+        <button class="dock-btn" id="room-photo" type="button" title="صورة">📷</button>
+        <button class="dock-btn gift-btn" id="room-gift" type="button" title="صندوق الهدايا">🎁</button>
       </div>
     </section>
 
@@ -1302,10 +1489,10 @@
       </div>
       <div class="chatbox" id="chat-msgs"></div>
       <div class="footbar">
-        <button class="iconbtn" id="chat-emoji" type="button" title="إيموجي">😀</button>
-        <button class="iconbtn" id="chat-voice" type="button" title="رسالة صوتية (حتى 30 ثانية)">🎙️</button>
+        <button class="dock-btn" id="chat-emoji" type="button" title="إيموجي">😀</button>
+        <button class="dock-btn" id="chat-voice" type="button" title="رسالة صوتية">🎙️</button>
         <input id="chat-input" type="text" maxlength="300" placeholder="اكتب رسالة خاصة..." />
-        <button class="btn sm" id="chat-send" type="button">إرسال</button>
+        <button class="dock-btn send-btn" id="chat-send" type="button" title="إرسال">➤</button>
       </div>
     </section>
 
