@@ -1,4 +1,4 @@
-/* REAL VOICE — إصلاح مزامنة المقاعد والأسماء والصور + إيقاف الصوت الفوري عند الخروج + إكمال البيانات + بحث ID + تثبيت الهاتف */
+/* REAL VOICE — ربط فوري وموحد لصورة البروفايل والاسم والـ ID بين الغرفة والمقاعد والبحث */
 (function (global) {
   "use strict";
 
@@ -13,7 +13,7 @@
   var TOKEN_URL = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";
 
   var CONFIG = {
-    storageKey: "rv_state_v8",
+    storageKey: "rv_state_v9",
     fixedUidKey: "rv_fixed_uid_v1",
     authSessionKey: "rv_auth_logged_v1",
     onboardDoneKey: "rv_onboard_done_v1",
@@ -123,8 +123,9 @@
   }
   function dmThreadId(a, b) { return [String(a), String(b)].sort().join("__"); }
 
+  /* ضغط مناسب ومضمون لظهور الصورة بوضوح وسرعة على كل الأجهزة */
   function readImageFileAsDataUrl(file, maxSize, quality) {
-    maxSize = maxSize || 300; quality = quality || 0.72;
+    maxSize = maxSize || 240; quality = quality || 0.65;
     return new Promise(function (resolve, reject) {
       if (!file || !file.type || file.type.indexOf("image/") !== 0) { reject(new Error("اختر ملف صورة صحيح")); return; }
       var reader = new FileReader();
@@ -151,7 +152,6 @@
   function getCharmLevel(charm) { return Math.max(1, Math.min(CONFIG.maxLevel, Math.floor(Math.max(0, Number(charm || 0)) / 100) + 1)); }
   function getWealthLevel(wealth) { return Math.max(1, Math.min(CONFIG.maxLevel, Math.floor(Math.max(0, Number(wealth || 0)) / 100) + 1)); }
 
-  /* ========= تثبيت التطبيق على الهاتف (PWA) ========= */
   var deferredInstallPrompt = null;
   function initPwaInstall() {
     window.addEventListener("beforeinstallprompt", function (e) {
@@ -190,7 +190,7 @@
     } catch (e) { /* */ }
   }
 
-  /* ========= الصوت (Agora RTC) مع إيقاف فوري عند الخروج ========= */
+  /* ========= الصوت (Agora RTC) ========= */
   var voice = { client: null, localTrack: null, channel: null, role: null, uidNum: 0, joining: false, leaving: false, speakingNums: {} };
   var musicState = { roomAudio: null };
 
@@ -350,7 +350,7 @@
       var el = seatEls[idx];
       if (!el) return;
       if (!s.uid) { el.classList.remove("speak"); return; }
-      var u = getUser(s.uid);
+      var u = resolveLiveUser(s.uid);
       var muted = s.muted || (s.uid === S.me.id && UI.micMuted);
       el.classList.toggle("speak", !muted && !!voice.speakingNums[u.num || hashNum(s.uid)]);
     });
@@ -385,7 +385,7 @@
   }
   function makeSeats(n) {
     var arr = [];
-    for (var i = 0; i < n; i++) arr.push({ uid: null, name: "", photo: "", gender: "", age: "", locked: false, muted: false, vip: i === 0 });
+    for (var i = 0; i < n; i++) arr.push({ uid: null, locked: false, muted: false, vip: i === 0 });
     return arr;
   }
   function demoRooms() {
@@ -443,6 +443,7 @@
   }
   function saveLocal() { try { localStorage.setItem(CONFIG.storageKey, JSON.stringify(S)); } catch (e) { /* */ } }
 
+  /* حفظ فوري لبيانات المستخدم وصورته ومستواه */
   function save() {
     saveLocal();
     if (!S || !S.me) return;
@@ -456,24 +457,26 @@
     S.me.wealthLevel = wLv;
     S.me.charmLevel = cLv;
 
+    var userPayload = {
+      id: S.me.id, num: S.me.num, specialId: S.me.specialId || "",
+      name: S.me.name || "مستخدم", username: S.me.name || "مستخدم",
+      gender: S.me.gender || "ذكر", age: S.me.age || "",
+      email: S.me.email || "", photo: S.me.photo || "",
+      bio: S.me.bio || "", coins: Number(S.me.coins || 0),
+      xp: xpVal, level: lv,
+      wealth: wealthVal, wealthLevel: wLv,
+      charm: charmVal, charmLevel: cLv,
+      vip: Number(S.me.vip || 0),
+      followers: Number(S.me.followers || 0),
+      following: S.follows.length || 0,
+      friendsCount: S.friends.length || 0,
+      online: true
+    };
+    cloud.usersMap[S.me.id] = Object.assign({}, cloud.usersMap[S.me.id] || {}, userPayload);
+
     if (cloud.on && cloud.db) {
-      var userPayload = {
-        id: S.me.id, num: S.me.num, specialId: S.me.specialId || "",
-        name: S.me.name || "مستخدم", username: S.me.name || "مستخدم",
-        gender: S.me.gender || "ذكر", age: S.me.age || "",
-        email: S.me.email || "", photo: S.me.photo || "",
-        bio: S.me.bio || "", coins: Number(S.me.coins || 0),
-        xp: xpVal, level: lv,
-        wealth: wealthVal, wealthLevel: wLv,
-        charm: charmVal, charmLevel: cLv,
-        vip: Number(S.me.vip || 0),
-        followers: Number(S.me.followers || 0),
-        following: S.follows.length || 0,
-        friendsCount: S.friends.length || 0,
-        online: true, updatedAt: serverTs()
-      };
       var batch = {};
-      batch["users/" + S.me.id] = userPayload;
+      batch["users/" + S.me.id] = Object.assign({}, userPayload, { updatedAt: serverTs() });
       batch["levels/byLevel/" + lv + "/" + S.me.id] = {
         id: S.me.id, specialId: S.me.specialId || "", name: userPayload.name, photo: userPayload.photo,
         level: lv, wealthLevel: wLv, charmLevel: cLv, xp: xpVal, wealth: wealthVal, charm: charmVal
@@ -482,6 +485,24 @@
       batch["levels/charm/" + cLv + "/" + S.me.id] = { name: userPayload.name, charm: charmVal, charmLevel: cLv };
       cloud.db.ref().update(batch).catch(function () { /* */ });
     }
+  }
+
+  /* دالة موحدة تجلب أحدث بيانات أي مستخدم (الاسم + الصورة + الـ ID) من كل المصادر */
+  function resolveLiveUser(id) {
+    if (!id) return { id: "", num: 0, specialId: "0001000", name: "مستخدم", gender: "", age: "", photo: "", online: false, level: 1 };
+    if (id === S.me.id) {
+      return Object.assign({}, cloud.usersMap[id] || {}, S.me, { level: computeLevelFromXp(S.me.xp || 0), me: true });
+    }
+    var fromCloud = cloud.usersMap[id];
+    var fromLocal = null;
+    for (var i = 0; i < (S.users || []).length; i++) {
+      if (S.users[i].id === id) { fromLocal = S.users[i]; break; }
+    }
+    var base = Object.assign({
+      id: id, num: hashNum(id), specialId: "", name: "مستخدم", gender: "", age: "", photo: "", online: false, level: 1
+    }, fromLocal || {}, fromCloud || {});
+    if (!base.name) base.name = "مستخدم";
+    return base;
   }
 
   function hasLocalSession() { try { return localStorage.getItem(CONFIG.authSessionKey) === "1"; } catch (e) { return false; } }
@@ -561,13 +582,8 @@
     var seats = [];
     for (var i = 0; i < n; i++) {
       var s = (r.seats && r.seats[i]) || {};
-      var uFromMap = s.uid && cloud.usersMap[s.uid] ? cloud.usersMap[s.uid] : null;
       seats.push({
         uid: s.uid || null,
-        name: s.name || (uFromMap ? uFromMap.name : "") || "",
-        photo: s.photo || (uFromMap ? uFromMap.photo : "") || "",
-        gender: s.gender || (uFromMap ? uFromMap.gender : "") || "",
-        age: s.age || (uFromMap ? uFromMap.age : "") || "",
         locked: !!s.locked,
         muted: !!s.muted,
         vip: s.vip != null ? !!s.vip : i === 0
@@ -613,7 +629,6 @@
           S.users = Object.keys(val).filter(function (k) { return k !== S.me.id; }).map(function (k) {
             return Object.assign({ id: k }, val[k]);
           });
-          S.rooms = S.rooms.map(function (rm) { return normalizeRoom(rm.id, rm); });
           renderAll();
           if (UI.roomId) renderRoom();
         });
@@ -718,14 +733,6 @@
     toast("تم حفظ بياناتك بنجاح ✅");
   }
 
-  function getUser(id) {
-    if (!id) return { id: "", num: 0, specialId: "0001000", name: "مستخدم", gender: "", age: "", photo: "", online: false, bio: "", vip: 0, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, coins: 0, xp: 0, level: 1 };
-    if (id === S.me.id) return Object.assign({}, S.me, { level: computeLevelFromXp(S.me.xp || 0), me: true });
-    if (cloud.usersMap[id]) return Object.assign({ id: id, photo: "", online: false, bio: "", vip: 0, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, coins: 0, xp: 0, level: 1 }, cloud.usersMap[id]);
-    for (var i = 0; i < S.users.length; i++) if (S.users[i].id === id) return S.users[i];
-    return { id: id, num: hashNum(id), specialId: "", name: "مستخدم", gender: "", age: "", photo: "", online: false, bio: "", vip: 0, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, coins: 0, xp: 0, level: 1 };
-  }
-
   function getRoom(id) {
     if (!id || !S || !Array.isArray(S.rooms)) return null;
     for (var i = 0; i < S.rooms.length; i++) if (S.rooms[i].id === id) return S.rooms[i];
@@ -776,7 +783,7 @@
   function showEntryBanner(userObj) {
     var wrap = $("entry-banner-wrap");
     if (!wrap || !userObj) return;
-    var u = typeof userObj === "string" ? getUser(userObj) : userObj;
+    var u = typeof userObj === "string" ? resolveLiveUser(userObj) : userObj;
     var ribbon = document.createElement("div");
     ribbon.className = "entry-ribbon";
     ribbon.innerHTML = "<span>✨ دخل الغرفة: " + esc(u.name || "مستخدم") + "</span>";
@@ -842,7 +849,7 @@
   }
 
   function renderTop() {
-    setAvatarEl($("avatar-top"), S.me);
+    setAvatarEl($("avatar-top"), resolveLiveUser(S.me.id));
     var tBtn = $("theme-toggle-btn");
     if (tBtn) tBtn.textContent = (S.settings && S.settings.lightTheme) ? "🌙" : "☀️";
     var unread = S.notifs.filter(function (n) { return !n.read; }).length;
@@ -865,35 +872,40 @@
       "</div></div>";
   }
 
+  /* البحث بالـ ID يظهر الاسم والصورة والـ ID مباشرة */
   function renderIdSearchHighlight(q) {
     var box = $("id-search-result-box");
     if (!box) return;
     if (!q) { box.classList.add("hidden"); box.innerHTML = ""; return; }
-    var allPeople = [Object.assign({}, S.me, { me: true })].concat(S.users || []);
-    var matchedPerson = null;
-    for (var i = 0; i < allPeople.length; i++) {
-      var p = allPeople[i];
-      var sid = displayUserId(p).toLowerCase();
-      if (sid === q || sid.indexOf(q) === 0 || String(p.id || "").toLowerCase() === q) {
-        matchedPerson = p;
-        break;
+
+    var allIds = [S.me.id].concat(Object.keys(cloud.usersMap || {}), (S.users || []).map(function (u) { return u.id; }));
+    var uniqueIds = [], seen = {};
+    allIds.forEach(function (id) { if (id && !seen[id]) { seen[id] = true; uniqueIds.push(id); } });
+
+    var matched = [];
+    uniqueIds.forEach(function (id) {
+      var u = resolveLiveUser(id);
+      var sid = displayUserId(u).toLowerCase();
+      var rawId = String(u.id || "").toLowerCase();
+      if (sid === q || sid.indexOf(q) === 0 || rawId.indexOf(q) === 0) {
+        matched.push(u);
       }
-    }
-    if (!matchedPerson) { box.classList.add("hidden"); box.innerHTML = ""; return; }
-    var extraInfo = [];
-    if (matchedPerson.gender) extraInfo.push(matchedPerson.gender);
-    if (matchedPerson.age) extraInfo.push(matchedPerson.age + " سنة");
-    extraInfo.push("ID: " + displayUserId(matchedPerson));
+    });
+
+    if (!matched.length) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+
     box.classList.remove("hidden");
-    box.innerHTML = '<div class="id-result-banner" data-profile="' + esc(matchedPerson.id) + '">' +
-      '<div style="display:flex;align-items:center;gap:12px">' +
-        avatarHTML(matchedPerson) +
-        '<div class="info">' +
-          '<div class="name">' + esc(matchedPerson.name || "مستخدم") + ' <span class="tag verified">نتيجة ID</span></div>' +
-          '<div class="meta">' + esc(extraInfo.join(" • ")) + "</div>" +
-        "</div>" +
-        (matchedPerson.id !== S.me.id ? '<button class="btn sm" data-profile="' + esc(matchedPerson.id) + '" type="button">عرض</button>' : "") +
-      "</div></div>";
+    box.innerHTML = matched.slice(0, 3).map(function (u) {
+      return '<div class="id-result-banner" data-profile="' + esc(u.id) + '">' +
+        '<div style="display:flex;align-items:center;gap:12px">' +
+          avatarHTML(u) +
+          '<div class="info">' +
+            '<div class="name">' + esc(u.name) + ' <span class="tag verified">ID: ' + esc(displayUserId(u)) + "</span></div>" +
+            '<div class="meta">' + (u.gender ? esc(u.gender) + " • " : "") + (u.age ? esc(u.age) + " سنة • " : "") + (u.online ? "متصل الآن" : "حساب مسجل") + "</div>" +
+          "</div>" +
+          (u.id !== S.me.id ? '<button class="btn sm" data-profile="' + esc(u.id) + '" type="button">فتح</button>' : '<span class="tag">أنت</span>') +
+        "</div></div>";
+    }).join("");
   }
 
   function renderHome() {
@@ -916,13 +928,15 @@
     var uBox = $("search-users");
     if (q) {
       var us = S.users.filter(function (u) {
-        var sid = displayUserId(u).toLowerCase();
-        return sid.indexOf(q) >= 0 || String(u.id || "").toLowerCase().indexOf(q) >= 0 || (u.name || "").toLowerCase().indexOf(q) >= 0;
+        var live = resolveLiveUser(u.id);
+        var sid = displayUserId(live).toLowerCase();
+        return sid.indexOf(q) >= 0 || String(live.id || "").toLowerCase().indexOf(q) >= 0 || (live.name || "").toLowerCase().indexOf(q) >= 0;
       });
       uBox.classList.toggle("hidden", us.length === 0);
       uBox.innerHTML = us.map(function (u) {
-        return '<div class="row glass" data-profile="' + esc(u.id) + '">' + avatarHTML(u) +
-          '<div class="info"><div class="name">' + esc(u.name) + ' <span class="tag">ID: ' + esc(displayUserId(u)) + '</span></div><div class="meta">' + (u.gender ? u.gender + " • " : "") + "Lv." + (u.level || 1) + "</div></div></div>";
+        var live = resolveLiveUser(u.id);
+        return '<div class="row glass" data-profile="' + esc(live.id) + '">' + avatarHTML(live) +
+          '<div class="info"><div class="name">' + esc(live.name) + ' <span class="tag">ID: ' + esc(displayUserId(live)) + '</span></div><div class="meta">' + (live.gender ? live.gender + " • " : "") + "Lv." + (live.level || 1) + "</div></div></div>";
       }).join("");
     } else { uBox.classList.add("hidden"); }
 
@@ -938,8 +952,9 @@
   }
 
   function personRow(u, actions) {
-    return '<div class="row glass"><div data-profile="' + esc(u.id) + '" style="position:relative">' + avatarHTML(u) + '<span class="dot ' + (u.online ? "on" : "") + '"></span></div>' +
-      '<div class="info" data-profile="' + esc(u.id) + '"><div class="name">' + esc(u.name) + '</div><div class="meta">ID: ' + esc(displayUserId(u)) + " • " + (u.online ? "متصل" : "غير متصل") + "</div></div>" +
+    var live = resolveLiveUser(u.id);
+    return '<div class="row glass"><div data-profile="' + esc(live.id) + '" style="position:relative">' + avatarHTML(live) + '<span class="dot ' + (live.online ? "on" : "") + '"></span></div>' +
+      '<div class="info" data-profile="' + esc(live.id) + '"><div class="name">' + esc(live.name) + '</div><div class="meta">ID: ' + esc(displayUserId(live)) + " • " + (live.online ? "متصل" : "غير متصل") + "</div></div>" +
       actions + "</div>";
   }
 
@@ -949,24 +964,26 @@
     $("find-box").classList.toggle("hidden", UI.ftab !== "find");
     var html = "";
     if (UI.ftab === "friends") {
-      var fr = S.friends.map(getUser);
+      var fr = S.friends.map(resolveLiveUser);
       html = fr.length ? fr.map(function (u) {
         return personRow(u, '<button class="btn sm ghost" data-dm="' + esc(u.id) + '" type="button">💬 خاص</button>');
       }).join("") : '<div class="empty">لا يوجد أصدقاء بعد</div>';
     } else if (UI.ftab === "requests") {
       html = S.requests.length ? S.requests.map(function (id) {
-        return personRow(getUser(id), '<button class="btn sm" data-accept="' + esc(id) + '" type="button">قبول</button><button class="btn sm ghost" data-reject="' + esc(id) + '" type="button">رفض</button>');
+        return personRow(resolveLiveUser(id), '<button class="btn sm" data-accept="' + esc(id) + '" type="button">قبول</button><button class="btn sm ghost" data-reject="' + esc(id) + '" type="button">رفض</button>');
       }).join("") : '<div class="empty">لا توجد طلبات صداقة</div>';
     } else {
       var q = UI.findQ.trim().toLowerCase();
       var res = S.users.filter(function (u) {
-        return !q || (u.name || "").toLowerCase().indexOf(q) >= 0 || displayUserId(u).toLowerCase().indexOf(q) >= 0;
+        var live = resolveLiveUser(u.id);
+        return !q || (live.name || "").toLowerCase().indexOf(q) >= 0 || displayUserId(live).toLowerCase().indexOf(q) >= 0;
       });
       html = res.length ? res.map(function (u) {
-        var btn = S.friends.indexOf(u.id) >= 0 ? '<span class="tag verified">صديق ✔</span>'
-          : (S.sentReq.indexOf(u.id) >= 0 ? '<span class="tag">تم الإرسال</span>'
-          : '<button class="btn sm" data-addfriend="' + esc(u.id) + '" type="button">+ إضافة</button>');
-        return personRow(u, btn);
+        var live = resolveLiveUser(u.id);
+        var btn = S.friends.indexOf(live.id) >= 0 ? '<span class="tag verified">صديق ✔</span>'
+          : (S.sentReq.indexOf(live.id) >= 0 ? '<span class="tag">تم الإرسال</span>'
+          : '<button class="btn sm" data-addfriend="' + esc(live.id) + '" type="button">+ إضافة</button>');
+        return personRow(live, btn);
       }).join("") : '<div class="empty">لا نتائج</div>';
     }
     $("friends-list").innerHTML = html;
@@ -975,7 +992,7 @@
   function renderMessages() {
     var ids = Object.keys(S.dms).filter(function (id) { return isFriendWith(id) && S.dms[id] && S.dms[id].length; });
     $("dm-list").innerHTML = ids.length ? ids.map(function (id) {
-      var u = getUser(id), last = S.dms[id][S.dms[id].length - 1];
+      var u = resolveLiveUser(id), last = S.dms[id][S.dms[id].length - 1];
       return '<div class="row glass" data-dm="' + esc(id) + '">' + avatarHTML(u) +
         '<div class="info"><div class="name">' + esc(u.name) + '</div><div class="meta">' + esc(last.text || "رسالة") + '</div></div>' +
         '<div class="meta">' + timeStr(last.t) + "</div></div>";
@@ -983,7 +1000,7 @@
   }
 
   function renderProfile() {
-    var m = S.me;
+    var m = resolveLiveUser(S.me.id);
     var covEl = $("pf-cover");
     if (covEl) covEl.style.backgroundImage = m.photo ? 'url("' + String(m.photo).replace(/"/g, '\\"') + '")' : "linear-gradient(135deg,#7c3aed,#db2777,#0891b2)";
     setAvatarEl($("pf-avatar"), m);
@@ -1025,14 +1042,20 @@
 
   function openProfileSettingsSheet() {
     var m = S.me;
+    var nextPhoto = m.photo || "";
     var canDaily = !m.daily || (Date.now() - Number(m.daily) >= 24 * 60 * 60 * 1000);
+
     openSheet("<h3>⚙️ إعدادات الملف الشخصي</h3>" +
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">' +
+        '<div class="avatar lg" id="set-av-live">' + (nextPhoto ? '<img src="' + esc(nextPhoto) + '" alt="" />' : esc(initials(m.name))) + "</div>" +
+        '<div class="info"><div class="name">' + esc(m.name || "مستخدم") + '</div><div class="meta">ID: ' + esc(displayUserId(m)) + "</div></div>" +
+      "</div>" +
       "<label>الاسم</label><input id='set-name' maxlength='24' value='" + esc(m.name) + "' />" +
       "<label>العمر</label><input id='set-age' type='number' min='10' max='99' value='" + esc(m.age || "") + "' />" +
       "<label>النوع</label><select id='set-gender'><option value='ذكر' " + (m.gender !== "أنثى" ? "selected" : "") + ">ذكر</option><option value='أنثى' " + (m.gender === "أنثى" ? "selected" : "") + ">أنثى</option></select>" +
       "<label>النبذة التعريفية</label><textarea id='set-bio' rows='2' maxlength='140'>" + esc(m.bio || "") + "</textarea>" +
-      "<label>صورة الحساب من المعرض</label><input id='set-photo-file' type='file' accept='image/*' />" +
-      '<button class="btn block" id="set-save-profile" type="button">💾 حفظ بيانات الملف</button>' +
+      "<label>تغيير صورة البروفايل (تظهر للجميع فوراً في الغرفة والبحث)</label><input id='set-photo-file' type='file' accept='image/*' />" +
+      '<button class="btn block" id="set-save-profile" type="button">💾 حفظ ونشر الصورة</button>' +
       '<div style="display:flex;gap:8px;margin-top:10px">' +
         '<button class="btn ghost" style="flex:1" id="set-daily" type="button">' + (canDaily ? "🎁 مكافأة اليوم (+100)" : "✅ تم استلام اليوم") + "</button>" +
         '<button class="btn ghost" style="flex:1" id="set-topup" type="button">+ شحن 500 عملة</button>' +
@@ -1041,12 +1064,17 @@
       '<button class="btn ghost block" id="set-google" type="button">🔄 تبديل / تسجيل دخول Google</button>' +
       '<button class="btn red block" id="set-reset" type="button">إعادة ضبط البيانات</button>');
 
-    var nextPhoto = m.photo || "";
     $("set-photo-file").onchange = async function () {
       var f = this.files && this.files[0];
       if (!f) return;
-      try { nextPhoto = await readImageFileAsDataUrl(f, 220, 0.72); toast("تم اختيار الصورة ✅"); } catch (e) { toast(e.message); }
+      try {
+        nextPhoto = await readImageFileAsDataUrl(f, 220, 0.65);
+        var avEl = $("set-av-live");
+        if (avEl) avEl.innerHTML = '<img src="' + esc(nextPhoto) + '" alt="" />';
+        toast("تم تحميل الصورة — اضغط حفظ ونشر الصورة ✅");
+      } catch (e) { toast(e.message); }
     };
+
     $("set-save-profile").onclick = function () {
       var n = $("set-name").value.trim();
       if (!n) { toast("الاسم مطلوب"); return; }
@@ -1055,8 +1083,23 @@
       m.gender = $("set-gender").value;
       m.bio = clean($("set-bio").value.trim());
       m.photo = nextPhoto;
-      save(); closeSheet(); renderAll(); toast("تم حفظ التعديلات ✅");
+
+      /* تحديث فوري في الكاش المحلي والقاعدة لكي يراها كل من في الغرفة أو يبحث بالـ ID */
+      cloud.usersMap[m.id] = Object.assign({}, cloud.usersMap[m.id] || {}, {
+        id: m.id, name: m.name, photo: m.photo, gender: m.gender, age: m.age, specialId: m.specialId || ""
+      });
+      if (cloud.on && cloud.db) {
+        cloud.db.ref("users/" + m.id).update({
+          name: m.name, username: m.name, photo: m.photo, gender: m.gender, age: m.age, updatedAt: serverTs()
+        }).catch(function () { /* */ });
+      }
+      save();
+      closeSheet();
+      renderAll();
+      if (UI.roomId) renderRoom();
+      toast("تم تحديث صورتك وبياناتك للجميع ✅");
     };
+
     $("set-daily").onclick = function () {
       if (!canDaily) { toast("استلمت مكافأة اليوم بالفعل"); return; }
       m.daily = Date.now(); m.coins += 100;
@@ -1160,7 +1203,6 @@
     joinVoiceChannel(id, seatIndexOf(room, S.me.id) >= 0 ? "publisher" : "subscriber");
   }
 
-  /* خروج كامل وفوري: إيقاف الصوت + إزالة المقعد والمستمع + إغلاق الغرفة */
   function leaveRoom(silent) {
     closeSheet();
     offDb("room");
@@ -1175,18 +1217,11 @@
     var room = getRoom(targetRoomId);
     if (room) {
       var si = seatIndexOf(room, S.me.id);
-      if (si >= 0) {
-        room.seats[si] = { uid: null, name: "", photo: "", gender: "", age: "", locked: room.seats[si].locked, muted: false, vip: room.seats[si].vip };
-      }
+      if (si >= 0) room.seats[si].uid = null;
       room.listeners = room.listeners.filter(function (x) { return x !== S.me.id; });
       if (cloud.on && cloud.db) {
         var ups = {};
-        if (si >= 0) {
-          ups["rooms/" + room.id + "/seats/" + si + "/uid"] = null;
-          ups["rooms/" + room.id + "/seats/" + si + "/name"] = "";
-          ups["rooms/" + room.id + "/seats/" + si + "/photo"] = "";
-          ups["rooms/" + room.id + "/seats/" + si + "/muted"] = false;
-        }
+        if (si >= 0) ups["rooms/" + room.id + "/seats/" + si + "/uid"] = null;
         ups["rooms/" + room.id + "/listeners/" + S.me.id] = null;
         cloud.db.ref().update(ups).catch(function () { /* */ });
       }
@@ -1206,7 +1241,7 @@
     $("floating-orb-label").textContent = r.name || "روم";
   }
 
-  /* رسم المقاعد مع إظهار اسم وصورة الجالس للجميع بوضوح */
+  /* كل مقعد يقرأ صورة واسم الجالس مباشرة من resolveLiveUser لضمان ظهورها للجميع */
   function renderRoom() {
     var room = getRoom(UI.roomId);
     if (!room) return;
@@ -1225,19 +1260,13 @@
     grid.innerHTML = room.seats.map(function (s, i) {
       var cls = "seat", inner, fullName, sub;
       if (s.uid) {
-        var uFromDb = cloud.usersMap[s.uid] || {};
-        var mergedUser = {
-          id: s.uid,
-          name: s.name || uFromDb.name || (s.uid === S.me.id ? S.me.name : "مستخدم"),
-          photo: s.photo || uFromDb.photo || (s.uid === S.me.id ? S.me.photo : ""),
-          num: uFromDb.num || hashNum(s.uid)
-        };
+        var u = resolveLiveUser(s.uid);
         var muted = s.muted || (s.uid === S.me.id && UI.micMuted);
-        var speaking = !muted && !!voice.speakingNums[mergedUser.num];
+        var speaking = !muted && !!voice.speakingNums[u.num || hashNum(s.uid)];
         cls += " occ" + (speaking ? " speak" : "");
-        inner = avatarInnerHTML(mergedUser);
-        fullName = esc(mergedUser.name);
-        sub = s.uid === room.owner ? "👑 المالك" : (s.uid === S.me.id ? "أنت" : "مقعد " + (i + 1));
+        inner = avatarInnerHTML(u);
+        fullName = esc(u.name || "مستخدم");
+        sub = s.uid === room.owner ? "👑 المالك" : (u.me ? "أنت" : "مقعد " + (i + 1));
       } else if (s.locked) {
         cls += " locked"; inner = "🔒"; fullName = "مقفل"; sub = "مقعد " + (i + 1);
       } else {
@@ -1267,7 +1296,7 @@
     var stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 48;
     box.innerHTML = (room.msgs || []).map(function (m) {
       if (m.sys) return '<div class="msg sys">' + esc(m.text) + "</div>";
-      var u = getUser(m.from), me = m.from === S.me.id;
+      var u = resolveLiveUser(m.from), me = m.from === S.me.id;
       var body = m.sticker ? '<div style="font-size:36px">' + esc(m.sticker) + "</div>"
         : (m.img ? '<img src="' + esc(m.img) + '" alt="" style="max-width:190px;border-radius:10px" />' : esc(m.text));
       return '<div class="msg ' + (me ? "me" : "") + '"><div class="who">' + esc(u.name) + "</div>" + body + '<div class="tm">' + timeStr(m.t) + "</div></div>";
@@ -1284,7 +1313,6 @@
     save();
   }
 
-  /* جلوس فوري مع حفظ الاسم والصورة مباشرة في المقعد والقاعدة */
   function seatClick(i) {
     var room = getRoom(UI.roomId);
     if (!room) return;
@@ -1301,31 +1329,26 @@
 
     var prevSeat = seatIndexOf(room, S.me.id);
     if (prevSeat >= 0) {
-      room.seats[prevSeat] = { uid: null, name: "", photo: "", gender: "", age: "", locked: room.seats[prevSeat].locked, muted: false, vip: room.seats[prevSeat].vip };
+      room.seats[prevSeat].uid = null;
+      if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + prevSeat + "/uid").set(null).catch(function () { /* */ });
     }
 
-    var myName = S.me.name || "مستخدم";
-    var myPhoto = S.me.photo || "";
     s.uid = S.me.id;
-    s.name = myName;
-    s.photo = myPhoto;
-    s.gender = S.me.gender || "";
-    s.age = S.me.age || "";
     s.muted = false;
     UI.micMuted = false;
 
+    /* ضمان رفع بياناتي الحالية وصورتي في users قبل أو مع تحديث المقعد */
+    cloud.usersMap[S.me.id] = Object.assign({}, cloud.usersMap[S.me.id] || {}, {
+      id: S.me.id, name: S.me.name || "مستخدم", photo: S.me.photo || "",
+      gender: S.me.gender || "", age: S.me.age || "", specialId: S.me.specialId || ""
+    });
+
     if (cloud.on && cloud.db) {
       var ups = {};
-      if (prevSeat >= 0) {
-        ups["rooms/" + room.id + "/seats/" + prevSeat] = room.seats[prevSeat];
-      }
-      ups["rooms/" + room.id + "/seats/" + i] = {
-        uid: S.me.id, name: myName, photo: myPhoto,
-        gender: S.me.gender || "", age: S.me.age || "",
-        locked: !!s.locked, muted: false, vip: !!s.vip
-      };
-      ups["users/" + S.me.id + "/name"] = myName;
-      ups["users/" + S.me.id + "/photo"] = myPhoto;
+      ups["users/" + S.me.id + "/name"] = S.me.name || "مستخدم";
+      ups["users/" + S.me.id + "/photo"] = S.me.photo || "";
+      ups["rooms/" + room.id + "/seats/" + i + "/uid"] = S.me.id;
+      ups["rooms/" + room.id + "/seats/" + i + "/muted"] = false;
       cloud.db.ref().update(ups).catch(function () { /* */ });
       try { cloud.db.ref("rooms/" + room.id + "/seats/" + i + "/uid").onDisconnect().set(null); } catch (e) { /* */ }
     }
@@ -1339,7 +1362,7 @@
     closeSheet();
     UI.dmId = id;
     if (!S.dms[id]) S.dms[id] = [];
-    var u = getUser(id);
+    var u = resolveLiveUser(id);
     setAvatarEl($("chat-avatar"), u);
     $("chat-title").textContent = u.name;
     $("chat-sub").textContent = "صديق • ID: " + displayUserId(u);
@@ -1397,7 +1420,7 @@
   }
 
   function openUserProfile(id) {
-    var u = getUser(id);
+    var u = resolveLiveUser(id);
     if (!u || !u.id || id === S.me.id) return;
     var isF = isFriendWith(id);
     var details = ["ID: " + displayUserId(u)];
@@ -1436,7 +1459,7 @@
     if (!UI.giftTarget || seatedIds.indexOf(UI.giftTarget) < 0) UI.giftTarget = seatedIds[0];
 
     var targetsHtml = seatedIds.map(function (id) {
-      var u = getUser(id);
+      var u = resolveLiveUser(id);
       return '<button class="gt-chip ' + (UI.giftTarget === id ? "sel" : "") + '" data-gtarget="' + esc(id) + '" type="button">' + esc(u.name) + "</button>";
     }).join("");
     var gridHtml = GIFTS.map(function (g) {
@@ -1461,7 +1484,7 @@
         var giftObj = GIFTS.filter(function (x) { return x.id === UI.giftSel; })[0];
         if (!giftObj) return;
         if (S.me.coins < giftObj.p) { toast("رصيد المحفظة غير كافٍ"); return; }
-        var recU = getUser(UI.giftTarget);
+        var recU = resolveLiveUser(UI.giftTarget);
         S.me.coins -= giftObj.p;
         S.me.wealth = Number(S.me.wealth || 0) + giftObj.p;
         S.me.xp = Number(S.me.xp || 0) + Math.max(10, Math.floor(giftObj.p / 2));
@@ -1489,7 +1512,7 @@
     $("ob-photo-input").onchange = async function () {
       var f = this.files && this.files[0];
       if (!f) return;
-      try { UI.onboardPhoto = await readImageFileAsDataUrl(f, 220, 0.72); renderOnboardPreview(); toast("تم اختيار الصورة ✅"); } catch (e) { toast(e.message); }
+      try { UI.onboardPhoto = await readImageFileAsDataUrl(f, 220, 0.65); renderOnboardPreview(); toast("تم اختيار الصورة ✅"); } catch (e) { toast(e.message); }
     };
     $("ob-name").oninput = renderOnboardPreview;
     $("ob-submit-btn").onclick = completeOnboarding;
