@@ -423,24 +423,24 @@
       background:rgba(14,10,30,.88);border:1px solid rgba(255,255,255,.28);color:#e9d5ff;font-size:9.5px;font-weight:800;display:grid;place-items:center
     }
 
-    /* شكل وهالة واضحة حول المقعد عند التحدث أو صدور صوت */
+    /* هالة واضحة ومتحركة حول المقعد عند التحدث أو صدور صوت */
     .seat.speak .seat-orb{
       border-color:#4ade80;
-      transform:scale(1.06);
+      transform:scale(1.07);
       box-shadow:
-        0 0 0 3px rgba(74,222,128,.45),
-        0 0 0 7px rgba(124,58,237,.28),
-        0 0 24px rgba(74,222,128,.85)
+        0 0 0 3px rgba(74,222,128,.55),
+        0 0 0 8px rgba(124,58,237,.35),
+        0 0 26px rgba(74,222,128,.9)
     }
     .seat.speak .seat-orb::after{
-      content:"";position:absolute;inset:-6px;border-radius:50%;
-      border:2px solid rgba(74,222,128,.75);
-      animation:seatVoicePulse 1.1s infinite ease-out;
+      content:"";position:absolute;inset:-7px;border-radius:50%;
+      border:2.5px solid rgba(74,222,128,.85);
+      animation:seatVoicePulse 1.05s infinite ease-out;
       pointer-events:none
     }
     @keyframes seatVoicePulse{
-      0%{transform:scale(.96);opacity:.95}
-      100%{transform:scale(1.24);opacity:0}
+      0%{transform:scale(.95);opacity:1}
+      100%{transform:scale(1.28);opacity:0}
     }
 
     .seat.gift-hit .seat-orb{border-color:#fde047;box-shadow:0 0 0 4px rgba(250,204,21,.45),0 0 28px rgba(236,72,153,.85)}
@@ -473,7 +473,6 @@
     .msg .tm{font-size:9.5px;color:var(--muted);margin-top:3px;text-align:left}
     .msg.sys{align-self:center;background:rgba(255,255,255,.08);color:#e2dcf5;font-size:11px;padding:4px 12px;border-radius:999px}
 
-    /* شريط أيقونة الأصدقاء أسفل علامة الدردشة */
     .room-sub-bar{
       display:flex;align-items:center;justify-content:space-between;gap:8px;
       padding:6px 12px 8px;
