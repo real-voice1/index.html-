@@ -5,11 +5,11 @@
   /* ========= 1. الإعدادات المركزية ========= */
   // ضع مفاتيح مشروعك من (Firebase Console > Project settings > Your apps)
   var FIREBASE_CONFIG = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-    projectId: "YOUR_PROJECT",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyDyx4MBxvRM0L5FrrjVOfVePlKRSxGpMg4",
+    authDomain: "real-voice-aec71.firebaseapp.com",
+    databaseURL: "https://real-voice-aec71-default-rtdb.firebaseio.com",
+    projectId: "real-voice-aec71",
+    appId: "1:1051527775983:web:ae3794c162184fd56b7d1a"
   };
 
   // رابط سيرفر التوكن الفعال على Railway
@@ -210,7 +210,6 @@
       var targetUid = S.me.num || hashNum(S.me.id);
       voice.uidNum = targetUid;
 
-      // إذا كنا متصلين بالفعل بنفس القناة
       if (voice.client.connectionState === "CONNECTED" && voice.channel === channelName) {
         if (desiredRole === "publisher" && !voice.localTrack) {
           await publishLocalMic();
@@ -221,7 +220,6 @@
         return true;
       }
 
-      // مغادرة أي قناة سابقة أولاً
       if (voice.client.connectionState !== "DISCONNECTED") {
         await leaveVoiceChannel();
       }
@@ -478,7 +476,6 @@
             uRef.set(Object.assign({}, S.me, { online: true, level: level() }));
           }
 
-          // حضور حي
           trackListener("app", cloud.db.ref(".info/connected"), "value", function (cs) {
             if (cs.val() !== true) return;
             uRef.child("online").onDisconnect().set(false);
@@ -486,7 +483,6 @@
             uRef.update({ online: true });
           });
 
-          // الاستماع لكل المستخدمين
           trackListener("app", cloud.db.ref("users"), "value", function (usnap) {
             var val = usnap.val() || {};
             cloud.usersMap = val;
@@ -499,7 +495,6 @@
             if (UI.roomId) renderRoom();
           });
 
-          // الاستماع لكل الغرف
           trackListener("app", cloud.db.ref("rooms"), "value", function (rsnap) {
             var val = rsnap.val() || {};
             var list = [];
@@ -508,7 +503,6 @@
             });
             S.rooms = list;
 
-            // التحقق من حالة الغرفة المفتوحة حالياً
             if (UI.roomId) {
               var cur = getRoom(UI.roomId);
               if (!cur) {
@@ -525,7 +519,6 @@
             renderAll();
           });
 
-          // الاستماع لطلبات الصداقة والأصدقاء
           trackListener("app", cloud.db.ref("social/" + S.me.id), "value", function (ssnap) {
             var sv = ssnap.val() || {};
             S.friends = Object.keys(sv.friends || {});
@@ -536,7 +529,6 @@
             renderAll();
           });
 
-          // الاستماع للإشعارات السحابية
           trackListener("app", cloud.db.ref("notifications/" + S.me.id).limitToLast(50), "value", function (nsnap) {
             var nv = nsnap.val() || {};
             var arr = Object.keys(nv).map(function (k) {
@@ -940,7 +932,6 @@
     $("room-view").classList.add("open");
     renderRoom();
 
-    // الاستماع لرسائل الغرفة الحية في Firebase
     if (cloud.on && cloud.db) {
       var msgsRef = cloud.db.ref("roomMessages/" + id).limitToLast(100);
       trackListener("room", msgsRef, "value", function (msnap) {
@@ -953,7 +944,6 @@
         if (r) r.msgs = arr;
         renderRoomChat();
 
-        // عرض أنيميشن الهدية للآخرين عند وصول رسالة هدية جديدة
         var last = arr[arr.length - 1];
         if (last && last.giftAnim && !cloud.seenFly[last.key] && (now() - last.t < 8000)) {
           cloud.seenFly[last.key] = true;
@@ -964,7 +954,6 @@
       });
     }
 
-    // الاتصال بقناة Agora الصوتية (مستمع أولاً حتى يصعد على مقعد)
     var initialRole = seatIndexOf(room, S.me.id) >= 0 ? "publisher" : "subscriber";
     await joinVoiceChannel(id, initialRole);
   }
@@ -1221,7 +1210,6 @@
     addXP(3);
     save(); renderRoom(); renderTop();
 
-    // تفعيل الميكروفون الحقيقي ونشر الصوت عبر Agora
     if (voice.client && voice.client.connectionState === "CONNECTED") {
       await publishLocalMic();
     } else {
