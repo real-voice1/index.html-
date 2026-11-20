@@ -1,4 +1,4 @@
-/* REAL VOICE — ربط فوري وموحد لصورة البروفايل والاسم والـ ID بين الغرفة والمقاعد والبحث */
+/* REAL VOICE — نسخة مستقرة ومربوطة بالكامل */
 (function (global) {
   "use strict";
 
@@ -13,7 +13,7 @@
   var TOKEN_URL = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";
 
   var CONFIG = {
-    storageKey: "rv_state_v9",
+    storageKey: "rv_state_v10",
     fixedUidKey: "rv_fixed_uid_v1",
     authSessionKey: "rv_auth_logged_v1",
     onboardDoneKey: "rv_onboard_done_v1",
@@ -123,7 +123,6 @@
   }
   function dmThreadId(a, b) { return [String(a), String(b)].sort().join("__"); }
 
-  /* ضغط مناسب ومضمون لظهور الصورة بوضوح وسرعة على كل الأجهزة */
   function readImageFileAsDataUrl(file, maxSize, quality) {
     maxSize = maxSize || 240; quality = quality || 0.65;
     return new Promise(function (resolve, reject) {
@@ -191,8 +190,8 @@
   }
 
   /* ========= الصوت (Agora RTC) ========= */
-  var voice = { client: null, localTrack: null, channel: null, role: null, uidNum: 0, joining: false, leaving: false, speakingNums: {} };
-  var musicState = { roomAudio: null };
+  var voice = { client: null, localTrack: null, channel: null, role: null, uidNum: 0, joining: false, speakingNums: {} };
+  var musicState = { roomAudio: null, currentTitle: "" };
 
   function setVoiceStatusUI(connected, label) {
     var dot = $("voice-status-dot"), txt = $("voice-status-text");
@@ -212,7 +211,7 @@
     if (spkBtn) { spkBtn.classList.toggle("spk-muted", muted); spkBtn.textContent = muted ? "🔇" : "🔊"; }
   }
   async function subscribeAndPlayRemoteUser(user, mediaType) {
-    if (!voice.client || !user || !UI.roomId) return;
+    if (!voice.client || !user || (!UI.roomId && !UI.floatingRoomId)) return;
     try {
       await voice.client.subscribe(user, mediaType);
       if (mediaType === "audio" && user.audioTrack) {
@@ -295,16 +294,16 @@
     if (voice.localTrack) { try { await voice.localTrack.setEnabled(!muted); } catch (e) { /* */ } }
   }
   async function joinVoiceChannel(channelName, desiredRole) {
-    if (!global.AgoraRTC) return false;
+    if (!global.AgoraRTC) { setVoiceStatusUI(false, "مكتبة الصوت غير متاحة"); return false; }
     setupAgoraClient();
-    if (!voice.client) return false;
+    if (!voice.client) { setVoiceStatusUI(false, "تعذر تهيئة الصوت"); return false; }
     voice.joining = true;
     setVoiceStatusUI(false, "جاري الاتصال بالصوت...");
     try {
       var targetUid = S.me.num || hashNum(S.me.id);
       voice.uidNum = targetUid;
       if (voice.client.connectionState !== "DISCONNECTED") await leaveVoiceChannel();
-      if (!UI.roomId) { voice.joining = false; return false; }
+      if (!UI.roomId && !UI.floatingRoomId) { voice.joining = false; return false; }
       var tokenData = await fetchRtcToken(channelName, targetUid, "publisher");
       await voice.client.join(tokenData.appId, channelName, tokenData.token, tokenData.uid || targetUid);
       voice.channel = channelName;
@@ -443,7 +442,6 @@
   }
   function saveLocal() { try { localStorage.setItem(CONFIG.storageKey, JSON.stringify(S)); } catch (e) { /* */ } }
 
-  /* حفظ فوري لبيانات المستخدم وصورته ومستواه */
   function save() {
     saveLocal();
     if (!S || !S.me) return;
@@ -475,19 +473,10 @@
     cloud.usersMap[S.me.id] = Object.assign({}, cloud.usersMap[S.me.id] || {}, userPayload);
 
     if (cloud.on && cloud.db) {
-      var batch = {};
-      batch["users/" + S.me.id] = Object.assign({}, userPayload, { updatedAt: serverTs() });
-      batch["levels/byLevel/" + lv + "/" + S.me.id] = {
-        id: S.me.id, specialId: S.me.specialId || "", name: userPayload.name, photo: userPayload.photo,
-        level: lv, wealthLevel: wLv, charmLevel: cLv, xp: xpVal, wealth: wealthVal, charm: charmVal
-      };
-      batch["levels/wealth/" + wLv + "/" + S.me.id] = { name: userPayload.name, wealth: wealthVal, wealthLevel: wLv };
-      batch["levels/charm/" + cLv + "/" + S.me.id] = { name: userPayload.name, charm: charmVal, charmLevel: cLv };
-      cloud.db.ref().update(batch).catch(function () { /* */ });
+      cloud.db.ref("users/" + S.me.id).update(Object.assign({}, userPayload, { updatedAt: serverTs() })).catch(function () { /* */ });
     }
   }
 
-  /* دالة موحدة تجلب أحدث بيانات أي مستخدم (الاسم + الصورة + الـ ID) من كل المصادر */
   function resolveLiveUser(id) {
     if (!id) return { id: "", num: 0, specialId: "0001000", name: "مستخدم", gender: "", age: "", photo: "", online: false, level: 1 };
     if (id === S.me.id) {
@@ -573,7 +562,10 @@
         await cloud.db.ref("users/" + userId + "/specialId").set(assigned);
       }
       return S.me.specialId || "0001000";
-    } catch (e) { return S.me.specialId || "0001000"; }
+    } catch (e) {
+      if (!S.me.specialId) S.me.specialId = formatSpecialId((hashNum(userId) % 8999) + 1000);
+      return S.me.specialId;
+    }
   }
 
   function normalizeRoom(id, r) {
@@ -592,13 +584,25 @@
     var listenersArr = Array.isArray(r.listeners) ? r.listeners : Object.keys(r.listeners || {}).filter(function (k) { return r.listeners[k]; });
     var modsArr = Array.isArray(r.mods) ? r.mods : Object.keys(r.mods || {});
     var bansArr = Array.isArray(r.bans) ? r.bans : Object.keys(r.bans || {});
+    var existing = getRoom(id);
     return {
-      id: id, name: r.name || "غرفة", desc: r.desc || "", cat: r.cat || "chat",
-      owner: r.owner || "", mods: modsArr, seats: seats, listeners: listenersArr,
-      bans: bansArr, priv: !!r.priv, locked: !!r.locked, pinned: r.pinned || "",
-      created: typeof r.created === "number" ? r.created : now(),
-      color: r.color || 0, icon: r.icon || 0, roomPhoto: r.roomPhoto || "",
-      msgs: cloud.roomMsgs[id] || r.msgs || []
+      id: id,
+      name: r.name || (existing && existing.name) || "غرفة",
+      desc: r.desc || "",
+      cat: r.cat || "chat",
+      owner: r.owner || "",
+      mods: modsArr,
+      seats: seats,
+      listeners: listenersArr,
+      bans: bansArr,
+      priv: !!r.priv,
+      locked: !!r.locked,
+      pinned: r.pinned || "",
+      created: typeof r.created === "number" ? r.created : ((existing && existing.created) || now()),
+      color: r.color != null ? r.color : 0,
+      icon: r.icon != null ? r.icon : 0,
+      roomPhoto: r.roomPhoto || (existing && existing.roomPhoto) || "",
+      msgs: cloud.roomMsgs[id] || (existing && existing.msgs) || r.msgs || []
     };
   }
 
@@ -607,7 +611,7 @@
     return new Promise(function (resolve) {
       var done = false;
       function finish() { if (!done) { done = true; resolve(); } }
-      setTimeout(finish, 2500);
+      setTimeout(finish, 2000);
       var myId = getOrCreateFixedUid();
       S.me.id = myId;
       S.me.num = hashNum(myId);
@@ -620,7 +624,7 @@
           if (S.me.name && String(S.me.name).trim()) setOnboardDone(true);
         }
         await ensureSequentialSpecialId(myId);
-        uRef.child("online").onDisconnect().set(false);
+        try { uRef.child("online").onDisconnect().set(false); } catch (e) { /* */ }
         uRef.update({ online: true, specialId: S.me.specialId }).catch(function () { /* */ });
 
         onDb("app", cloud.db.ref("users"), "value", function (us) {
@@ -636,7 +640,10 @@
         onDb("app", cloud.db.ref("rooms"), "value", function (rs) {
           var val = rs.val() || {};
           var list = Object.keys(val).map(function (rid) { return normalizeRoom(rid, val[rid]); });
-          if (list.length) S.rooms = list;
+          if (list.length) {
+            var localOnly = (S.rooms || []).filter(function (lr) { return !val[lr.id]; });
+            S.rooms = list.concat(localOnly);
+          }
           if (UI.roomId) {
             var cur = getRoom(UI.roomId);
             if (!cur) { leaveRoom(false); }
@@ -872,7 +879,6 @@
       "</div></div>";
   }
 
-  /* البحث بالـ ID يظهر الاسم والصورة والـ ID مباشرة */
   function renderIdSearchHighlight(q) {
     var box = $("id-search-result-box");
     if (!box) return;
@@ -887,7 +893,7 @@
       var u = resolveLiveUser(id);
       var sid = displayUserId(u).toLowerCase();
       var rawId = String(u.id || "").toLowerCase();
-      if (sid === q || sid.indexOf(q) === 0 || rawId.indexOf(q) === 0) {
+      if (sid.indexOf(q) >= 0 || rawId.indexOf(q) >= 0) {
         matched.push(u);
       }
     });
@@ -1028,7 +1034,6 @@
 
   function openSheet(html) {
     var sh = $("sheet"), sc = $("scrim");
-    sh.onclick = null;
     sh.innerHTML = '<div class="sheet-handle"></div>' + html;
     sh.scrollTop = 0;
     sc.classList.add("open");
@@ -1037,7 +1042,7 @@
   function closeSheet() {
     var sh = $("sheet"), sc = $("scrim");
     if (sc) sc.classList.remove("open");
-    if (sh) { sh.classList.remove("open"); sh.onclick = null; }
+    if (sh) sh.classList.remove("open");
   }
 
   function openProfileSettingsSheet() {
@@ -1054,7 +1059,7 @@
       "<label>العمر</label><input id='set-age' type='number' min='10' max='99' value='" + esc(m.age || "") + "' />" +
       "<label>النوع</label><select id='set-gender'><option value='ذكر' " + (m.gender !== "أنثى" ? "selected" : "") + ">ذكر</option><option value='أنثى' " + (m.gender === "أنثى" ? "selected" : "") + ">أنثى</option></select>" +
       "<label>النبذة التعريفية</label><textarea id='set-bio' rows='2' maxlength='140'>" + esc(m.bio || "") + "</textarea>" +
-      "<label>تغيير صورة البروفايل (تظهر للجميع فوراً في الغرفة والبحث)</label><input id='set-photo-file' type='file' accept='image/*' />" +
+      "<label>تغيير صورة البروفايل</label><input id='set-photo-file' type='file' accept='image/*' />" +
       '<button class="btn block" id="set-save-profile" type="button">💾 حفظ ونشر الصورة</button>' +
       '<div style="display:flex;gap:8px;margin-top:10px">' +
         '<button class="btn ghost" style="flex:1" id="set-daily" type="button">' + (canDaily ? "🎁 مكافأة اليوم (+100)" : "✅ تم استلام اليوم") + "</button>" +
@@ -1084,7 +1089,6 @@
       m.bio = clean($("set-bio").value.trim());
       m.photo = nextPhoto;
 
-      /* تحديث فوري في الكاش المحلي والقاعدة لكي يراها كل من في الغرفة أو يبحث بالـ ID */
       cloud.usersMap[m.id] = Object.assign({}, cloud.usersMap[m.id] || {}, {
         id: m.id, name: m.name, photo: m.photo, gender: m.gender, age: m.age, specialId: m.specialId || ""
       });
@@ -1115,6 +1119,7 @@
     $("set-google").onclick = function () { closeSheet(); signInWithGoogle(); };
     $("set-reset").onclick = function () {
       localStorage.removeItem(CONFIG.storageKey);
+      localStorage.removeItem(CONFIG.onboardDoneKey);
       location.reload();
     };
   }
@@ -1168,6 +1173,7 @@
     if (!room) { toast("الغرفة غير موجودة"); return; }
     offDb("room");
     if (!inRoom(room, S.me.id)) {
+      if (!Array.isArray(room.listeners)) room.listeners = [];
       if (room.listeners.indexOf(S.me.id) < 0) room.listeners.push(S.me.id);
       if (cloud.on && cloud.db) {
         var lRef = cloud.db.ref("rooms/" + id + "/listeners/" + S.me.id);
@@ -1178,7 +1184,9 @@
       showEntryBanner(S.me);
     }
     UI.roomId = id;
+    UI.floatingRoomId = null;
     UI.micMuted = false;
+    renderFloatingOrb();
     $("room-view").classList.add("open");
     renderRoom();
     renderHome();
@@ -1203,7 +1211,7 @@
     joinVoiceChannel(id, seatIndexOf(room, S.me.id) >= 0 ? "publisher" : "subscriber");
   }
 
-  function leaveRoom(silent) {
+  async function leaveRoom(silent) {
     closeSheet();
     offDb("room");
     var targetRoomId = UI.roomId || UI.floatingRoomId;
@@ -1212,13 +1220,13 @@
     $("room-view").classList.remove("open");
     renderFloatingOrb();
 
-    leaveVoiceChannel();
+    await leaveVoiceChannel();
 
     var room = getRoom(targetRoomId);
     if (room) {
       var si = seatIndexOf(room, S.me.id);
       if (si >= 0) room.seats[si].uid = null;
-      room.listeners = room.listeners.filter(function (x) { return x !== S.me.id; });
+      room.listeners = (room.listeners || []).filter(function (x) { return x !== S.me.id; });
       if (cloud.on && cloud.db) {
         var ups = {};
         if (si >= 0) ups["rooms/" + room.id + "/seats/" + si + "/uid"] = null;
@@ -1241,7 +1249,6 @@
     $("floating-orb-label").textContent = r.name || "روم";
   }
 
-  /* كل مقعد يقرأ صورة واسم الجالس مباشرة من resolveLiveUser لضمان ظهورها للجميع */
   function renderRoom() {
     var room = getRoom(UI.roomId);
     if (!room) return;
@@ -1337,7 +1344,6 @@
     s.muted = false;
     UI.micMuted = false;
 
-    /* ضمان رفع بياناتي الحالية وصورتي في users قبل أو مع تحديث المقعد */
     cloud.usersMap[S.me.id] = Object.assign({}, cloud.usersMap[S.me.id] || {}, {
       id: S.me.id, name: S.me.name || "مستخدم", photo: S.me.photo || "",
       gender: S.me.gender || "", age: S.me.age || "", specialId: S.me.specialId || ""
@@ -1466,38 +1472,28 @@
       return '<div class="gift ' + (UI.giftSel === g.id ? "sel" : "") + '" data-gift="' + g.id + '"><div class="e">' + g.e + "</div><small>" + g.n + '</small><span class="p">🪙 ' + g.p + "</span></div>";
     }).join("");
 
-    openSheet("<h3>🎁 إرسال هدية</h3><div class='gift-targets-bar'>" + targetsHtml + "</div><div class='giftgrid'>" + gridHtml + "</div><button class='btn block' id='send-gift' type="button">إرسال</button>");
-    $("sheet").onclick = function (e) {
-      var gt = e.target.closest("[data-gtarget]");
-      if (gt) {
-        UI.giftTarget = gt.getAttribute("data-gtarget");
-        $("sheet").querySelectorAll("[data-gtarget]").forEach(function (c) { c.classList.toggle("sel", c.getAttribute("data-gtarget") === UI.giftTarget); });
-        return;
-      }
-      var g = e.target.closest("[data-gift]");
-      if (g) {
-        UI.giftSel = g.getAttribute("data-gift");
-        $("sheet").querySelectorAll(".gift").forEach(function (x) { x.classList.toggle("sel", x.getAttribute("data-gift") === UI.giftSel); });
-        return;
-      }
-      if (e.target.id === "send-gift") {
-        var giftObj = GIFTS.filter(function (x) { return x.id === UI.giftSel; })[0];
-        if (!giftObj) return;
-        if (S.me.coins < giftObj.p) { toast("رصيد المحفظة غير كافٍ"); return; }
-        var recU = resolveLiveUser(UI.giftTarget);
-        S.me.coins -= giftObj.p;
-        S.me.wealth = Number(S.me.wealth || 0) + giftObj.p;
-        S.me.xp = Number(S.me.xp || 0) + Math.max(10, Math.floor(giftObj.p / 2));
-        if (UI.giftTarget === S.me.id) S.me.charm = Number(S.me.charm || 0) + giftObj.p;
-        else if (cloud.on && cloud.db) {
-          cloud.db.ref("users/" + UI.giftTarget + "/charm").transaction(function (c) { return (Number(c) || 0) + giftObj.p; }).catch(function () { /* */ });
-        }
-        pushRoomMsg(room, { from: S.me.id, text: "أرسل " + giftObj.e + " " + giftObj.n + " إلى " + recU.name, giftAnim: { e: giftObj.e, fromName: S.me.name, toUid: UI.giftTarget, toName: recU.name } });
-        save(); closeSheet(); renderAll();
-        showFlyGiftToSeat(giftObj.e, S.me.name, UI.giftTarget, recU.name);
-        toast("تم إرسال الهدية ✅");
-      }
-    };
+    openSheet("<h3>🎁 إرسال هدية</h3><div class='gift-targets-bar'>" + targetsHtml + "</div><div class='giftgrid'>" + gridHtml + "</div><button class='btn block' id='send-gift' type='button'>إرسال</button>");
+  }
+
+  function openRoomPresenceSheet(room) {
+    if (!room) return;
+    var ids = getRoomParticipantIds(room);
+    if (!ids.length) { toast("لا يوجد متواجدون حالياً"); return; }
+    var rows = ids.map(function (id) {
+      var u = resolveLiveUser(id);
+      var isSeated = seatIndexOf(room, id) >= 0;
+      return '<div class="row glass" data-profile="' + esc(id) + '">' + avatarHTML(u, "sm") +
+        '<div class="info"><div class="name">' + esc(u.name) + '</div><div class="meta">' + (isSeated ? "على مقعد 🎙️" : "مستمع 🎧") + " • ID: " + esc(displayUserId(u)) + "</div></div></div>";
+    }).join("");
+    openSheet("<h3>🎧 المتواجدون في الغرفة (" + ids.length + ")</h3><div class='list'>" + rows + "</div>");
+  }
+
+  function openMusicSheet(room) {
+    if (!room) return;
+    openSheet("<h3>🎵 الموسيقى</h3>" + DEFAULT_TRACKS.map(function (t) {
+      return '<div class="track-row" data-turl="' + esc(t.url) + '" data-ttitle="' + esc(t.title) + '">' +
+        '<div style="font-size:20px">' + t.cover + '</div><div class="info"><div class="name">' + esc(t.title) + '</div><div class="meta">' + esc(t.artist) + '</div></div><button class="btn sm" type="button">▶ تشغيل</button></div>';
+    }).join(""));
   }
 
   function bindEvents() {
@@ -1519,6 +1515,7 @@
 
     document.querySelectorAll(".navbtn").forEach(function (b) { b.onclick = function () { go(b.getAttribute("data-page")); }; });
     $("avatar-top").onclick = function () { go("profile"); };
+    $("notif-btn").onclick = function () { toast("لا توجد إشعارات جديدة حالياً 🔔"); };
     $("theme-toggle-btn").onclick = function () { S.settings.lightTheme = !S.settings.lightTheme; applyThemeMode(); saveLocal(); renderTop(); };
     $("pf-settings-btn").onclick = openProfileSettingsSheet;
     $("pf-copy-id").onclick = function () {
@@ -1538,7 +1535,65 @@
     document.querySelectorAll("#rooms-tabs .tab").forEach(function (t) { t.onclick = function () { UI.rfilter = t.getAttribute("data-rfilter"); renderRooms(); }; });
     document.querySelectorAll("#friends-tabs .tab").forEach(function (t) { t.onclick = function () { UI.ftab = t.getAttribute("data-ftab"); renderFriends(); }; });
 
+    $("sheet").addEventListener("click", function (e) {
+      var gt = e.target.closest("[data-gtarget]");
+      if (gt) {
+        UI.giftTarget = gt.getAttribute("data-gtarget");
+        $("sheet").querySelectorAll("[data-gtarget]").forEach(function (c) { c.classList.toggle("sel", c.getAttribute("data-gtarget") === UI.giftTarget); });
+        return;
+      }
+      var g = e.target.closest("[data-gift]");
+      if (g) {
+        UI.giftSel = g.getAttribute("data-gift");
+        $("sheet").querySelectorAll(".gift").forEach(function (x) { x.classList.toggle("sel", x.getAttribute("data-gift") === UI.giftSel); });
+        return;
+      }
+      if (e.target.id === "send-gift") {
+        var room = getRoom(UI.roomId);
+        if (!room) return;
+        var giftObj = GIFTS.filter(function (x) { return x.id === UI.giftSel; })[0];
+        if (!giftObj) return;
+        if (S.me.coins < giftObj.p) { toast("رصيد المحفظة غير كافٍ"); return; }
+        var recU = resolveLiveUser(UI.giftTarget);
+        S.me.coins -= giftObj.p;
+        S.me.wealth = Number(S.me.wealth || 0) + giftObj.p;
+        S.me.xp = Number(S.me.xp || 0) + Math.max(10, Math.floor(giftObj.p / 2));
+        if (UI.giftTarget === S.me.id) S.me.charm = Number(S.me.charm || 0) + giftObj.p;
+        else if (cloud.on && cloud.db) {
+          cloud.db.ref("users/" + UI.giftTarget + "/charm").transaction(function (c) { return (Number(c) || 0) + giftObj.p; }).catch(function () { /* */ });
+        }
+        pushRoomMsg(room, { from: S.me.id, text: "أرسل " + giftObj.e + " " + giftObj.n + " إلى " + recU.name, giftAnim: { e: giftObj.e, fromName: S.me.name, toUid: UI.giftTarget, toName: recU.name } });
+        save(); closeSheet(); renderAll();
+        showFlyGiftToSeat(giftObj.e, S.me.name, UI.giftTarget, recU.name);
+        toast("تم إرسال الهدية ✅");
+        return;
+      }
+      var row = e.target.closest("[data-turl]");
+      if (row) {
+        var u = row.getAttribute("data-turl"), title = row.getAttribute("data-ttitle");
+        if (!musicState.roomAudio) musicState.roomAudio = new Audio();
+        musicState.roomAudio.src = u;
+        musicState.roomAudio.muted = !!UI.roomSpeakerMuted;
+        musicState.roomAudio.play().catch(function () { toast("اضغط مرة أخرى لتشغيل الصوت"); });
+        musicState.currentTitle = title;
+        $("music-mini").classList.remove("hidden");
+        $("music-mini-title").textContent = "🎵 " + title;
+        closeSheet();
+        return;
+      }
+      var item = e.target.closest("[data-stk]");
+      if (item) {
+        var st = STICKERS.filter(function (x) { return x.id === item.getAttribute("data-stk"); })[0];
+        if (!st) return;
+        closeSheet(); sendRoomMsg(st.n, { sticker: st.e });
+        return;
+      }
+      var b = e.target.closest("[data-em]");
+      if (b) { $("chat-input").value += b.getAttribute("data-em"); closeSheet(); }
+    });
+
     document.addEventListener("click", function (e) {
+      if (e.target.closest("#sheet")) return;
       var en = e.target.closest("[data-enter]"); if (en) { enterRoom(en.getAttribute("data-enter")); return; }
       var pr = e.target.closest("[data-profile]"); if (pr) { openUserProfile(pr.getAttribute("data-profile")); return; }
       var dm = e.target.closest("[data-dm]"); if (dm) { openDM(dm.getAttribute("data-dm")); return; }
@@ -1563,13 +1618,17 @@
     $("scrim").onclick = closeSheet;
     $("room-back").onclick = function () { leaveRoom(false); };
     $("room-rename-quick").onclick = function () { var r = getRoom(UI.roomId); if (r) openRenameRoomSheet(r); };
+    $("room-presence-btn").onclick = function () { var r = getRoom(UI.roomId); if (r) openRoomPresenceSheet(r); };
     $("room-top-thumb").onclick = function () { $("room-photo-input").click(); };
     $("room-photo-input").onchange = async function () {
       var f = this.files && this.files[0]; var r = getRoom(UI.roomId);
       if (!f || !r) return;
-      r.roomPhoto = await readImageFileAsDataUrl(f, 260, 0.72);
-      if (cloud.on && cloud.db) cloud.db.ref("rooms/" + r.id + "/roomPhoto").set(r.roomPhoto).catch(function () { /* */ });
-      saveLocal(); renderRoom(); renderHome(); renderRooms();
+      try {
+        r.roomPhoto = await readImageFileAsDataUrl(f, 260, 0.72);
+        if (cloud.on && cloud.db) cloud.db.ref("rooms/" + r.id + "/roomPhoto").set(r.roomPhoto).catch(function () { /* */ });
+        saveLocal(); renderRoom(); renderHome(); renderRooms();
+        toast("تم تحديث صورة الغرفة ✅");
+      } catch (err) { toast(err.message); }
     };
     $("room-menu").onclick = function () {
       var r = getRoom(UI.roomId); if (!r) return;
@@ -1584,24 +1643,8 @@
       };
       $("rm-act-leave").onclick = function () { leaveRoom(false); };
     };
-    $("room-music").onclick = function () {
-      var r = getRoom(UI.roomId); if (!r) return;
-      openSheet("<h3>🎵 الموسيقى</h3>" + DEFAULT_TRACKS.map(function (t) {
-        return '<div class="track-row" data-turl="' + esc(t.url) + '" data-ttitle="' + esc(t.title) + '">' +
-          '<div style="font-size:20px">' + t.cover + '</div><div class="info"><div class="name">' + esc(t.title) + '</div><div class="meta">' + esc(t.artist) + '</div></div><button class="btn sm" type="button">▶ تشغيل</button></div>';
-      }).join(""));
-      $("sheet").onclick = function (e) {
-        var row = e.target.closest("[data-turl]");
-        if (!row) return;
-        var u = row.getAttribute("data-turl"), title = row.getAttribute("data-ttitle");
-        if (!musicState.roomAudio) musicState.roomAudio = new Audio();
-        musicState.roomAudio.src = u;
-        musicState.roomAudio.play().catch(function () { /* */ });
-        $("music-mini").classList.remove("hidden");
-        $("music-mini-title").textContent = "🎵 " + title;
-        closeSheet();
-      };
-    };
+    $("room-music").onclick = function () { var r = getRoom(UI.roomId); if (r) openMusicSheet(r); };
+    $("mmini-open").onclick = function () { var r = getRoom(UI.roomId); if (r) openMusicSheet(r); };
     $("mmini-toggle").onclick = function () {
       if (!musicState.roomAudio) return;
       if (musicState.roomAudio.paused) musicState.roomAudio.play().catch(function () { /* */ });
@@ -1636,19 +1679,15 @@
       openSheet("<h3>🎭 ملصقات</h3><div class='giftgrid'>" + STICKERS.map(function (st) {
         return '<div class="gift" data-stk="' + st.id + '"><div class="e">' + st.e + '</div><small>' + st.n + "</small></div>";
       }).join("") + "</div>");
-      $("sheet").onclick = function (e) {
-        var item = e.target.closest("[data-stk]"); if (!item) return;
-        var st = STICKERS.filter(function (x) { return x.id === item.getAttribute("data-stk"); })[0];
-        if (!st) return;
-        closeSheet(); sendRoomMsg(st.n, { sticker: st.e });
-      };
     };
     $("room-photo").onclick = function () {
       openSheet('<h3>📷 إرسال صورة</h3><input id="rm-img-file" type="file" accept="image/*" />');
       $("rm-img-file").onchange = async function () {
         var f = this.files && this.files[0]; if (!f) return;
-        var url = await readImageFileAsDataUrl(f, 380, 0.65);
-        closeSheet(); sendRoomMsg("", { img: url });
+        try {
+          var url = await readImageFileAsDataUrl(f, 380, 0.65);
+          closeSheet(); sendRoomMsg("", { img: url });
+        } catch (err) { toast(err.message); }
       };
     };
     $("room-send").onclick = function () { var i = $("room-input"); sendRoomMsg(i.value); i.value = ""; };
@@ -1658,13 +1697,19 @@
     $("chat-back").onclick = closeDM;
     $("chat-send").onclick = function () { var i = $("chat-input"); sendDM(i.value); i.value = ""; };
     $("chat-input").onkeydown = function (e) { if (e.key === "Enter") { sendDM(this.value); this.value = ""; } };
+    $("chat-voice").onclick = function () { toast("الرسائل الصوتية الخاصة قيد التطوير 🎙️"); };
+    $("chat-menu").onclick = function () {
+      if (!UI.dmId) return;
+      openSheet("<h3>خيارات المحادثة</h3><div class='actlist'><button class='danger' id='dm-clear-btn' type='button'>🗑️ مسح المحادثة محلياً</button></div>");
+      $("dm-clear-btn").onclick = function () {
+        S.dms[UI.dmId] = [];
+        saveLocal(); closeSheet(); renderDM(); renderMessages();
+        toast("تم مسح المحادثة");
+      };
+    };
     $("chat-emoji").onclick = function () {
       openSheet("<h3>إيموجي</h3><div style='display:grid;grid-template-columns:repeat(6,1fr);gap:8px;font-size:24px;text-align:center'>" +
         EMOJIS.map(function (em) { return '<button type="button" data-em="' + em + '">' + em + "</button>"; }).join("") + "</div>");
-      $("sheet").onclick = function (e) {
-        var b = e.target.closest("[data-em]");
-        if (b) { $("chat-input").value += b.getAttribute("data-em"); closeSheet(); }
-      };
     };
 
     var orb = $("floating-room-orb");
@@ -1687,11 +1732,8 @@
     initPwaInstall();
     bindEvents();
     renderAll();
-    initCloud();
-    await startCloudSync();
-    await ensureSequentialSpecialId(S.me.id);
 
-    var logged = hasLocalSession() || !!(cloud.auth && cloud.auth.currentUser);
+    var logged = hasLocalSession();
     if (!logged) {
       showAuthGate(true, "login");
     } else if (!isOnboardDone()) {
@@ -1699,8 +1741,19 @@
     } else {
       UI.authReady = true;
       showAuthGate(false);
+    }
+
+    initCloud();
+    await startCloudSync();
+    await ensureSequentialSpecialId(S.me.id);
+
+    if (hasLocalSession() && isOnboardDone()) {
+      UI.authReady = true;
+      showAuthGate(false);
       save();
       renderAll();
+    } else if (hasLocalSession() && !isOnboardDone()) {
+      showAuthGate(true, "onboard");
     }
   }
 
