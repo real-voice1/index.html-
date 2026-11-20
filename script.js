@@ -1,4 +1,4 @@
-/* REAL VOICE — نسخة منظمة: بروفايل مرتب + إعدادات شاملة + خاص للأصدقاء فقط + أسماء كاملة للروم والمقاعد */
+/* REAL VOICE — نسخة احترافية: بحث ID واضح + مربعات غرف بعداد حي أولاً بأول + قاعدة بيانات منظمة حسب المستوى */
 (function (global) {
   "use strict";
 
@@ -13,7 +13,7 @@
   var TOKEN_URL = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";
 
   var CONFIG = {
-    storageKey: "rv_state_v6",
+    storageKey: "rv_state_v7",
     fixedUidKey: "rv_fixed_uid_v1",
     authSessionKey: "rv_auth_logged_v1",
     startCoins: 1000,
@@ -161,17 +161,14 @@
 
   /* ========= الصوت (Agora RTC) ========= */
   var voice = { client: null, localTrack: null, channel: null, role: null, uidNum: 0, joining: false, leaving: false, speakingNums: {} };
-  var musicState = { data: null, bufferTrack: null, roomAudio: null, syncing: false };
+  var musicState = { roomAudio: null };
 
   function setVoiceStatusUI(connected, label) {
     var dot = $("voice-status-dot"), txt = $("voice-status-text");
     if (dot) dot.classList.toggle("live", !!connected);
     if (txt) txt.textContent = label || (connected ? "الصوت المباشر متصل 🔊" : "جاري ربط الصوت...");
   }
-  function showAudioUnlockBar(show) {
-    var bar = $("audio-unlock-bar");
-    if (bar) bar.classList.toggle("hidden", !show);
-  }
+  function showAudioUnlockBar(show) { var bar = $("audio-unlock-bar"); if (bar) bar.classList.toggle("hidden", !show); }
   function applyRoomSpeakerMuteState() {
     var muted = !!UI.roomSpeakerMuted;
     if (voice.client && Array.isArray(voice.client.remoteUsers)) {
@@ -181,10 +178,7 @@
     }
     if (musicState.roomAudio) { try { musicState.roomAudio.muted = muted; } catch (e) { /* */ } }
     var spkBtn = $("room-speaker-btn");
-    if (spkBtn) {
-      spkBtn.classList.toggle("spk-muted", muted);
-      spkBtn.textContent = muted ? "🔇" : "🔊";
-    }
+    if (spkBtn) { spkBtn.classList.toggle("spk-muted", muted); spkBtn.textContent = muted ? "🔇" : "🔊"; }
   }
   async function subscribeAndPlayRemoteUser(user, mediaType) {
     if (!voice.client || !user) return;
@@ -319,13 +313,13 @@
     });
   }
 
-  /* ========= الحالة والمزامنة ========= */
+  /* ========= الحالة والمزامنة وقاعدة البيانات الاحترافية على المستوى ========= */
   var cloud = { on: false, db: null, auth: null, usersMap: {}, roomMsgs: {} };
   var S = null;
   var UI = {
     page: "home", filter: "all", rfilter: "mine", ftab: "friends",
     query: "", findQ: "", roomId: null, floatingRoomId: null, dmId: null,
-    micMuted: false, roomSpeakerMuted: false, giftSel: "heart", giftTarget: "", giftSending: false,
+    micMuted: false, roomSpeakerMuted: false, giftSel: "heart", giftTarget: "",
     authReady: false, authSigningIn: false
   };
   var listenersMap = {};
@@ -341,9 +335,9 @@
 
   function demoUsers() {
     return [
-      { id: "RV-1001", num: 1001, specialId: "0001001", name: "ليلى", photo: "", online: true, bio: "أحب الموسيقى 🎵", vip: 2, verified: true, wealth: 1850, charm: 2400, followers: 120, following: 45, friendsCount: 18, gifts: 32, xp: 1140 },
-      { id: "RV-1002", num: 1002, specialId: "0001002", name: "أحمد", photo: "", online: true, bio: "لاعب محترف 🎮", vip: 0, verified: false, wealth: 620, charm: 310, followers: 40, following: 22, friendsCount: 9, gifts: 11, xp: 420 },
-      { id: "RV-1003", num: 1003, specialId: "0001003", name: "سارة", photo: "", online: false, bio: "هنا للدردشة ☕", vip: 1, verified: true, wealth: 1200, charm: 1650, followers: 85, following: 30, friendsCount: 14, gifts: 21, xp: 750 }
+      { id: "RV-1001", num: 1001, specialId: "0001001", name: "ليلى", photo: "", online: true, bio: "أحب الموسيقى 🎵", vip: 2, verified: true, wealth: 1850, charm: 2400, followers: 120, following: 45, friendsCount: 18, gifts: 32, xp: 1140, level: 12 },
+      { id: "RV-1002", num: 1002, specialId: "0001002", name: "أحمد", photo: "", online: true, bio: "لاعب محترف 🎮", vip: 0, verified: false, wealth: 620, charm: 310, followers: 40, following: 22, friendsCount: 9, gifts: 11, xp: 420, level: 5 },
+      { id: "RV-1003", num: 1003, specialId: "0001003", name: "سارة", photo: "", online: false, bio: "هنا للدردشة ☕", vip: 1, verified: true, wealth: 1200, charm: 1650, followers: 85, following: 30, friendsCount: 14, gifts: 21, xp: 750, level: 8 }
     ];
   }
   function makeSeats(n) {
@@ -365,14 +359,13 @@
       me: {
         id: id, num: hashNum(id), specialId: "", name: "مستخدم جديد", email: "", photo: "",
         bio: "مرحباً بك في REAL VOICE", coins: CONFIG.startCoins, xp: 0, level: 1,
-        wealth: 0, charm: 0, vip: 0, verified: false, followers: 0, following: 0, friendsCount: 0,
-        gifts: 0, msgCount: 0, roomsJoined: 0, daily: 0, joined: now(),
-        tasks: { dayKey: new Date().toDateString(), msg: false, friend: false, mic: false, room: false }
+        wealth: 0, wealthLevel: 1, charm: 0, charmLevel: 1, vip: 0, verified: false,
+        followers: 0, following: 0, friendsCount: 0, gifts: 0, daily: 0, joined: now()
       },
       users: demoUsers(), rooms: demoRooms(),
       friends: [], requests: [], sentReq: [], blocked: [], follows: [],
       dms: {}, unread: {}, notifs: [],
-      banners: [], // تضاف لاحقاً
+      banners: [],
       settings: { notif: true, sound: true, lightTheme: false }
     };
   }
@@ -406,18 +399,44 @@
     saveLocal();
   }
   function saveLocal() { try { localStorage.setItem(CONFIG.storageKey, JSON.stringify(S)); } catch (e) { /* */ } }
+
+  /* حفظ احترافي منظم حسب المستوى (level / wealthLevel / charmLevel) في Realtime Database */
   function save() {
     saveLocal();
-    if (cloud.on && cloud.db && S && S.me) {
-      cloud.db.ref("users/" + S.me.id).update({
+    if (!S || !S.me) return;
+    var xpVal = Number(S.me.xp || 0);
+    var wealthVal = Number(S.me.wealth || 0);
+    var charmVal = Number(S.me.charm || 0);
+    var lv = computeLevelFromXp(xpVal);
+    var wLv = getWealthLevel(wealthVal);
+    var cLv = getCharmLevel(charmVal);
+    S.me.level = lv;
+    S.me.wealthLevel = wLv;
+    S.me.charmLevel = cLv;
+
+    if (cloud.on && cloud.db) {
+      var userPayload = {
         id: S.me.id, num: S.me.num, specialId: S.me.specialId || "",
         name: S.me.name, username: S.me.name, email: S.me.email || "", photo: S.me.photo || "",
-        bio: S.me.bio || "", coins: Number(S.me.coins || 0), xp: Number(S.me.xp || 0),
-        level: computeLevelFromXp(S.me.xp || 0), wealth: Number(S.me.wealth || 0),
-        charm: Number(S.me.charm || 0), vip: Number(S.me.vip || 0),
-        followers: Number(S.me.followers || 0), following: S.follows.length || 0,
-        friendsCount: S.friends.length || 0, online: true
-      }).catch(function () { /* */ });
+        bio: S.me.bio || "", coins: Number(S.me.coins || 0),
+        xp: xpVal, level: lv,
+        wealth: wealthVal, wealthLevel: wLv,
+        charm: charmVal, charmLevel: cLv,
+        vip: Number(S.me.vip || 0),
+        followers: Number(S.me.followers || 0),
+        following: S.follows.length || 0,
+        friendsCount: S.friends.length || 0,
+        online: true, updatedAt: serverTs()
+      };
+      var batch = {};
+      batch["users/" + S.me.id] = userPayload;
+      batch["levels/byLevel/" + lv + "/" + S.me.id] = {
+        id: S.me.id, specialId: S.me.specialId || "", name: S.me.name, photo: S.me.photo || "",
+        level: lv, wealthLevel: wLv, charmLevel: cLv, xp: xpVal, wealth: wealthVal, charm: charmVal
+      };
+      batch["levels/wealth/" + wLv + "/" + S.me.id] = { name: S.me.name, wealth: wealthVal, wealthLevel: wLv };
+      batch["levels/charm/" + cLv + "/" + S.me.id] = { name: S.me.name, charm: charmVal, charmLevel: cLv };
+      cloud.db.ref().update(batch).catch(function () { /* */ });
     }
   }
 
@@ -585,11 +604,11 @@
   }
 
   function getUser(id) {
-    if (!id) return { id: "", num: 0, specialId: "0001000", name: "مستخدم", photo: "", online: false, bio: "", vip: 0, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, coins: 0, xp: 0 };
+    if (!id) return { id: "", num: 0, specialId: "0001000", name: "مستخدم", photo: "", online: false, bio: "", vip: 0, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, coins: 0, xp: 0, level: 1 };
     if (id === S.me.id) return Object.assign({}, S.me, { level: computeLevelFromXp(S.me.xp || 0), me: true });
-    if (cloud.usersMap[id]) return Object.assign({ id: id, photo: "", online: false, bio: "", vip: 0, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, coins: 0, xp: 0 }, cloud.usersMap[id]);
+    if (cloud.usersMap[id]) return Object.assign({ id: id, photo: "", online: false, bio: "", vip: 0, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, coins: 0, xp: 0, level: 1 }, cloud.usersMap[id]);
     for (var i = 0; i < S.users.length; i++) if (S.users[i].id === id) return S.users[i];
-    return { id: id, num: hashNum(id), specialId: "", name: "مستخدم", photo: "", online: false, bio: "", vip: 0, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, coins: 0, xp: 0 };
+    return { id: id, num: hashNum(id), specialId: "", name: "مستخدم", photo: "", online: false, bio: "", vip: 0, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, coins: 0, xp: 0, level: 1 };
   }
 
   function getRoom(id) {
@@ -611,11 +630,13 @@
   }
   function setAvatarEl(el, u) { if (el) el.innerHTML = avatarInnerHTML(u); }
 
-  function roomSqMediaHTML(r) {
+  function roomSqMediaHTML(r, insideCount) {
     var bg = COVERS[(r.color || 0) % COVERS.length];
     var ic = COVER_ICONS[(r.icon || 0) % COVER_ICONS.length];
     var inner = r.roomPhoto ? '<img src="' + esc(r.roomPhoto) + '" alt="' + esc(r.name || "") + '" />' : "<span>" + ic + "</span>";
-    return '<div class="room-sq-media" style="background:' + bg + '">' + inner + "</div>";
+    return '<div class="room-sq-media" style="background:' + bg + '">' +
+      '<span class="room-sq-live-pill">🎧 ' + insideCount + "</span>" +
+      inner + "</div>";
   }
 
   function getRoomParticipantIds(room) {
@@ -632,12 +653,6 @@
     return -1;
   }
   function inRoom(room, id) { return !!room && (seatIndexOf(room, id) >= 0 || (room.listeners || []).indexOf(id) >= 0); }
-  function role(room, id) {
-    if (!room) return "user";
-    if (room.owner === id) return "owner";
-    if ((room.mods || []).indexOf(id) >= 0) return "mod";
-    return "user";
-  }
 
   function pushRoomMsg(room, msgObj) {
     if (!room) return;
@@ -697,7 +712,6 @@
     setTimeout(function () { if (proj.parentNode) proj.parentNode.removeChild(proj); }, 2400);
   }
 
-  /* ========= البنرات في الواجهة الرئيسية ========= */
   function renderHomeBanners() {
     var slot = $("home-banners-slot");
     if (!slot) return;
@@ -708,7 +722,6 @@
     slot.innerHTML = '<img src="' + esc(S.banners[0]) + '" alt="Banner" />';
   }
 
-  /* ========= التنقل ورسم الصفحات ========= */
   function go(page) {
     closeSheet();
     UI.page = page;
@@ -731,16 +744,24 @@
     if (fb) { fb.textContent = S.requests.length; fb.classList.toggle("hidden", S.requests.length === 0); }
   }
 
+  /* بطاقة الغرفة على شكل مربع مع عداد المتواجدين داخلها أولاً بأول */
   function roomCard(r) {
+    var inside = count(r);
     return '<div class="room-sq-card" data-enter="' + esc(r.id) + '">' +
-      roomSqMediaHTML(r) +
-      '<div class="room-sq-name-full">' + esc(r.name) + "</div></div>";
+      roomSqMediaHTML(r, inside) +
+      '<div class="room-sq-footer">' +
+        '<div class="room-sq-name-full">' + esc(r.name) + "</div>" +
+        '<div class="room-sq-inside-count">داخل الغرفة: ' + inside + "</div>" +
+      "</div></div>";
   }
 
   function renderHome() {
     renderHomeBanners();
-    var list = S.rooms.filter(function (r) { return !r.priv || r.owner === S.me.id || inRoom(r, S.me.id); });
     var q = UI.query.trim().toLowerCase();
+    var clrBtn = $("search-clear-btn");
+    if (clrBtn) clrBtn.classList.toggle("hidden", !q);
+
+    var list = S.rooms.filter(function (r) { return !r.priv || r.owner === S.me.id || inRoom(r, S.me.id); });
     if (q) list = list.filter(function (r) { return r.name.toLowerCase().indexOf(q) >= 0 || r.id.toLowerCase().indexOf(q) >= 0; });
     if (UI.filter === "popular") list = list.slice().sort(function (a, b) { return count(b) - count(a); });
     else if (UI.filter === "new") list = list.slice().sort(function (a, b) { return (b.created || 0) - (a.created || 0); });
@@ -753,12 +774,13 @@
     var uBox = $("search-users");
     if (q) {
       var us = S.users.filter(function (u) {
-        return (u.name || "").toLowerCase().indexOf(q) >= 0 || String(u.specialId || "").indexOf(q) >= 0;
+        var sid = displayUserId(u).toLowerCase();
+        return sid.indexOf(q) >= 0 || String(u.id || "").toLowerCase().indexOf(q) >= 0 || (u.name || "").toLowerCase().indexOf(q) >= 0;
       });
       uBox.classList.toggle("hidden", us.length === 0);
       uBox.innerHTML = us.map(function (u) {
         return '<div class="row glass" data-profile="' + esc(u.id) + '">' + avatarHTML(u) +
-          '<div class="info"><div class="name">' + esc(u.name) + '</div><div class="meta">ID: ' + esc(displayUserId(u)) + "</div></div></div>";
+          '<div class="info"><div class="name">' + esc(u.name) + ' <span class="tag">ID: ' + esc(displayUserId(u)) + '</span></div><div class="meta">Lv.' + (u.level || 1) + " • " + (u.online ? "متصل" : "غير متصل") + "</div></div></div>";
       }).join("");
     } else { uBox.classList.add("hidden"); }
 
@@ -796,7 +818,7 @@
     } else {
       var q = UI.findQ.trim().toLowerCase();
       var res = S.users.filter(function (u) {
-        return !q || (u.name || "").toLowerCase().indexOf(q) >= 0 || String(u.specialId || "").indexOf(q) >= 0;
+        return !q || (u.name || "").toLowerCase().indexOf(q) >= 0 || displayUserId(u).toLowerCase().indexOf(q) >= 0;
       });
       html = res.length ? res.map(function (u) {
         var btn = S.friends.indexOf(u.id) >= 0 ? '<span class="tag verified">صديق ✔</span>'
@@ -818,7 +840,6 @@
     }).join("") : '<div class="empty">لا توجد رسائل خاصة للأصدقاء حالياً</div>';
   }
 
-  /* الملف الشخصي المنظم: الجاذبية والثروة + الأصدقاء ومن يتابعني + المحفظة بالخارج، والباقي داخل الإعدادات */
   function renderProfile() {
     var m = S.me;
     var covEl = $("pf-cover");
@@ -842,7 +863,6 @@
   }
   function renderAll() { renderTop(); renderCurrentPage(); }
 
-  /* ========= النوافذ السفلية وإعدادات الملف الشخصي الكاملة ========= */
   function openSheet(html) {
     var sh = $("sheet"), sc = $("scrim");
     sh.onclick = null;
@@ -906,7 +926,6 @@
     };
   }
 
-  /* ========= الغرفة الصوتية: اسم الروم كامل واسم المستخدم كامل على المقعد ========= */
   function openRenameRoomSheet(room) {
     if (!room) return;
     openSheet("<h3>✏️ تغيير اسم الغرفة</h3><input id='rn-input' maxlength='40' value='" + esc(room.name) + "' /><button class='btn block' id='rn-ok' type='button'>حفظ الاسم</button>");
@@ -969,6 +988,7 @@
     UI.micMuted = false;
     $("room-view").classList.add("open");
     renderRoom();
+    renderHome();
 
     if (cloud.on && cloud.db) {
       onDb("room", cloud.db.ref("roomMessages/" + id).limitToLast(100), "value", function (ms) {
@@ -990,6 +1010,7 @@
     joinVoiceChannel(id, seatIndexOf(room, S.me.id) >= 0 ? "publisher" : "subscriber");
   }
 
+  /* خروج العضو الفوري وتحديث العدد والمقاعد أولاً بأول */
   function leaveRoom(silent) {
     closeSheet();
     offDb("room");
@@ -1000,7 +1021,10 @@
       room.listeners = room.listeners.filter(function (x) { return x !== S.me.id; });
       if (cloud.on && cloud.db) {
         var ups = {};
-        if (si >= 0) { ups["rooms/" + room.id + "/seats/" + si + "/uid"] = null; ups["rooms/" + room.id + "/seats/" + si + "/muted"] = false; }
+        if (si >= 0) {
+          ups["rooms/" + room.id + "/seats/" + si + "/uid"] = null;
+          ups["rooms/" + room.id + "/seats/" + si + "/muted"] = false;
+        }
         ups["rooms/" + room.id + "/listeners/" + S.me.id] = null;
         cloud.db.ref().update(ups).catch(function () { /* */ });
       }
@@ -1092,7 +1116,7 @@
     text = String(text || "").trim();
     if (!room || (!text && (!extra || (!extra.img && !extra.sticker)))) return;
     pushRoomMsg(room, Object.assign({ from: S.me.id, text: clean(text) }, extra || {}));
-    S.me.xp = Number(S.me.xp || 0) + 2;
+    S.me.xp = Number(S.me.xp || 0) + 5;
     save();
   }
 
@@ -1115,17 +1139,17 @@
       if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + prevSeat + "/uid").set(null).catch(function () { /* */ });
     }
     s.uid = S.me.id; s.muted = false; UI.micMuted = false;
-    if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + i + "/uid").set(S.me.id).catch(function () { /* */ });
+    if (cloud.on && cloud.db) {
+      var sRef = cloud.db.ref("rooms/" + room.id + "/seats/" + i + "/uid");
+      try { sRef.onDisconnect().set(null); } catch (e) { /* */ }
+      sRef.set(S.me.id).catch(function () { /* */ });
+    }
     renderRoom();
     joinVoiceChannel(room.id, "publisher");
   }
 
-  /* ========= الدردشة الخاصة: متاحة للأصدقاء فقط ========= */
   function openDM(id) {
-    if (!isFriendWith(id)) {
-      toast("الدردشة الخاصة متاحة للأصدقاء فقط 👥");
-      return;
-    }
+    if (!isFriendWith(id)) { toast("الدردشة الخاصة متاحة للأصدقاء فقط 👥"); return; }
     closeSheet();
     UI.dmId = id;
     if (!S.dms[id]) S.dms[id] = [];
@@ -1191,7 +1215,7 @@
     if (!u || !u.id || id === S.me.id) return;
     var isF = isFriendWith(id);
     var html = '<div style="display:flex;gap:12px;align-items:center">' + avatarHTML(u, "lg") +
-      '<div class="info"><div class="name">' + esc(u.name) + '</div><div class="meta">ID: ' + esc(displayUserId(u)) + " • " + (isF ? "صديق ✔" : "ليس صديقاً") + "</div></div></div>" +
+      '<div class="info"><div class="name">' + esc(u.name) + '</div><div class="meta">ID: ' + esc(displayUserId(u)) + " • Lv." + (u.level || 1) + " • " + (isF ? "صديق ✔" : "ليس صديقاً") + "</div></div></div>" +
       '<div class="social-grid">' +
         (isF
           ? '<button class="btn" id="up-dm" type="button">💬 رسالة خاصة</button>'
@@ -1250,8 +1274,11 @@
         var recU = getUser(UI.giftTarget);
         S.me.coins -= giftObj.p;
         S.me.wealth = Number(S.me.wealth || 0) + giftObj.p;
+        S.me.xp = Number(S.me.xp || 0) + Math.max(10, Math.floor(giftObj.p / 2));
         if (UI.giftTarget === S.me.id) S.me.charm = Number(S.me.charm || 0) + giftObj.p;
-        else if (cloud.on && cloud.db) cloud.db.ref("users/" + UI.giftTarget + "/charm").transaction(function (c) { return (Number(c) || 0) + giftObj.p; }).catch(function () { /* */ });
+        else if (cloud.on && cloud.db) {
+          cloud.db.ref("users/" + UI.giftTarget + "/charm").transaction(function (c) { return (Number(c) || 0) + giftObj.p; }).catch(function () { /* */ });
+        }
         pushRoomMsg(room, { from: S.me.id, text: "أرسل " + giftObj.e + " " + giftObj.n + " إلى " + recU.name, giftAnim: { e: giftObj.e, fromName: S.me.name, toUid: UI.giftTarget, toName: recU.name } });
         save(); closeSheet(); renderAll();
         showFlyGiftToSeat(giftObj.e, S.me.name, UI.giftTarget, recU.name);
@@ -1274,7 +1301,11 @@
     };
     $("fab-create").onclick = openCreateRoom;
     $("refresh-rooms").onclick = function () { renderHome(); toast("تم التحديث"); };
+
     $("search-input").oninput = function () { UI.query = this.value; renderHome(); };
+    $("search-go-btn").onclick = function () { UI.query = $("search-input").value; renderHome(); };
+    $("search-clear-btn").onclick = function () { $("search-input").value = ""; UI.query = ""; renderHome(); };
+
     $("find-input").oninput = function () { UI.findQ = this.value; renderFriends(); };
     document.querySelectorAll("#home-tabs .tab").forEach(function (t) { t.onclick = function () { UI.filter = t.getAttribute("data-filter"); renderHome(); }; });
     document.querySelectorAll("#rooms-tabs .tab").forEach(function (t) { t.onclick = function () { UI.rfilter = t.getAttribute("data-rfilter"); renderRooms(); }; });
