@@ -1,4 +1,4 @@
-/* REAL VOICE — نسخة 3D احترافية + صوت جماعي متزامن + خلفيات مخصصة للغرف */
+/* REAL VOICE — نسخة 3D احترافية + صوت جماعي متزامن + إصلاح النوافذ والمقاعد */
 (function (global) {
   "use strict";
 
@@ -148,7 +148,7 @@
 
   function readImageFileAsDataUrl(file, maxSize, quality) {
     maxSize = maxSize || 320;
-    quality = quality || 0.78;
+    quality = quality || 0.72;
     return new Promise(function (resolve, reject) {
       if (!file || !file.type || file.type.indexOf("image/") !== 0) {
         reject(new Error("اختر ملف صورة صحيح"));
@@ -216,7 +216,9 @@
     uidNum: 0,
     joining: false,
     leaving: false,
-    speakingNums: {}
+    speakingNums: {},
+    autoplayBlocked: false,
+    boundSeatRef: null
   };
 
   var musicState = {
@@ -233,7 +235,13 @@
     var dot = $("voice-status-dot");
     var txt = $("voice-status-text");
     if (dot) dot.classList.toggle("live", !!connected);
-    if (txt) txt.textContent = label || (connected ? "الصوت المباشر متصل • تسمع الجميع" : "جاري ربط الصوت...");
+    if (txt) txt.textContent = label || (connected ? "الصوت المباشر متصل 🔊" : "جاري ربط الصوت...");
+  }
+
+  function showAudioUnlockBar(show) {
+    voice.autoplayBlocked = !!show;
+    var bar = $("audio-unlock-bar");
+    if (bar) bar.classList.toggle("hidden", !show);
   }
 
   async function subscribeAndPlayRemoteUser(user, mediaType) {
@@ -242,7 +250,12 @@
       await voice.client.subscribe(user, mediaType);
       if (mediaType === "audio" && user.audioTrack) {
         user.audioTrack.setVolume(100);
-        user.audioTrack.play();
+        try {
+          user.audioTrack.play();
+          showAudioUnlockBar(false);
+        } catch (playErr) {
+          showAudioUnlockBar(true);
+        }
       }
     } catch (e) {
       /* قد يحتاج تفاعل أولي من المستخدم على المتصفح */
@@ -251,23 +264,30 @@
 
   function resumeAllRemoteAudioTracks() {
     if (!voice.client || !Array.isArray(voice.client.remoteUsers)) return;
+    var anyPlayed = false;
     voice.client.remoteUsers.forEach(function (u) {
       if (u && u.hasAudio) {
         if (u.audioTrack) {
           try {
             u.audioTrack.setVolume(100);
             u.audioTrack.play();
+            anyPlayed = true;
           } catch (e) { /* */ }
         } else {
           subscribeAndPlayRemoteUser(u, "audio");
         }
       }
     });
+    if (anyPlayed) showAudioUnlockBar(false);
   }
 
   function setupAgoraClient() {
     if (voice.client || !global.AgoraRTC) return;
     try {
+      AgoraRTC.onAutoplayFailed = function () {
+        showAudioUnlockBar(true);
+      };
+
       voice.client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
       voice.client.enableAudioVolumeIndicator();
 
@@ -622,15 +642,15 @@
 
     var html = "<h3>🎵 مشغل الموسيقى المشترك</h3>" +
       '<div class="small" style="margin-bottom:8px">الـ DJ الحالي: <b>' + esc(djUser) + "</b> " + (isDj ? "(أنت)" : "") + "</div>" +
-      "<label>اختر أغنية من جهازك / المعرض</label>" +
-      '<input id="ms-file" type="file" accept="audio/*" />' +
-      "<label>أو رابط أغنية MP3 مباشر</label>" +
+      "<label>رابط أغنية MP3 مباشر (يسمعه كل من في الغرفة)</label>" +
       '<input id="ms-url" type="url" placeholder="https://example.com/song.mp3" />' +
+      "<label>أو اختر أغنية من جهازك (تشغيل محلي)</label>" +
+      '<input id="ms-file" type="file" accept="audio/*" />' +
       '<div style="display:flex;gap:6px;margin-top:6px">' +
       '<input id="ms-title" type="text" maxlength="40" placeholder="اسم الأغنية" />' +
       '<input id="ms-artist" type="text" maxlength="40" placeholder="المغني" /></div>' +
       '<button class="btn block" id="ms-add" type="button">➕ تشغيل / أضف للطابور</button>' +
-      '<div style="margin-top:8px"><div class="small" style="margin-bottom:4px">أغاني جاهزة:</div><div>' + sugHtml + "</div></div>" +
+      '<div style="margin-top:8px"><div class="small" style="margin-bottom:4px">أغاني جاهزة للبث الجماعي:</div><div>' + sugHtml + "</div></div>" +
       '<h4 style="margin:12px 0 6px;font-size:13px">قائمة الطابور (' + musicState.queue.length + ")</h4>" +
       '<div id="ms-queue-box">' + qHtml + "</div>" +
       '<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">' +
@@ -648,7 +668,6 @@
       '<button class="btn sm ghost" data-sleep="0" type="button">إلغاء</button></div>';
 
     openSheet(html);
-    $("sheet").onclick = null;
 
     $("ms-file").onchange = function () {
       var f = this.files && this.files[0];
@@ -657,14 +676,14 @@
       var cleanTitle = f.name.replace(/\.[^/.]+$/, "");
       if (!$("ms-title").value) $("ms-title").value = cleanTitle;
       $("ms-url").value = blobUrl;
-      toast("تم تحميل الأغنية من جهازك 🎵");
+      toast("تم تحميل الأغنية محلياً 🎵");
     };
 
     $("ms-add").onclick = async function () {
       var u = $("ms-url").value.trim();
       var ti = $("ms-title").value.trim() || "أغنية";
       var ar = $("ms-artist").value.trim() || S.me.name;
-      if (!u) { toast("اختر أغنية من جهازك أو أدخل رابط MP3"); return; }
+      if (!u) { toast("اختر أغنية أو أدخل رابط MP3"); return; }
       if (isStaff && (!musicState.data || !musicState.data.url)) {
         await startTrackNow(room, { url: u, title: ti, artist: ar, cover: "🎵" });
       } else {
@@ -770,6 +789,23 @@
     });
   }
 
+  function clearSeatDisconnectBinding() {
+    if (voice.boundSeatRef) {
+      try { voice.boundSeatRef.onDisconnect().cancel(); } catch (e) { /* */ }
+      voice.boundSeatRef = null;
+    }
+  }
+
+  function bindSeatDisconnect(roomId, seatIdx) {
+    clearSeatDisconnectBinding();
+    if (!cloud.on || !cloud.db) return;
+    try {
+      var ref = cloud.db.ref("rooms/" + roomId + "/seats/" + seatIdx + "/uid");
+      ref.onDisconnect().set(null);
+      voice.boundSeatRef = ref;
+    } catch (e) { /* */ }
+  }
+
   async function joinVoiceChannel(channelName, desiredRole) {
     if (!global.AgoraRTC) {
       setVoiceStatusUI(false, "مكتبة الصوت غير متاحة");
@@ -802,7 +838,6 @@
         await leaveVoiceChannel();
       }
 
-      /* الانضمام كـ publisher يتيح للجميع سماع بعضهم والتحدث فوراً عند الصعود للمقعد */
       var tokenRole = "publisher";
       var tokenData = await fetchRtcToken(channelName, targetUid, tokenRole);
       var joinUid = (tokenData.uid !== undefined && tokenData.uid !== null) ? tokenData.uid : targetUid;
@@ -811,7 +846,6 @@
       voice.channel = channelName;
       voice.role = desiredRole;
 
-      /* الاشتراك التلقائي الفوري في صوت المتواجدين مسبقاً في الغرفة */
       if (Array.isArray(voice.client.remoteUsers)) {
         for (var i = 0; i < voice.client.remoteUsers.length; i++) {
           var ru = voice.client.remoteUsers[i];
@@ -865,6 +899,7 @@
     if (!room) return;
     var mySeatIdx = seatIndexOf(room, S.me.id);
     if (mySeatIdx < 0) {
+      clearSeatDisconnectBinding();
       await stopLocalMic();
       return;
     }
@@ -884,6 +919,8 @@
   async function leaveVoiceChannel() {
     if (voice.leaving) return;
     voice.leaving = true;
+    clearSeatDisconnectBinding();
+    showAudioUnlockBar(false);
     try {
       await stopMusicBroadcast();
       await stopLocalMic();
@@ -1408,6 +1445,7 @@
 
   /* ========= 7. التنقل ورسم الصفحات ========= */
   function go(page) {
+    closeSheet();
     UI.page = page;
     document.querySelectorAll(".page").forEach(function (p) { p.classList.toggle("active", p.id === "page-" + page); });
     document.querySelectorAll(".navbtn").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-page") === page); });
@@ -1583,15 +1621,30 @@
     renderCurrentPage();
   }
 
-  /* ========= 8. النوافذ السفلية ========= */
+  /* ========= 8. النوافذ السفلية (إصلاح الشاشة الشفافة المعلقة نهائياً) ========= */
   function openSheet(html) {
-    $("sheet").innerHTML = html;
-    $("sheet").scrollTop = 0;
-    $("scrim").classList.add("open");
+    var content = String(html || "").trim();
+    if (!content) {
+      closeSheet();
+      return;
+    }
+    var sh = $("sheet");
+    var sc = $("scrim");
+    sh.onclick = null;
+    sh.innerHTML = content;
+    sh.scrollTop = 0;
+    sc.classList.add("open");
+    sh.classList.add("open");
   }
+
   function closeSheet() {
-    $("scrim").classList.remove("open");
-    $("sheet").onclick = null;
+    var sh = $("sheet");
+    var sc = $("scrim");
+    if (sc) sc.classList.remove("open");
+    if (sh) {
+      sh.classList.remove("open");
+      sh.onclick = null;
+    }
   }
 
   function actionList(title, items) {
@@ -1614,7 +1667,6 @@
 
   function confirmBox(text, yes) {
     openSheet("<h3>تأكيد</h3><p style='margin-bottom:14px;line-height:1.7'>" + esc(text) + '</p><div style="display:flex;gap:10px"><button class="btn" id="cf-yes" style="flex:1" type="button">تأكيد</button><button class="btn ghost" id="cf-no" style="flex:1" type="button">إلغاء</button></div>');
-    $("sheet").onclick = null;
     $("cf-yes").onclick = function () { closeSheet(); if (typeof yes === "function") yes(); };
     $("cf-no").onclick = closeSheet;
   }
@@ -1666,13 +1718,12 @@
       '<label>كلمة المرور (اختياري)</label><input id="cr-pass" maxlength="20" placeholder="اتركها فارغة للغرفة المفتوحة" />' +
       '<label>نوع الغرفة</label><select id="cr-priv"><option value="0">عامة</option><option value="1">خاصة (لا تظهر في القائمة)</option></select>' +
       '<button class="btn block" id="cr-ok" type="button">إنشاء الغرفة</button>');
-    $("sheet").onclick = null;
     var selectedBgDataUrl = "";
     $("cr-bgfile").onchange = async function () {
       var f = this.files && this.files[0];
       if (!f) return;
       try {
-        selectedBgDataUrl = await readImageFileAsDataUrl(f, 720, 0.72);
+        selectedBgDataUrl = await readImageFileAsDataUrl(f, 540, 0.58);
         toast("تم اختيار خلفية الغرفة ✅");
       } catch (err) {
         toast(err.message || "تعذر تحميل الخلفية");
@@ -1754,13 +1805,13 @@
   }
 
   function enterRoom(id, skipPass) {
+    closeSheet();
     var room = getRoom(id);
     if (!room) { toast("الغرفة غير موجودة"); return; }
     if (room.bans.indexOf(S.me.id) >= 0) { toast("أنت محظور من هذه الغرفة 🚫"); return; }
     if (room.locked && room.owner !== S.me.id && !inRoom(room, S.me.id)) { toast("الغرفة مقفلة من المالك 🔒"); return; }
     if (room.pass && !skipPass && room.owner !== S.me.id && !inRoom(room, S.me.id)) {
       openSheet('<h3>🔒 الغرفة محمية</h3><label>أدخل كلمة المرور</label><input id="pw-in" type="password" /><button class="btn block" id="pw-ok" type="button">دخول</button>');
-      $("sheet").onclick = null;
       $("pw-ok").onclick = function () {
         if ($("pw-in").value === room.pass) { closeSheet(); enterRoom(id, true); }
         else toast("كلمة المرور خاطئة");
@@ -1892,7 +1943,9 @@
   }
 
   function leaveRoom(silent) {
+    closeSheet();
     cleanup("room");
+    clearSeatDisconnectBinding();
     var rid = UI.roomId;
     var room = getRoom(rid);
 
@@ -1939,7 +1992,7 @@
     if (cntEl) cntEl.textContent = String(ids.length);
     if (!stripEl) return;
 
-    var maxShow = 4;
+    var maxShow = 3;
     var shown = ids.slice(0, maxShow);
     var extra = ids.length - shown.length;
 
@@ -1961,14 +2014,9 @@
     var room = getRoom(UI.roomId);
     if (!room) return;
     var mySeat = seatIndexOf(room, S.me.id);
-    var rRole = role(room, S.me.id);
-    var canBg = rRole === "owner" || rRole === "mod";
 
     $("room-title").textContent = (room.pass ? "🔒 " : "") + room.name;
-    $("room-sub-meta").textContent = "ID: " + room.id + " • " + (CATEGORIES[room.cat] || "");
-    if ($("room-bg-quick")) {
-      $("room-bg-quick").classList.toggle("hidden", !canBg);
-    }
+    $("room-sub-meta").textContent = "ID: " + room.id;
     renderRoomPresenceStrip(room);
 
     var pin = $("room-pinned");
@@ -2115,7 +2163,6 @@
     }
 
     openSheet(html);
-    $("sheet").onclick = null;
 
     if ($("hq-raise")) {
       $("hq-raise").onclick = function () {
@@ -2215,6 +2262,7 @@
         label: "⬇️ مغادرة المقعد",
         fn: function () {
           UI.micMuted = false;
+          clearSeatDisconnectBinding();
           stopLocalMic();
           room.seats[i].uid = null;
           room.seats[i].muted = false;
@@ -2293,6 +2341,7 @@
           var otherUid = s.uid;
           room.seats[mySeat].uid = otherUid;
           s.uid = S.me.id;
+          bindSeatDisconnect(room.id, i);
           if (cloud.on && cloud.db) {
             var ups = {};
             ups["rooms/" + room.id + "/seats/" + mySeat + "/uid"] = otherUid;
@@ -2313,6 +2362,8 @@
     room.seats[i].uid = S.me.id;
     room.seats[i].muted = false;
     delete UI.micQueue[S.me.id];
+
+    bindSeatDisconnect(room.id, i);
 
     if (cloud.on && cloud.db) {
       var ups = {};
@@ -2451,14 +2502,13 @@
     });
 
     openSheet(html);
-    $("sheet").onclick = null;
     var pickedGalleryBg = "";
 
     $("th-file").onchange = async function () {
       var f = this.files && this.files[0];
       if (!f) return;
       try {
-        pickedGalleryBg = await readImageFileAsDataUrl(f, 720, 0.72);
+        pickedGalleryBg = await readImageFileAsDataUrl(f, 540, 0.58);
         $("th-preview").innerHTML = '<img src="' + esc(pickedGalleryBg) + '" style="max-width:100%;max-height:140px;border-radius:14px;border:1px solid var(--border)" />';
         toast("الصورة جاهزة — اضغط تثبيت الصورة ✅");
       } catch (err) {
@@ -2616,7 +2666,6 @@
 
   function promptRoom(title, label, val, cb) {
     openSheet("<h3>" + esc(title) + "</h3><label>" + esc(label) + '</label><input id="pr-in" maxlength="100" value="' + esc(val) + '" /><button class="btn block" id="pr-ok" type="button">حفظ</button>');
-    $("sheet").onclick = null;
     $("pr-ok").onclick = function () { var v = $("pr-in").value.trim(); closeSheet(); cb(v); };
   }
 
@@ -2814,6 +2863,7 @@
   }
 
   function openDM(id) {
+    closeSheet();
     if (S.blocked.indexOf(id) >= 0) { toast("هذا المستخدم محظور"); return; }
     cleanup("dm");
     UI.dmId = id;
@@ -2952,7 +3002,6 @@
       '<label>النبذة</label><textarea id="ep-bio" rows="3" maxlength="120">' + esc(S.me.bio) + "</textarea>" +
       '<label>الدولة</label><input id="ep-country" maxlength="20" value="' + esc(S.me.country) + '" />' +
       '<button class="btn block" id="ep-ok" type="button">حفظ</button>');
-    $("sheet").onclick = null;
     var tempPhoto = S.me.photo || "";
     $("ep-photo").onchange = async function () {
       var f = this.files && this.files[0];
@@ -3025,7 +3074,6 @@
       return '<div class="row glass"><div style="font-size:22px;width:32px;text-align:center">' + (medals[i] || (i + 1)) + '</div><div class="info"><div class="name">' + esc(u.name) + '</div></div><span class="tag">المستوى ' + u.lv + "</span></div>";
     }).join("");
     openSheet(html);
-    $("sheet").onclick = null;
   }
 
   function openStickersSheet() {
@@ -3044,7 +3092,6 @@
 
   function openPhotoSheet() {
     openSheet('<h3>📷 إرسال صورة في الشات</h3><label>اختر صورة من المعرض</label><input id="ph-file" type="file" accept="image/*" /><label>أو رابط الصورة المباشر</label><input id="ph-url" type="url" placeholder="https://example.com/image.png" /><div id="ph-prev" style="margin-top:8px;text-align:center"></div><button class="btn block" id="ph-send" type="button">إرسال الصورة</button>');
-    $("sheet").onclick = null;
     $("ph-file").onchange = async function () {
       var f = this.files && this.files[0];
       if (!f) return;
@@ -3070,11 +3117,13 @@
 
   /* ========= 16. ربط الأحداث ========= */
   function bind() {
+    $("scrim").onclick = closeSheet;
+
     document.addEventListener("click", function (e) {
       var t = e.target, el;
       if (!t || typeof t.closest !== "function") return;
       if (UI.roomId) resumeAllRemoteAudioTracks();
-      if (t.closest("#sheet")) return;
+      if (t.closest("#sheet") || t.id === "scrim") return;
 
       if ((el = t.closest("[data-enter]"))) { closeSheet(); enterRoom(el.getAttribute("data-enter")); return; }
       if ((el = t.closest(".navbtn"))) { go(el.getAttribute("data-page")); return; }
@@ -3190,8 +3239,16 @@
         return;
       }
       if ((el = t.closest("#room-emojis button"))) { var inp = $("room-input"); inp.value += el.textContent; inp.focus(); return; }
-      if (t === $("scrim")) closeSheet();
     });
+
+    $("audio-unlock-bar").onclick = function () {
+      resumeAllRemoteAudioTracks();
+      if (musicState.roomAudio && musicState.data && !musicState.data.paused) {
+        musicState.roomAudio.play().catch(function () { /* */ });
+      }
+      showAudioUnlockBar(false);
+      toast("تم تفعيل الصوت المباشر 🔊");
+    };
 
     $("pf-photo-trigger").onclick = function () {
       var fin = $("pf-photo-input");
@@ -3246,12 +3303,6 @@
       var r = getRoom(UI.roomId);
       if (r) showMembers(r);
     };
-    if ($("room-bg-quick")) {
-      $("room-bg-quick").onclick = function () {
-        var r = getRoom(UI.roomId);
-        if (r) openThemeSheet(r);
-      };
-    }
     $("room-music").onclick = openMusicSheet;
     $("room-hand").onclick = openHandQueueSheet;
     $("room-sticker").onclick = openStickersSheet;
@@ -3277,6 +3328,7 @@
       renderRoom();
     };
     $("chat-back").onclick = function () {
+      closeSheet();
       cleanup("dm");
       $("chat-view").classList.remove("open");
       UI.dmId = null;
@@ -3292,6 +3344,7 @@
 
   /* ========= 17. نقطة الانطلاق ========= */
   async function init() {
+    closeSheet();
     loadLocal();
     initCloud();
     bind();
