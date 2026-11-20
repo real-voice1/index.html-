@@ -1,4 +1,4 @@
-/* REAL VOICE — نسخة محسّنة وسلسة (منع تكرار الحسابات + شريط صور المتواجدين + استجابة فورية + Agora + موسيقى) */
+/* REAL VOICE — نسخة مستقرة ومُصلحة بالكامل */
 (function (global) {
   "use strict";
 
@@ -14,7 +14,7 @@
   var TOKEN_URL = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";
 
   var CONFIG = {
-    storageKey: "rv_state_v3",
+    storageKey: "rv_state_v4",
     fixedUidKey: "rv_fixed_uid_v1",
     startCoins: 1000,
     xpPerLevel: 100,
@@ -59,10 +59,10 @@
   ];
 
   var ROOM_THEMES = [
-    { id: "default", name: "بنفسجي ليلي", bg: "linear-gradient(175deg, #170e2e, #090612 68%)", frame: "linear-gradient(135deg, #f59e0b, #ec4899)" },
-    { id: "ocean", name: "أزرق المحيط", bg: "linear-gradient(175deg, #082f49, #061322 70%)", frame: "linear-gradient(135deg, #22d3ee, #3b82f6)" },
-    { id: "rose", name: "وردي نيون", bg: "linear-gradient(175deg, #4a0d2e, #120610 70%)", frame: "linear-gradient(135deg, #f472b6, #a855f7)" },
-    { id: "emerald", name: "زمردي VIP", bg: "linear-gradient(175deg, #064e3b, #051410 70%)", frame: "linear-gradient(135deg, #34d399, #eab308)" }
+    { id: "default", name: "بنفسجي ليلي", bg: "linear-gradient(175deg, #170e2e, #090612 68%)", accent: "#ec4899" },
+    { id: "ocean", name: "أزرق المحيط", bg: "linear-gradient(175deg, #082f49, #061322 70%)", accent: "#22d3ee" },
+    { id: "rose", name: "وردي نيون", bg: "linear-gradient(175deg, #4a0d2e, #120610 70%)", accent: "#f472b6" },
+    { id: "emerald", name: "زمردي VIP", bg: "linear-gradient(175deg, #064e3b, #051410 70%)", accent: "#34d399" }
   ];
 
   var TRUTH_OR_DARE = [
@@ -89,12 +89,14 @@
   function initials(n) { n = String(n || "").trim(); return n ? n.slice(0, 2) : "RV"; }
   function now() { return Date.now(); }
   function serverTs() {
-    return (global.firebase && firebase.database && firebase.database.ServerValue)
-      ? firebase.database.ServerValue.TIMESTAMP
-      : Date.now();
+    if (global.firebase && firebase.database && firebase.database.ServerValue && firebase.database.ServerValue.TIMESTAMP) {
+      return firebase.database.ServerValue.TIMESTAMP;
+    }
+    return Date.now();
   }
   function timeStr(t) {
-    var d = new Date(t || Date.now()), h = d.getHours(), m = d.getMinutes();
+    var d = new Date(typeof t === "number" ? t : Date.now());
+    var h = d.getHours(), m = d.getMinutes();
     return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
   }
   function uid() { return "u" + Math.random().toString(36).slice(2, 9); }
@@ -115,7 +117,7 @@
   function toast(msg) {
     var t = $("toast");
     if (!t) return;
-    t.textContent = msg;
+    t.textContent = String(msg || "");
     t.classList.add("show");
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2400);
@@ -134,8 +136,9 @@
   }
 
   function hashNum(str) {
+    var s = String(str || "rv");
     var h = 5381;
-    for (var i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+    for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
     return (Math.abs(h) % 2147483646) + 1;
   }
 
@@ -184,8 +187,10 @@
   /* ========= 3. إدارة المستمعين والمؤقتات ========= */
   var registry = {};
   function trackListener(scope, ref, ev, fn) {
-    ref.on(ev, fn);
-    (registry[scope] = registry[scope] || []).push({ ref: ref, ev: ev, fn: fn });
+    try {
+      ref.on(ev, fn);
+      (registry[scope] = registry[scope] || []).push({ ref: ref, ev: ev, fn: fn });
+    } catch (e) { /* تجاهل */ }
   }
   function trackTimer(scope, id, kind) {
     (registry[scope] = registry[scope] || []).push({ timer: id, kind: kind || "timeout" });
@@ -202,7 +207,7 @@
     registry[scope] = [];
   }
 
-  /* ========= 4. محرك الصوت الحقيقي (Agora RTC) + المشغل الموسيقي المشترك ========= */
+  /* ========= 4. محرك الصوت (Agora RTC) + المشغل الموسيقي ========= */
   var voice = {
     client: null,
     localTrack: null,
@@ -235,9 +240,7 @@
           if (mediaType === "audio" && user.audioTrack) {
             user.audioTrack.play();
           }
-        } catch (e) {
-          console.warn("Subscribe error", e);
-        }
+        } catch (e) { /* تجاهل */ }
       });
 
       voice.client.on("user-unpublished", function (user) {
@@ -267,9 +270,7 @@
         updateSpeakingIndicators();
         applyMusicDucking();
       });
-    } catch (e) {
-      console.warn("Agora setup error", e);
-    }
+    } catch (e) { /* تجاهل */ }
   }
 
   async function fetchRtcToken(channelName, uidNum, roleName) {
@@ -279,12 +280,12 @@
     url.searchParams.set("role", roleName);
 
     var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
-    var tid = ctrl ? setTimeout(function () { ctrl.abort(); }, 7000) : null;
+    var tid = ctrl ? setTimeout(function () { ctrl.abort(); }, 6000) : null;
     try {
       var res = await fetch(url.toString(), { method: "GET", signal: ctrl ? ctrl.signal : undefined });
       var data = await res.json();
       if (!res.ok || !data.token || !data.appId) {
-        throw new Error(data.error || "فشل جلب التوكن من السيرفر");
+        throw new Error(data.error || "فشل جلب التوكن");
       }
       return data;
     } finally {
@@ -427,9 +428,7 @@
       } else {
         audio.onloadedmetadata = applySeekAndPlay;
       }
-    } catch (eAudio) {
-      console.warn("Room audio sync error:", eAudio);
-    }
+    } catch (eAudio) { /* تجاهل */ }
   }
 
   function renderMusicMini() {
@@ -460,19 +459,18 @@
       title: clean(trackObj.title || "أغنية"),
       artist: clean(trackObj.artist || S.me.name),
       cover: trackObj.cover || "🎵",
-      startedAt: serverTs(),
+      startedAt: Date.now(),
       paused: false,
       pausedAt: 0,
       volume: (musicState.data && typeof musicState.data.volume === "number") ? musicState.data.volume : 0.7,
       duck: musicState.data ? musicState.data.duck !== false : true,
       skipVotes: {}
     };
+    musicState.data = Object.assign({}, payload);
+    renderMusicMini();
+    await syncRoomMusicForEveryone(musicState.data);
     if (cloud.on && cloud.db) {
-      await cloud.db.ref("rooms/" + room.id + "/music").set(payload);
-    } else {
-      musicState.data = Object.assign({}, payload, { startedAt: Date.now() });
-      renderMusicMini();
-      await syncRoomMusicForEveryone(musicState.data);
+      cloud.db.ref("rooms/" + room.id + "/music").set(Object.assign({}, payload, { startedAt: serverTs() })).catch(function () { /* */ });
     }
     pushRoomMsg(room, { sys: true, text: "🎵 بدأ تشغيل: " + payload.title + " — " + payload.artist });
   }
@@ -483,14 +481,15 @@
     var upd = {
       paused: nextPaused,
       pausedAt: nextPaused ? Date.now() : 0,
-      startedAt: nextPaused ? musicState.data.startedAt : serverTs()
+      startedAt: nextPaused ? musicState.data.startedAt : Date.now()
     };
+    musicState.data = Object.assign({}, musicState.data, upd);
+    renderMusicMini();
+    await syncRoomMusicForEveryone(musicState.data);
     if (cloud.on && cloud.db) {
-      await cloud.db.ref("rooms/" + room.id + "/music").update(upd);
-    } else {
-      musicState.data = Object.assign({}, musicState.data, upd, { startedAt: Date.now() });
-      renderMusicMini();
-      await syncRoomMusicForEveryone(musicState.data);
+      cloud.db.ref("rooms/" + room.id + "/music").update(Object.assign({}, upd, {
+        startedAt: nextPaused ? musicState.data.startedAt : serverTs()
+      })).catch(function () { /* */ });
     }
   }
 
@@ -502,7 +501,7 @@
       var needed = Math.max(1, Math.ceil(count(room) * 0.5));
       var currentVotes = Object.keys(votes).length;
       if (currentVotes < needed) {
-        if (cloud.on && cloud.db) await cloud.db.ref("rooms/" + room.id + "/music/skipVotes").set(votes);
+        if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/music/skipVotes").set(votes).catch(function () { /* */ });
         toast("تم تسجيل صوتك للتخطي (" + currentVotes + "/" + needed + ")");
         return;
       }
@@ -511,23 +510,20 @@
     var nextTrack = musicState.queue && musicState.queue.length ? musicState.queue[0] : null;
     if (nextTrack) {
       if (cloud.on && cloud.db && nextTrack._key) {
-        await cloud.db.ref("rooms/" + room.id + "/queue/" + nextTrack._key).remove();
+        cloud.db.ref("rooms/" + room.id + "/queue/" + nextTrack._key).remove().catch(function () { /* */ });
       } else {
         musicState.queue.shift();
       }
       await startTrackNow(room, nextTrack);
     } else {
+      musicState.data = null;
+      await stopMusicBroadcast();
+      renderMusicMini();
       if (cloud.on && cloud.db) {
-        await cloud.db.ref("rooms/" + room.id + "/music").set({
-          djUid: musicState.data.djUid || null,
-          trackId: null, url: "", title: "", artist: "", cover: "🎵",
-          startedAt: serverTs(), paused: true, pausedAt: 0,
-          volume: musicState.data.volume || 0.7, duck: musicState.data.duck !== false, skipVotes: {}
-        });
-      } else {
-        musicState.data = null;
-        await stopMusicBroadcast();
-        renderMusicMini();
+        cloud.db.ref("rooms/" + room.id + "/music").set({
+          djUid: null, trackId: null, url: "", title: "", artist: "", cover: "🎵",
+          startedAt: serverTs(), paused: true, pausedAt: 0, volume: 0.7, duck: true, skipVotes: {}
+        }).catch(function () { /* */ });
       }
       toast("انتهى طابور الأغاني");
     }
@@ -542,24 +538,18 @@
       artist: clean(trackObj.artist || S.me.name),
       cover: trackObj.cover || "🎵",
       addedBy: S.me.id,
-      t: serverTs()
+      t: Date.now()
     };
     if (!item.url) { toast("أدخل رابط أغنية صحيح"); return; }
 
-    if (cloud.on && cloud.db && item.url.indexOf("data:") !== 0) {
-      await cloud.db.ref("rooms/" + room.id + "/queue").push(item);
-    } else {
-      musicState.queue.push(Object.assign({}, item, { _key: uid(), t: Date.now() }));
+    musicState.queue.push(Object.assign({}, item, { _key: uid() }));
+    if (cloud.on && cloud.db && item.url.indexOf("data:") !== 0 && item.url.indexOf("blob:") !== 0) {
+      cloud.db.ref("rooms/" + room.id + "/queue").push(Object.assign({}, item, { t: serverTs() })).catch(function () { /* */ });
     }
     toast("تمت إضافة الأغنية للطابور 🎶");
 
     if ((!musicState.data || !musicState.data.url) && canControlMusic(room)) {
-      var first = musicState.queue[0] || item;
-      if (cloud.on && cloud.db && first._key) {
-        await cloud.db.ref("rooms/" + room.id + "/queue/" + first._key).remove();
-      } else {
-        musicState.queue.shift();
-      }
+      var first = musicState.queue.shift() || item;
       await startTrackNow(room, first);
     }
   }
@@ -574,39 +564,39 @@
     var duckChecked = m.duck !== false ? "checked" : "";
 
     var sugHtml = DEFAULT_TRACKS.map(function (t) {
-      return '<button class="btn sm ghost" data-sug="' + t.id + '" type="button" style="margin:2px">' + t.cover + ' ' + esc(t.title) + '</button>';
+      return '<button class="btn sm ghost" data-sug="' + t.id + '" type="button" style="margin:2px">' + t.cover + " " + esc(t.title) + "</button>";
     }).join("");
 
     var qHtml = musicState.queue.length
       ? musicState.queue.map(function (q, idx) {
           return '<div class="row glass" style="margin-bottom:6px;padding:8px">' +
-            '<div style="font-size:18px">' + (q.cover || "🎵") + '</div>' +
-            '<div class="info"><div class="name">' + esc(q.title) + '</div><div class="meta">' + esc(q.artist) + '</div></div>' +
+            '<div style="font-size:18px">' + (q.cover || "🎵") + "</div>" +
+            '<div class="info"><div class="name">' + esc(q.title) + '</div><div class="meta">' + esc(q.artist) + "</div></div>" +
             '<button class="btn sm ghost" data-delq="' + (q._key || idx) + '" type="button">🗑</button></div>';
         }).join("")
       : '<div class="small" style="padding:8px 0">الطابور فارغ حالياً</div>';
 
-    var html = '<h3>🎵 مشغل الموسيقى المشترك</h3>' +
-      '<div class="small" style="margin-bottom:8px">الـ DJ الحالي: <b>' + esc(djUser) + '</b> ' + (isDj ? '(أنت)' : '') + '</div>' +
-      '<label>اختر أغنية من جهازك / المعرض</label>' +
+    var html = "<h3>🎵 مشغل الموسيقى المشترك</h3>" +
+      '<div class="small" style="margin-bottom:8px">الـ DJ الحالي: <b>' + esc(djUser) + "</b> " + (isDj ? "(أنت)" : "") + "</div>" +
+      "<label>اختر أغنية من جهازك / المعرض</label>" +
       '<input id="ms-file" type="file" accept="audio/*" />' +
-      '<label>أو رابط أغنية MP3 مباشر</label>' +
+      "<label>أو رابط أغنية MP3 مباشر</label>" +
       '<input id="ms-url" type="url" placeholder="https://example.com/song.mp3" />' +
       '<div style="display:flex;gap:6px;margin-top:6px">' +
       '<input id="ms-title" type="text" maxlength="40" placeholder="اسم الأغنية" />' +
       '<input id="ms-artist" type="text" maxlength="40" placeholder="المغني" /></div>' +
       '<button class="btn block" id="ms-add" type="button">➕ تشغيل / أضف للطابور</button>' +
-      '<div style="margin-top:8px"><div class="small" style="margin-bottom:4px">أغاني جاهزة:</div><div>' + sugHtml + '</div></div>' +
-      '<h4 style="margin:12px 0 6px;font-size:13px">قائمة الطابور (' + musicState.queue.length + ')</h4>' +
-      '<div id="ms-queue-box">' + qHtml + '</div>' +
+      '<div style="margin-top:8px"><div class="small" style="margin-bottom:4px">أغاني جاهزة:</div><div>' + sugHtml + "</div></div>" +
+      '<h4 style="margin:12px 0 6px;font-size:13px">قائمة الطابور (' + musicState.queue.length + ")</h4>" +
+      '<div id="ms-queue-box">' + qHtml + "</div>" +
       '<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">' +
-      (isStaff ? '<button class="btn sm" id="ms-dj" type="button">' + (isDj ? '🎧 أنت DJ الآن' : '🎛️ أنا DJ') + '</button>' : '') +
-      (isStaff ? '<button class="btn sm ghost" id="ms-toggle" type="button">⏯ تشغيل/إيقاف</button>' : '') +
+      (isStaff ? '<button class="btn sm" id="ms-dj" type="button">' + (isDj ? "🎧 أنت DJ الآن" : "🎛️ أنا DJ") + "</button>" : "") +
+      (isStaff ? '<button class="btn sm ghost" id="ms-toggle" type="button">⏯ تشغيل/إيقاف</button>' : "") +
       '<button class="btn sm ghost" id="ms-skip" type="button">⏭ تخطي / تصويت</button>' +
-      (isStaff ? '<button class="btn sm ghost" id="ms-clear" type="button">مسح الطابور</button>' : '') +
-      '</div>' +
+      (isStaff ? '<button class="btn sm ghost" id="ms-clear" type="button">مسح الطابور</button>' : "") +
+      "</div>" +
       '<div class="switchrow"><span>خفض الموسيقى تلقائياً عند الكلام (Ducking)</span><input id="ms-duck" type="checkbox" ' + duckChecked + ' style="width:auto" /></div>' +
-      '<label>مؤقت النوم</label>' +
+      "<label>مؤقت النوم</label>" +
       '<div style="display:flex;gap:6px">' +
       '<button class="btn sm ghost" data-sleep="15" type="button">15 د</button>' +
       '<button class="btn sm ghost" data-sleep="30" type="button">30 د</button>' +
@@ -651,13 +641,12 @@
     });
 
     $("sheet").querySelectorAll("[data-delq]").forEach(function (btn) {
-      btn.onclick = async function () {
+      btn.onclick = function () {
         var key = btn.getAttribute("data-delq");
-        if (cloud.on && cloud.db) {
-          await cloud.db.ref("rooms/" + room.id + "/queue/" + key).remove();
-        } else {
-          musicState.queue = musicState.queue.filter(function (x) { return String(x._key) !== String(key); });
+        if (cloud.on && cloud.db && String(key).indexOf("u") !== 0) {
+          cloud.db.ref("rooms/" + room.id + "/queue/" + key).remove().catch(function () { /* */ });
         }
+        musicState.queue = musicState.queue.filter(function (x) { return String(x._key) !== String(key); });
         openMusicSheet();
       };
     });
@@ -668,15 +657,14 @@
         var curMusic = musicState.data && musicState.data.url ? musicState.data : DEFAULT_TRACKS[0];
         var payload = Object.assign({}, curMusic, {
           djUid: S.me.id,
-          startedAt: serverTs(),
+          startedAt: Date.now(),
           paused: false
         });
+        musicState.data = payload;
+        renderMusicMini();
+        await syncRoomMusicForEveryone(musicState.data);
         if (cloud.on && cloud.db) {
-          await cloud.db.ref("rooms/" + room.id + "/music").set(payload);
-        } else {
-          musicState.data = Object.assign({}, payload, { startedAt: Date.now() });
-          renderMusicMini();
-          await syncRoomMusicForEveryone(musicState.data);
+          cloud.db.ref("rooms/" + room.id + "/music").set(Object.assign({}, payload, { startedAt: serverTs() })).catch(function () { /* */ });
         }
         toast("أنت الآن الـ DJ في الغرفة 🎛️");
         openMusicSheet();
@@ -696,21 +684,20 @@
     };
 
     if ($("ms-clear")) {
-      $("ms-clear").onclick = async function () {
-        if (cloud.on && cloud.db) await cloud.db.ref("rooms/" + room.id + "/queue").remove();
+      $("ms-clear").onclick = function () {
+        if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/queue").remove().catch(function () { /* */ });
         musicState.queue = [];
         toast("تم مسح الطابور");
         openMusicSheet();
       };
     }
 
-    $("ms-duck").onchange = async function () {
+    $("ms-duck").onchange = function () {
       var val = !!$("ms-duck").checked;
       if (cloud.on && cloud.db && musicState.data) {
-        await cloud.db.ref("rooms/" + room.id + "/music/duck").set(val);
-      } else if (musicState.data) {
-        musicState.data.duck = val;
+        cloud.db.ref("rooms/" + room.id + "/music/duck").set(val).catch(function () { /* */ });
       }
+      if (musicState.data) musicState.data.duck = val;
       applyMusicDucking();
     };
 
@@ -764,7 +751,8 @@
       }
 
       var tokenData = await fetchRtcToken(channelName, targetUid, desiredRole);
-      await voice.client.join(tokenData.appId, channelName, tokenData.token, tokenData.uid ?? targetUid);
+      var joinUid = (tokenData.uid !== undefined && tokenData.uid !== null) ? tokenData.uid : targetUid;
+      await voice.client.join(tokenData.appId, channelName, tokenData.token, joinUid);
 
       voice.channel = channelName;
       voice.role = desiredRole;
@@ -774,7 +762,6 @@
       }
       return true;
     } catch (err) {
-      console.warn("Agora join error:", err);
       return false;
     } finally {
       voice.joining = false;
@@ -796,7 +783,6 @@
       await voice.client.publish([voice.localTrack]);
       return true;
     } catch (err) {
-      console.warn("Mic publish error:", err);
       toast("لم يتم السماح بالوصول إلى الميكروفون 🎤");
       return false;
     }
@@ -828,9 +814,7 @@
       if (voice.client && voice.client.connectionState !== "DISCONNECTED") {
         await voice.client.leave();
       }
-    } catch (e) {
-      console.warn("Leave voice error", e);
-    } finally {
+    } catch (e) { /* */ } finally {
       voice.channel = null;
       voice.role = null;
       voice.speakingNums = {};
@@ -857,7 +841,7 @@
     });
   }
 
-  /* ========= 5. الحالة والبيانات (السحابية + المحلية) ========= */
+  /* ========= 5. الحالة والبيانات ========= */
   var cloud = { on: false, db: null, auth: null, fbUser: null, usersMap: {}, roomsMap: {}, roomMsgs: {}, seenFly: {}, seenReact: {} };
   var S = null;
   var UI = {
@@ -881,7 +865,6 @@
       cloud.auth = firebase.auth();
       cloud.on = true;
     } catch (e) {
-      console.warn("Firebase init failed", e);
       cloud.on = false;
     }
     return cloud.on;
@@ -959,13 +942,24 @@
     try {
       var raw = localStorage.getItem(CONFIG.storageKey);
       if (raw) {
-        S = JSON.parse(raw);
-        if (S && S.me && S.rooms) {
+        var parsed = JSON.parse(raw);
+        if (parsed && parsed.me && Array.isArray(parsed.rooms)) {
+          S = parsed;
           S.me.id = fixedId;
           if (!S.me.num) S.me.num = hashNum(fixedId);
           if (S.me.photo == null) S.me.photo = "";
           if (!S.unread) S.unread = {};
           if (!S.dms) S.dms = {};
+          if (!S.users) S.users = demoUsers();
+          if (!S.friends) S.friends = [];
+          if (!S.requests) S.requests = [];
+          if (!S.sentReq) S.sentReq = [];
+          if (!S.blocked) S.blocked = [];
+          if (!S.follows) S.follows = [];
+          if (!S.notifs) S.notifs = [];
+          if (!S.txs) S.txs = [];
+          if (!S.giftsLog) S.giftsLog = [];
+          if (!S.settings) S.settings = { notif: true, sound: true };
           ensureDailyTasks();
           return;
         }
@@ -981,7 +975,7 @@
   }
 
   function saveMeCloud() {
-    if (!cloud.on || !S || !S.me) return;
+    if (!cloud.on || !cloud.db || !S || !S.me) return;
     cloud.db.ref("users/" + S.me.id).update({
       id: S.me.id, num: S.me.num, name: S.me.name, photo: S.me.photo || "", bio: S.me.bio,
       coins: S.me.coins, xp: S.me.xp, vip: S.me.vip,
@@ -999,7 +993,8 @@
 
   function normalizeRoom(id, r) {
     r = r || {};
-    var n = Number(r.seatCount) || 9, seats = [];
+    var n = Number(r.seatCount) || (Array.isArray(r.seats) ? r.seats.length : 9) || 9;
+    var seats = [];
     var seenSeatUids = {};
     for (var i = 0; i < n; i++) {
       var s = (r.seats && r.seats[i]) || {};
@@ -1015,32 +1010,41 @@
         vip: s.vip != null ? !!s.vip : i === 0
       });
     }
-    var rawListeners = Object.keys(r.listeners || {}).filter(function (uidKey) {
-      return !seenSeatUids[uidKey];
-    });
+    var listenersArr = [];
+    if (Array.isArray(r.listeners)) {
+      r.listeners.forEach(function (uidKey) {
+        if (uidKey && !seenSeatUids[uidKey] && listenersArr.indexOf(uidKey) < 0) listenersArr.push(uidKey);
+      });
+    } else if (r.listeners && typeof r.listeners === "object") {
+      Object.keys(r.listeners).forEach(function (uidKey) {
+        if (r.listeners[uidKey] && !seenSeatUids[uidKey] && listenersArr.indexOf(uidKey) < 0) listenersArr.push(uidKey);
+      });
+    }
+    var modsArr = Array.isArray(r.mods) ? r.mods : Object.keys(r.mods || {});
+    var bansArr = Array.isArray(r.bans) ? r.bans : Object.keys(r.bans || {});
+
     return {
       id: id, name: r.name || "غرفة", desc: r.desc || "", cat: r.cat || "chat",
-      owner: r.owner || "", mods: Object.keys(r.mods || {}),
-      seats: seats, listeners: rawListeners,
-      bans: Object.keys(r.bans || {}), pass: r.pass || "",
+      owner: r.owner || "", mods: modsArr,
+      seats: seats, listeners: listenersArr,
+      bans: bansArr, pass: r.pass || "",
       priv: !!r.priv, locked: !!r.locked, pinned: r.pinned || "",
-      created: r.created || 0, color: r.color || 0, icon: r.icon || 0,
-      recvTop: r.recvTop || {}, seatCount: n, msgs: cloud.roomMsgs[id] || []
+      created: typeof r.created === "number" ? r.created : now(),
+      color: r.color || 0, icon: r.icon || 0,
+      recvTop: r.recvTop || {}, seatCount: n, msgs: cloud.roomMsgs[id] || r.msgs || []
     };
   }
 
   function requestBrowserNotifPermission() {
     if ("Notification" in global && Notification.permission === "default") {
-      Notification.requestPermission().catch(function () { /* */ });
+      try { Notification.requestPermission().catch(function () { /* */ }); } catch (e) { /* */ }
     }
   }
 
   function triggerBrowserNotif(title, body) {
     if (!S || !S.settings || !S.settings.notif) return;
     if ("Notification" in global && Notification.permission === "granted") {
-      try {
-        new Notification(title, { body: body });
-      } catch (e) { /* */ }
+      try { new Notification(title, { body: body }); } catch (e) { /* */ }
     }
   }
 
@@ -1076,7 +1080,7 @@
     return new Promise(function (resolve) {
       var resolved = false;
       function finish() { if (!resolved) { resolved = true; resolve(); } }
-      var safetyTimer = setTimeout(finish, 3000);
+      var safetyTimer = setTimeout(finish, 2500);
 
       var myId = getOrCreateFixedUid();
       var myNum = hashNum(myId);
@@ -1089,7 +1093,7 @@
         if (p && p.id) {
           S.me = Object.assign({}, S.me, p, { id: myId, num: p.num || myNum });
         } else {
-          uRef.set(Object.assign({}, S.me, { online: true, level: level() }));
+          uRef.set(Object.assign({}, S.me, { online: true, level: level() })).catch(function () { /* */ });
         }
         ensureDailyTasks();
 
@@ -1097,14 +1101,14 @@
         var refUid = params.get("ref");
         if (refUid && refUid !== S.me.id && !S.me._invitedBy) {
           S.me._invitedBy = refUid;
-          cloud.db.ref("users/" + refUid + "/invites").transaction(function (c) { return (c || 0) + 1; });
+          cloud.db.ref("users/" + refUid + "/invites").transaction(function (c) { return (c || 0) + 1; }).catch(function () { /* */ });
         }
 
         trackListener("app", cloud.db.ref(".info/connected"), "value", function (cs) {
           if (cs.val() !== true) return;
           uRef.child("online").onDisconnect().set(false);
-          uRef.child("lastSeen").onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
-          uRef.update({ online: true });
+          uRef.child("lastSeen").onDisconnect().set(serverTs());
+          uRef.update({ online: true }).catch(function () { /* */ });
         });
 
         trackListener("app", cloud.db.ref("users"), "value", function (usnap) {
@@ -1128,17 +1132,19 @@
           Object.keys(val).forEach(function (rid) {
             list.push(normalizeRoom(rid, val[rid]));
           });
-          S.rooms = list;
+          if (list.length) {
+            S.rooms = list;
+          }
 
           if (UI.roomId) {
             var cur = getRoom(UI.roomId);
-            if (!cur) {
+            if (!cur && list.length) {
               toast("تم إغلاق الغرفة من المالك");
               leaveRoom(false);
-            } else if (cur.bans.indexOf(S.me.id) >= 0) {
+            } else if (cur && cur.bans.indexOf(S.me.id) >= 0) {
               toast("تم حظرك من هذه الغرفة 🚫");
               leaveRoom(false);
-            } else {
+            } else if (cur) {
               syncMicHardwareState();
               renderRoom();
             }
@@ -1164,7 +1170,7 @@
           var nv = nsnap.val() || {};
           var arr = Object.keys(nv).map(function (k) {
             return Object.assign({ id: k }, nv[k]);
-          }).sort(function (a, b) { return b.t - a.t; });
+          }).sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
           S.notifs = arr;
           renderTop();
         });
@@ -1180,7 +1186,7 @@
       });
 
       if (cloud.auth) {
-        cloud.auth.signInAnonymously().catch(function () { /* نعتمد على الهوية الثابتة */ });
+        cloud.auth.signInAnonymously().catch(function () { /* */ });
       }
     });
   }
@@ -1204,15 +1210,16 @@
   }
 
   function getRoom(id) {
+    if (!id || !S || !Array.isArray(S.rooms)) return null;
     for (var i = 0; i < S.rooms.length; i++) if (S.rooms[i].id === id) return S.rooms[i];
     return null;
   }
 
-  function level() { return Math.floor(S.me.xp / CONFIG.xpPerLevel) + 1; }
+  function level() { return Math.floor((S.me.xp || 0) / CONFIG.xpPerLevel) + 1; }
 
   function addXP(n) {
     var before = level();
-    S.me.xp += n;
+    S.me.xp = (S.me.xp || 0) + n;
     var after = level();
     if (after > before) {
       S.me.coins += after * 20;
@@ -1230,7 +1237,6 @@
 
     if (cloud.on && cloud.db) {
       cloud.db.ref("notifications/" + uidTarget).push({ icon: icon, text: text, t: serverTs(), read: false }).catch(function () { /* */ });
-      return;
     }
     if (uidTarget === S.me.id) {
       S.notifs.unshift(item);
@@ -1240,13 +1246,14 @@
 
   function pushRoomMsg(room, msgObj) {
     if (!room) return;
-    var payload = Object.assign({}, msgObj, { t: serverTs() });
+    if (!Array.isArray(room.msgs)) room.msgs = [];
+    var localMsg = Object.assign({}, msgObj, { t: now() });
+    room.msgs.push(localMsg);
+    if (room.msgs.length > 150) room.msgs.shift();
+    if (UI.roomId === room.id) renderRoomChat();
+
     if (cloud.on && cloud.db) {
-      cloud.db.ref("roomMessages/" + room.id).push(payload).catch(function () { /* */ });
-    } else {
-      room.msgs.push(Object.assign({}, msgObj, { t: now() }));
-      if (room.msgs.length > 150) room.msgs.shift();
-      renderRoomChat();
+      cloud.db.ref("roomMessages/" + room.id).push(Object.assign({}, msgObj, { t: serverTs() })).catch(function () { /* */ });
     }
   }
 
@@ -1274,15 +1281,20 @@
   }
 
   function seatIndexOf(room, id) {
+    if (!room || !Array.isArray(room.seats)) return -1;
     for (var i = 0; i < room.seats.length; i++) if (room.seats[i].uid === id) return i;
     return -1;
   }
 
-  function inRoom(room, id) { return seatIndexOf(room, id) >= 0 || room.listeners.indexOf(id) >= 0; }
+  function inRoom(room, id) {
+    if (!room) return false;
+    return seatIndexOf(room, id) >= 0 || (room.listeners || []).indexOf(id) >= 0;
+  }
 
   function role(room, id) {
+    if (!room) return "user";
     if (room.owner === id) return "owner";
-    if (room.mods.indexOf(id) >= 0) return "mod";
+    if ((room.mods || []).indexOf(id) >= 0) return "mod";
     return "user";
   }
 
@@ -1345,7 +1357,7 @@
       '<div class="info"><div class="name">' + lock + esc(r.name) + '<span class="tag">' + esc(CATEGORIES[r.cat] || "عام") + "</span></div>" +
       '<div class="meta">👤 ' + esc(owner.name) + " • 🎧 " + count(r) + " • 🪑 " + r.seats.filter(function (s) { return s.uid; }).length + "/" + r.seats.length + "</div>" +
       '<div class="meta">' + esc(r.desc || "") + "</div></div>" +
-      '<button class="btn sm" data-enter="' + r.id + '" type="button">دخول</button></div>';
+      '<button class="btn sm" data-enter="' + esc(r.id) + '" type="button">دخول</button></div>';
   }
 
   function filterRooms() {
@@ -1354,7 +1366,7 @@
     if (q) list = list.filter(function (r) { return r.name.toLowerCase().indexOf(q) >= 0 || r.id.toLowerCase().indexOf(q) >= 0 || (r.desc || "").toLowerCase().indexOf(q) >= 0; });
     var f = UI.filter;
     if (f === "popular") list = list.slice().sort(function (a, b) { return count(b) - count(a); });
-    else if (f === "new") list = list.slice().sort(function (a, b) { return b.created - a.created; });
+    else if (f === "new") list = list.slice().sort(function (a, b) { return (b.created || 0) - (a.created || 0); });
     else if (f === "friends") list = list.filter(function (r) { return S.friends.some(function (fid) { return inRoom(r, fid); }); });
     else if (f === "vip") list = list.filter(function (r) { return r.cat === "vip"; });
     else if (f === "games") list = list.filter(function (r) { return r.cat === "games"; });
@@ -1370,7 +1382,7 @@
       var us = S.users.filter(function (u) { return (u.name || "").toLowerCase().indexOf(q) >= 0 || (u.id || "").toLowerCase().indexOf(q) >= 0; });
       box.classList.toggle("hidden", us.length === 0);
       box.innerHTML = us.length ? '<h2 class="title">المستخدمون</h2>' + us.map(function (u) {
-        return '<div class="row glass" data-profile="' + u.id + '">' + avatarHTML(u) + '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">' + esc(u.id) + "</div></div></div>";
+        return '<div class="row glass" data-profile="' + esc(u.id) + '">' + avatarHTML(u) + '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">' + esc(u.id) + "</div></div></div>";
       }).join("") : "";
     } else { box.classList.add("hidden"); box.innerHTML = ""; }
     document.querySelectorAll("#home-tabs .tab").forEach(function (t) { t.classList.toggle("active", t.getAttribute("data-filter") === UI.filter); });
@@ -1387,8 +1399,8 @@
   function personRow(u, actions) {
     var where = "";
     for (var i = 0; i < S.rooms.length; i++) if (inRoom(S.rooms[i], u.id)) { where = " • في غرفة: " + esc(S.rooms[i].name); break; }
-    return '<div class="row glass"><div data-profile="' + u.id + '" style="position:relative">' + avatarHTML(u) + '<span class="dot ' + (u.online ? "on" : "") + '"></span></div>' +
-      '<div class="info" data-profile="' + u.id + '"><div class="name">' + userNameHTML(u) + '</div><div class="meta">' + (u.online ? "متصل" : "غير متصل") + where + "</div></div>" + actions + "</div>";
+    return '<div class="row glass"><div data-profile="' + esc(u.id) + '" style="position:relative">' + avatarHTML(u) + '<span class="dot ' + (u.online ? "on" : "") + '"></span></div>' +
+      '<div class="info" data-profile="' + esc(u.id) + '"><div class="name">' + userNameHTML(u) + '</div><div class="meta">' + (u.online ? "متصل" : "غير متصل") + where + "</div></div>" + actions + "</div>";
   }
 
   function renderFriends() {
@@ -1401,17 +1413,17 @@
       html = fr.length ? fr.map(function (u) {
         var room = null;
         for (var i = 0; i < S.rooms.length; i++) if (inRoom(S.rooms[i], u.id)) { room = S.rooms[i]; break; }
-        var btns = (room ? '<button class="btn sm" data-enter="' + room.id + '" type="button">🚪 انضم</button>' : "") +
-          '<button class="btn sm ghost" data-dm="' + u.id + '" type="button">💬</button>';
+        var btns = (room ? '<button class="btn sm" data-enter="' + esc(room.id) + '" type="button">🚪 انضم</button>' : "") +
+          '<button class="btn sm ghost" data-dm="' + esc(u.id) + '" type="button">💬</button>';
         return personRow(u, btns);
       }).join("") : '<div class="empty">لا يوجد أصدقاء بعد. استخدم تبويب "بحث" لإضافة أصدقاء</div>';
     } else if (UI.ftab === "requests") {
       html = S.requests.length ? S.requests.map(function (id) {
-        return personRow(getUser(id), '<button class="btn sm" data-accept="' + id + '" type="button">قبول</button><button class="btn sm ghost" data-reject="' + id + '" type="button">رفض</button>');
+        return personRow(getUser(id), '<button class="btn sm" data-accept="' + esc(id) + '" type="button">قبول</button><button class="btn sm ghost" data-reject="' + esc(id) + '" type="button">رفض</button>');
       }).join("") : '<div class="empty">لا توجد طلبات صداقة</div>';
       if (S.sentReq.length) {
         html += '<h2 class="title">طلبات أرسلتها</h2>' + S.sentReq.map(function (id) {
-          return personRow(getUser(id), '<button class="btn sm ghost" data-cancelreq="' + id + '" type="button">إلغاء</button>');
+          return personRow(getUser(id), '<button class="btn sm ghost" data-cancelreq="' + esc(id) + '" type="button">إلغاء</button>');
         }).join("");
       }
     } else {
@@ -1421,7 +1433,7 @@
         var btn;
         if (S.friends.indexOf(u.id) >= 0) btn = '<span class="small">صديق ✔</span>';
         else if (S.sentReq.indexOf(u.id) >= 0) btn = '<span class="small">تم الإرسال</span>';
-        else btn = '<button class="btn sm" data-addfriend="' + u.id + '" type="button">+ إضافة</button>';
+        else btn = '<button class="btn sm" data-addfriend="' + esc(u.id) + '" type="button">+ إضافة</button>';
         return personRow(u, btn);
       }).join("") : '<div class="empty">لا نتائج</div>';
     }
@@ -1430,17 +1442,17 @@
 
   function renderMessages() {
     var ids = Object.keys(S.dms).filter(function (id) { return S.dms[id] && S.dms[id].length && S.blocked.indexOf(id) < 0; });
-    ids.sort(function (a, b) { return S.dms[b][S.dms[b].length - 1].t - S.dms[a][S.dms[a].length - 1].t; });
+    ids.sort(function (a, b) { return (S.dms[b][S.dms[b].length - 1].t || 0) - (S.dms[a][S.dms[a].length - 1].t || 0); });
     $("dm-list").innerHTML = ids.length ? ids.map(function (id) {
       var u = getUser(id), last = S.dms[id][S.dms[id].length - 1], un = S.unread[id] || 0;
       var preview = last.audio ? "🎙️ رسالة صوتية" : esc(last.text || "");
-      return '<div class="row glass" data-dm="' + id + '">' + avatarHTML(u) + '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">' + (last.from === S.me.id ? "أنت: " : "") + preview + '</div></div><div style="text-align:left"><div class="small">' + timeStr(last.t) + "</div>" + (un ? '<span class="badge" style="position:static;display:inline-flex;margin-top:4px">' + un + "</span>" : "") + "</div></div>";
+      return '<div class="row glass" data-dm="' + esc(id) + '">' + avatarHTML(u) + '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">' + (last.from === S.me.id ? "أنت: " : "") + preview + '</div></div><div style="text-align:left"><div class="small">' + timeStr(last.t) + "</div>" + (un ? '<span class="badge" style="position:static;display:inline-flex;margin-top:4px">' + un + "</span>" : "") + "</div></div>";
     }).join("") : '<div class="empty">لا توجد محادثات بعد.<br>افتح ملف صديق واضغط "رسالة".</div>';
   }
 
   function renderProfile() {
     ensureDailyTasks();
-    var m = S.me, lv = level(), into = m.xp % CONFIG.xpPerLevel;
+    var m = S.me, lv = level(), into = (m.xp || 0) % CONFIG.xpPerLevel;
     setAvatarEl($("pf-avatar"), m);
     $("pf-name").textContent = m.name;
     $("pf-id").textContent = "ID: " + m.id + " • الدعوات: " + (m.invites || 0);
@@ -1455,7 +1467,7 @@
     $("pf-following").textContent = S.follows.length;
     $("pf-gifts").textContent = m.gifts;
     $("pf-bio").textContent = m.bio;
-    $("pf-meta").textContent = m.country + " • انضم في " + new Date(m.joined).toLocaleDateString("ar");
+    $("pf-meta").textContent = m.country + " • انضم في " + new Date(m.joined || now()).toLocaleDateString("ar");
     $("pf-ach").innerHTML = ACHIEVEMENTS.map(function (a) { return '<span class="' + (m.ach[a.id] ? "" : "off") + '">' + a.t + "</span>"; }).join("");
 
     var canDaily = !m.daily || (Date.now() - Number(m.daily) >= 24 * 60 * 60 * 1000);
@@ -1494,6 +1506,7 @@
   /* ========= 8. النوافذ السفلية ========= */
   function openSheet(html) {
     $("sheet").innerHTML = html;
+    $("sheet").scrollTop = 0;
     $("scrim").classList.add("open");
   }
   function closeSheet() {
@@ -1503,7 +1516,9 @@
 
   function actionList(title, items) {
     var html = "<h3>" + esc(title) + '</h3><div class="actlist">';
-    items.forEach(function (it, i) { html += '<button class="' + (it.danger ? "danger" : "") + '" data-act="' + i + '" type="button">' + esc(it.label) + "</button>"; });
+    items.forEach(function (it, i) {
+      html += '<button class="' + (it.danger ? "danger" : "") + '" data-act="' + i + '" type="button">' + esc(it.label) + "</button>";
+    });
     html += '<button data-act="cancel" type="button">إلغاء</button></div>';
     openSheet(html);
     $("sheet").onclick = function (e) {
@@ -1511,14 +1526,16 @@
       if (!b) return;
       var a = b.getAttribute("data-act");
       closeSheet();
-      if (a !== "cancel") items[Number(a)].fn();
+      if (a !== "cancel" && items[Number(a)] && typeof items[Number(a)].fn === "function") {
+        items[Number(a)].fn();
+      }
     };
   }
 
   function confirmBox(text, yes) {
     openSheet("<h3>تأكيد</h3><p style='margin-bottom:14px;line-height:1.7'>" + esc(text) + '</p><div style="display:flex;gap:10px"><button class="btn" id="cf-yes" style="flex:1" type="button">تأكيد</button><button class="btn ghost" id="cf-no" style="flex:1" type="button">إلغاء</button></div>');
     $("sheet").onclick = null;
-    $("cf-yes").onclick = function () { closeSheet(); yes(); };
+    $("cf-yes").onclick = function () { closeSheet(); if (typeof yes === "function") yes(); };
     $("cf-no").onclick = closeSheet;
   }
 
@@ -1527,25 +1544,31 @@
     var html = "<h3>🔔 الإشعارات</h3>";
     if (!S.notifs.length) html += '<div class="empty">لا توجد إشعارات</div>';
     S.notifs.forEach(function (n) {
-      html += '<div class="row glass" style="margin-bottom:8px"><div style="font-size:24px">' + n.icon + '</div><div class="info"><div class="name" style="white-space:normal;font-weight:' + (n.read ? "normal" : "bold") + '">' + esc(n.text) + '</div><div class="meta">' + timeStr(n.t) + '</div></div><button class="btn sm ghost" data-delnotif="' + n.id + '" type="button">🗑</button></div>';
+      html += '<div class="row glass" style="margin-bottom:8px"><div style="font-size:24px">' + n.icon + '</div><div class="info"><div class="name" style="white-space:normal;font-weight:' + (n.read ? "normal" : "bold") + '">' + esc(n.text) + '</div><div class="meta">' + timeStr(n.t) + '</div></div><button class="btn sm ghost" data-delnotif="' + esc(n.id) + '" type="button">🗑</button></div>';
     });
     if (S.notifs.length) html += '<button class="btn red block" id="clear-notifs" type="button">مسح الكل</button>';
     openSheet(html);
     S.notifs.forEach(function (n) { n.read = true; });
     if (cloud.on && cloud.db) {
-      S.notifs.forEach(function (n) { cloud.db.ref("notifications/" + S.me.id + "/" + n.id + "/read").set(true); });
+      S.notifs.forEach(function (n) {
+        if (n.id && n.id.indexOf("u") !== 0) {
+          cloud.db.ref("notifications/" + S.me.id + "/" + n.id + "/read").set(true).catch(function () { /* */ });
+        }
+      });
     }
     saveLocal(); renderTop();
     $("sheet").onclick = function (e) {
       var d = e.target.closest("[data-delnotif]");
       if (d) {
         var nid = d.getAttribute("data-delnotif");
-        if (cloud.on && cloud.db) cloud.db.ref("notifications/" + S.me.id + "/" + nid).remove();
+        if (cloud.on && cloud.db && nid.indexOf("u") !== 0) {
+          cloud.db.ref("notifications/" + S.me.id + "/" + nid).remove().catch(function () { /* */ });
+        }
         S.notifs = S.notifs.filter(function (n) { return n.id !== nid; });
         saveLocal(); openNotifs(); return;
       }
       if (e.target.id === "clear-notifs") {
-        if (cloud.on && cloud.db) cloud.db.ref("notifications/" + S.me.id).remove();
+        if (cloud.on && cloud.db) cloud.db.ref("notifications/" + S.me.id).remove().catch(function () { /* */ });
         S.notifs = []; saveLocal(); openNotifs();
       }
     };
@@ -1574,14 +1597,13 @@
         priv: $("cr-priv").value === "1", locked: false, pinned: "", created: now(), msgs: [],
         color: Math.floor(Math.random() * COVERS.length), icon: Math.floor(Math.random() * COVER_ICONS.length), recvTop: {}
       };
+      S.rooms.unshift(room);
       if (cloud.on && cloud.db) {
         cloud.db.ref("rooms/" + roomId).set({
           name: room.name, desc: room.desc, cat: room.cat, owner: room.owner,
           seatCount: n, pass: room.pass, priv: room.priv, locked: false,
           pinned: "", created: serverTs(), color: room.color, icon: room.icon
-        });
-      } else {
-        S.rooms.unshift(room);
+        }).catch(function () { /* */ });
       }
       S.me.ach.host = true;
       addXP(20);
@@ -1707,13 +1729,14 @@
       trackListener("room", cloud.db.ref("rooms/" + id + "/music"), "value", function (musSnap) {
         var prevDj = musicState.data && musicState.data.djUid;
         var m = musSnap.val() || null;
-        musicState.data = m;
-        renderMusicMini();
-
-        if (prevDj && (!m || !m.djUid) && UI.roomId === id) {
-          pushRoomMsg(room, { sys: true, text: "DJ غادر، اختر DJ جديد" });
+        if (m && m.url) {
+          musicState.data = m;
+          renderMusicMini();
+          if (prevDj && !m.djUid && UI.roomId === id) {
+            pushRoomMsg(room, { sys: true, text: "DJ غادر، اختر DJ جديد" });
+          }
+          syncRoomMusicForEveryone(m);
         }
-        syncRoomMusicForEveryone(m);
       });
 
       trackListener("room", cloud.db.ref("rooms/" + id + "/queue"), "value", function (qSnap) {
@@ -1738,7 +1761,7 @@
       });
 
       trackListener("room", cloud.db.ref("rooms/" + id + "/theme"), "value", function (thSnap) {
-        applyRoomTheme(thSnap.val());
+        if (thSnap.val()) applyRoomTheme(thSnap.val());
       });
 
       trackListener("room", cloud.db.ref("rooms/" + id + "/quiz/current"), "value", function (qzSnap) {
@@ -1869,7 +1892,7 @@
     if (!room) return;
     var box = $("room-chat");
     var stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 48;
-    box.innerHTML = room.msgs.map(function (m, i) {
+    box.innerHTML = (room.msgs || []).map(function (m, i) {
       if (m.sys) return '<div class="msg sys">' + esc(m.text) + "</div>";
       var u = getUser(m.from), me = m.from === S.me.id;
       var body = "";
@@ -1888,7 +1911,7 @@
     if (!room || (!text && (!extra || (!extra.img && !extra.sticker)))) return;
     var msg = Object.assign({ from: S.me.id, text: clean(text), color: UI.msgColor }, extra || {});
     pushRoomMsg(room, msg);
-    S.me.msgCount++;
+    S.me.msgCount = (S.me.msgCount || 0) + 1;
     if (S.me.msgCount >= 5) S.me.ach.chatter = true;
     addXP(2);
     completeTask("msg", 25);
@@ -1946,7 +1969,7 @@
       html += '<div style="margin-top:12px">';
       entries.forEach(function (ent) {
         var u = getUser(ent.uid);
-        var allowBtn = isStaff ? '<button class="btn sm" data-allowmic="' + ent.uid + '" type="button">اسمح له بالصعود</button>' : "";
+        var allowBtn = isStaff ? '<button class="btn sm" data-allowmic="' + esc(ent.uid) + '" type="button">اسمح له بالصعود</button>' : "";
         html += '<div class="row glass" style="margin-bottom:6px">' + avatarHTML(u, "sm") +
           '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">بانتظار المايك</div></div>' + allowBtn + "</div>";
       });
@@ -1959,17 +1982,16 @@
     $("sheet").onclick = null;
 
     if ($("hq-raise")) {
-      $("hq-raise").onclick = async function () {
+      $("hq-raise").onclick = function () {
         if (alreadyRaised) {
-          if (cloud.on && cloud.db) await cloud.db.ref("rooms/" + room.id + "/micQueue/" + S.me.id).remove();
+          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/micQueue/" + S.me.id).remove().catch(function () { /* */ });
           delete UI.micQueue[S.me.id];
           toast("تم إنزال اليد");
         } else {
           if (cloud.on && cloud.db) {
-            await cloud.db.ref("rooms/" + room.id + "/micQueue/" + S.me.id).set({ uid: S.me.id, name: S.me.name, t: serverTs() });
-          } else {
-            UI.micQueue[S.me.id] = { uid: S.me.id, name: S.me.name, t: now() };
+            cloud.db.ref("rooms/" + room.id + "/micQueue/" + S.me.id).set({ uid: S.me.id, name: S.me.name, t: serverTs() }).catch(function () { /* */ });
           }
+          UI.micQueue[S.me.id] = { uid: S.me.id, name: S.me.name, t: now() };
           room.mods.concat(room.owner).forEach(function (staffId) {
             if (staffId && staffId !== S.me.id) addNotif("✋", S.me.name + " يطلب المايك في " + room.name, staffId);
           });
@@ -1980,20 +2002,26 @@
     }
 
     $("sheet").querySelectorAll("[data-allowmic]").forEach(function (btn) {
-      btn.onclick = async function () {
+      btn.onclick = function () {
         var targetUid = btn.getAttribute("data-allowmic");
         var freeIdx = -1;
         for (var i = 0; i < room.seats.length; i++) {
           if (!room.seats[i].uid && !room.seats[i].locked) { freeIdx = i; break; }
         }
         if (freeIdx < 0) { toast("لا يوجد مقعد فارغ حالياً"); return; }
+        room.seats[freeIdx].uid = targetUid;
+        room.seats[freeIdx].muted = false;
+        room.listeners = room.listeners.filter(function (x) { return x !== targetUid; });
+        delete UI.micQueue[targetUid];
         if (cloud.on && cloud.db) {
           var ups = {};
           ups["rooms/" + room.id + "/seats/" + freeIdx + "/uid"] = targetUid;
+          ups["rooms/" + room.id + "/seats/" + freeIdx + "/muted"] = false;
           ups["rooms/" + room.id + "/listeners/" + targetUid] = null;
           ups["rooms/" + room.id + "/micQueue/" + targetUid] = null;
-          await cloud.db.ref().update(ups);
+          cloud.db.ref().update(ups).catch(function () { /* */ });
         }
+        renderRoom();
         toast("تم السماح لـ " + getUser(targetUid).name + " بالصعود 🎤");
         closeSheet();
       };
@@ -2002,7 +2030,7 @@
 
   function onSeatTap(i) {
     var room = getRoom(UI.roomId);
-    if (!room) return;
+    if (!room || !room.seats[i]) return;
     var s = room.seats[i], myRole = role(room, S.me.id), mySeat = seatIndexOf(room, S.me.id);
     var canManage = myRole === "owner" || myRole === "mod";
     var items = [];
@@ -2019,8 +2047,9 @@
         items.push({
           label: s.locked ? "🔓 فتح المقعد" : "🔒 قفل المقعد",
           fn: function () {
-            if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + i + "/locked").set(!s.locked);
-            else { s.locked = !s.locked; saveLocal(); renderRoom(); }
+            s.locked = !s.locked;
+            if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + i + "/locked").set(s.locked).catch(function () { /* */ });
+            saveLocal(); renderRoom();
           }
         });
       }
@@ -2028,8 +2057,9 @@
         items.push({
           label: s.vip ? "إلغاء VIP للمقعد" : "👑 جعل المقعد VIP",
           fn: function () {
-            if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + i + "/vip").set(!s.vip);
-            else { s.vip = !s.vip; saveLocal(); renderRoom(); }
+            s.vip = !s.vip;
+            if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + i + "/vip").set(s.vip).catch(function () { /* */ });
+            saveLocal(); renderRoom();
           }
         });
       }
@@ -2058,9 +2088,8 @@
             ups["rooms/" + room.id + "/seats/" + i + "/muted"] = false;
             ups["rooms/" + room.id + "/listeners/" + S.me.id] = true;
             cloud.db.ref().update(ups).catch(function () { /* */ });
-          } else {
-            saveLocal();
           }
+          saveLocal();
           if (!(musicState.data && musicState.data.djUid === S.me.id && !musicState.data.paused)) {
             joinVoiceChannel(room.id, "subscriber");
           }
@@ -2072,9 +2101,10 @@
       items.push({
         label: s.muted ? "🔊 إلغاء كتم المستخدم" : "🔇 كتم المستخدم",
         fn: function () {
-          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + i + "/muted").set(!s.muted);
-          else { s.muted = !s.muted; saveLocal(); renderRoom(); }
-          toast(s.muted ? "تم إلغاء الكتم" : "تم كتم " + u.name);
+          s.muted = !s.muted;
+          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + i + "/muted").set(s.muted).catch(function () { /* */ });
+          saveLocal(); renderRoom();
+          toast(s.muted ? "تم كتم " + u.name : "تم إلغاء الكتم");
         }
       });
       items.push({
@@ -2090,10 +2120,8 @@
             ups["rooms/" + room.id + "/seats/" + i + "/muted"] = false;
             ups["rooms/" + room.id + "/listeners/" + kickedUid] = true;
             cloud.db.ref().update(ups).catch(function () { /* */ });
-          } else {
-            saveLocal();
           }
-          renderRoom();
+          saveLocal(); renderRoom();
           toast("تم إنزال " + u.name);
         }
       });
@@ -2110,10 +2138,8 @@
             ups["rooms/" + room.id + "/seats/" + i + "/locked"] = true;
             ups["rooms/" + room.id + "/listeners/" + kickedUid] = true;
             cloud.db.ref().update(ups).catch(function () { /* */ });
-          } else {
-            saveLocal();
           }
-          renderRoom();
+          saveLocal(); renderRoom();
         }
       });
       if (myRole === "owner") {
@@ -2131,14 +2157,15 @@
         label: "🔄 تبديل المكان معي",
         fn: function () {
           var otherUid = s.uid;
+          room.seats[mySeat].uid = otherUid;
+          s.uid = S.me.id;
           if (cloud.on && cloud.db) {
             var ups = {};
             ups["rooms/" + room.id + "/seats/" + mySeat + "/uid"] = otherUid;
             ups["rooms/" + room.id + "/seats/" + i + "/uid"] = S.me.id;
-            cloud.db.ref().update(ups);
-          } else {
-            room.seats[mySeat].uid = otherUid; s.uid = S.me.id; saveLocal(); renderRoom();
+            cloud.db.ref().update(ups).catch(function () { /* */ });
           }
+          saveLocal(); renderRoom();
         }
       });
     }
@@ -2151,6 +2178,7 @@
     room.listeners = room.listeners.filter(function (x) { return x !== S.me.id; });
     room.seats[i].uid = S.me.id;
     room.seats[i].muted = false;
+    delete UI.micQueue[S.me.id];
 
     if (cloud.on && cloud.db) {
       var ups = {};
@@ -2177,30 +2205,28 @@
 
   function toggleMod(room, id) {
     var isMod = room.mods.indexOf(id) >= 0;
+    if (isMod) room.mods.splice(room.mods.indexOf(id), 1);
+    else room.mods.push(id);
     if (cloud.on && cloud.db) {
-      cloud.db.ref("rooms/" + room.id + "/mods/" + id).set(isMod ? null : true);
-    } else {
-      if (isMod) room.mods.splice(room.mods.indexOf(id), 1);
-      else room.mods.push(id);
-      saveLocal(); renderRoom();
+      cloud.db.ref("rooms/" + room.id + "/mods/" + id).set(isMod ? null : true).catch(function () { /* */ });
     }
+    saveLocal(); renderRoom();
     toast(isMod ? "تمت إزالة الإشراف" : "تمت ترقية مشرف 👑");
   }
 
   function kickUser(room, id, ban) {
     var si = seatIndexOf(room, id);
+    if (si >= 0) room.seats[si].uid = null;
+    room.listeners = room.listeners.filter(function (x) { return x !== id; });
+    if (ban && room.bans.indexOf(id) < 0) room.bans.push(id);
     if (cloud.on && cloud.db) {
       var ups = {};
       if (si >= 0) ups["rooms/" + room.id + "/seats/" + si + "/uid"] = null;
       ups["rooms/" + room.id + "/listeners/" + id] = null;
       if (ban) ups["rooms/" + room.id + "/bans/" + id] = true;
-      cloud.db.ref().update(ups);
-    } else {
-      if (si >= 0) room.seats[si].uid = null;
-      room.listeners = room.listeners.filter(function (x) { return x !== id; });
-      if (ban && room.bans.indexOf(id) < 0) room.bans.push(id);
-      saveLocal(); renderRoom();
+      cloud.db.ref().update(ups).catch(function () { /* */ });
     }
+    saveLocal(); renderRoom();
     pushRoomMsg(room, { sys: true, text: getUser(id).name + (ban ? " تم حظره من الغرفة" : " تم طرده من الغرفة") });
   }
 
@@ -2213,15 +2239,16 @@
       var u = getUser(bid);
       html += '<div class="row glass">' + avatarHTML(u, "sm") +
         '<div class="info"><div class="name">' + esc(u.name) + '</div><div class="meta">' + esc(bid) + '</div></div>' +
-        '<button class="btn sm" data-unbanroom="' + bid + '" type="button">فك الحظر</button></div>';
+        '<button class="btn sm" data-unbanroom="' + esc(bid) + '" type="button">فك الحظر</button></div>';
     });
     openSheet(html);
     $("sheet").onclick = function (e) {
       var b = e.target.closest("[data-unbanroom]");
       if (!b) return;
       var target = b.getAttribute("data-unbanroom");
-      if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/bans/" + target).remove();
+      if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/bans/" + target).remove().catch(function () { /* */ });
       room.bans = room.bans.filter(function (x) { return x !== target; });
+      saveLocal();
       toast("تم فك الحظر");
       openBannedList(room);
     };
@@ -2235,7 +2262,7 @@
       '<button data-g="quizstop" class="danger" type="button">⏹️ إيقاف سؤال الأسئلة</button>' +
       "</div>";
     openSheet(html);
-    $("sheet").onclick = async function (e) {
+    $("sheet").onclick = function (e) {
       var btn = e.target.closest("[data-g]");
       if (!btn) return;
       var g = btn.getAttribute("data-g");
@@ -2252,13 +2279,15 @@
         pushRoomMsg(room, { sys: true, text: "🎭 " + pick });
       } else if (g === "quiz") {
         var qObj = QUIZ_BANK[Math.floor(Math.random() * QUIZ_BANK.length)];
-        var quizPayload = { active: true, q: qObj.q, opts: qObj.opts, ans: qObj.ans, answers: {}, t: serverTs() };
-        if (cloud.on && cloud.db) await cloud.db.ref("rooms/" + room.id + "/quiz/current").set(quizPayload);
-        else { UI.quiz = quizPayload; renderQuizBox(); }
+        var quizPayload = { active: true, q: qObj.q, opts: qObj.opts, ans: qObj.ans, answers: {}, t: now() };
+        UI.quiz = quizPayload;
+        renderQuizBox();
+        if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/quiz/current").set(Object.assign({}, quizPayload, { t: serverTs() })).catch(function () { /* */ });
         pushRoomMsg(room, { sys: true, text: "🧠 بدأ تحدي الأسئلة: " + qObj.q });
       } else if (g === "quizstop") {
-        if (cloud.on && cloud.db) await cloud.db.ref("rooms/" + room.id + "/quiz/current").set({ active: false });
-        else { UI.quiz = null; renderQuizBox(); }
+        UI.quiz = null;
+        renderQuizBox();
+        if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/quiz/current").set({ active: false }).catch(function () { /* */ });
       }
     };
   }
@@ -2275,19 +2304,19 @@
     openSheet(html);
     $("sheet").onclick = null;
     $("sheet").querySelectorAll("[data-th]").forEach(function (btn) {
-      btn.onclick = async function () {
+      btn.onclick = function () {
         var found = ROOM_THEMES.filter(function (x) { return x.id === btn.getAttribute("data-th"); })[0] || ROOM_THEMES[0];
-        if (cloud.on && cloud.db) await cloud.db.ref("rooms/" + room.id + "/theme").set(found);
+        if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/theme").set(found).catch(function () { /* */ });
         applyRoomTheme(found);
         closeSheet();
         toast("تم تطبيق الثيم 🎨");
       };
     });
-    $("th-custom").onclick = async function () {
+    $("th-custom").onclick = function () {
       var u = $("th-url").value.trim();
       if (!u) { toast("أدخل رابط صورة"); return; }
       var custom = { id: "custom", name: "مخصص", bg: "url('" + u + "') center/cover no-repeat" };
-      if (cloud.on && cloud.db) await cloud.db.ref("rooms/" + room.id + "/theme").set(custom);
+      if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/theme").set(custom).catch(function () { /* */ });
       applyRoomTheme(custom);
       closeSheet();
       toast("تم تحديث خلفية الغرفة");
@@ -2312,8 +2341,9 @@
         fn: function () {
           promptRoom("تثبيت رسالة", "اكتب الرسالة المثبتة", room.pinned, function (v) {
             var val = clean(v);
-            if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/pinned").set(val);
-            else { room.pinned = val; saveLocal(); renderRoom(); }
+            room.pinned = val;
+            if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/pinned").set(val).catch(function () { /* */ });
+            saveLocal(); renderRoom();
           });
         }
       });
@@ -2325,10 +2355,10 @@
           room.seats.forEach(function (s, idx) {
             if (s.uid && s.uid !== S.me.id) {
               s.muted = true;
-              if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + idx + "/muted").set(true);
+              if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + idx + "/muted").set(true).catch(function () { /* */ });
             }
           });
-          renderRoom();
+          saveLocal(); renderRoom();
           toast("تم كتم الجميع 🔇");
         }
       });
@@ -2337,9 +2367,9 @@
         fn: function () {
           room.seats.forEach(function (s, idx) {
             s.muted = false;
-            if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + idx + "/muted").set(false);
+            if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/seats/" + idx + "/muted").set(false).catch(function () { /* */ });
           });
-          renderRoom();
+          saveLocal(); renderRoom();
           toast("تم فك الكتم عن الجميع 🔊");
         }
       });
@@ -2349,8 +2379,9 @@
           promptRoom("اسم الغرفة", "الاسم الجديد", room.name, function (v) {
             if (!v) return;
             var val = clean(v);
-            if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/name").set(val);
-            else { room.name = val; saveLocal(); renderRoom(); }
+            room.name = val;
+            if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/name").set(val).catch(function () { /* */ });
+            saveLocal(); renderRoom();
           });
         }
       });
@@ -2358,16 +2389,18 @@
         label: "🖼️ تغيير صورة الغرفة",
         fn: function () {
           var nc = (room.color + 1) % COVERS.length, ni = (room.icon + 1) % COVER_ICONS.length;
-          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id).update({ color: nc, icon: ni });
-          else { room.color = nc; room.icon = ni; saveLocal(); }
+          room.color = nc; room.icon = ni;
+          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id).update({ color: nc, icon: ni }).catch(function () { /* */ });
+          saveLocal(); renderAll();
           toast("تم تغيير صورة الغرفة");
         }
       });
       items.push({
         label: room.locked ? "🔓 فتح الغرفة" : "🔒 قفل الغرفة",
         fn: function () {
-          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/locked").set(!room.locked);
-          else { room.locked = !room.locked; saveLocal(); }
+          room.locked = !room.locked;
+          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/locked").set(room.locked).catch(function () { /* */ });
+          saveLocal();
           toast(room.locked ? "تم فتح الغرفة" : "تم قفل الغرفة");
         }
       });
@@ -2375,12 +2408,11 @@
         label: "🗑️ حذف الغرفة",
         danger: true,
         fn: function () {
-          confirmBox("هل تريد حذف الغرفة نهائياً؟", async function () {
+          confirmBox("هل تريد حذف الغرفة نهائياً؟", function () {
+            S.rooms = S.rooms.filter(function (x) { return x.id !== room.id; });
             if (cloud.on && cloud.db) {
-              await cloud.db.ref("rooms/" + room.id).remove();
-              await cloud.db.ref("roomMessages/" + room.id).remove();
-            } else {
-              S.rooms = S.rooms.filter(function (x) { return x.id !== room.id; });
+              cloud.db.ref("rooms/" + room.id).remove().catch(function () { /* */ });
+              cloud.db.ref("roomMessages/" + room.id).remove().catch(function () { /* */ });
             }
             UI.roomId = null;
             $("room-view").classList.remove("open");
@@ -2423,7 +2455,7 @@
     var html = "<h3>👥 الموجودون في الغرفة</h3>";
     function row(id, tag) {
       var u = getUser(id);
-      return '<div class="row glass" data-profile="' + id + '">' + avatarHTML(u) + '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">' + tag + "</div></div></div>";
+      return '<div class="row glass" data-profile="' + esc(id) + '">' + avatarHTML(u) + '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">' + tag + "</div></div></div>";
     }
     var sp = room.seats.filter(function (s) { return s.uid; });
     html += '<div class="small" style="margin:6px 0">🎤 المتحدثون (' + sp.length + ")</div>" + (sp.map(function (s) { return row(s.uid, "متحدث"); }).join("") || '<div class="small">لا أحد</div>');
@@ -2453,8 +2485,8 @@
     if (!room) return;
     UI.giftTarget = targetId || "room";
     var opts = '<option value="room">🏠 كل الغرفة</option>';
-    room.seats.forEach(function (s) { if (s.uid && s.uid !== S.me.id) opts += '<option value="' + s.uid + '">🎤 ' + esc(getUser(s.uid).name) + "</option>"; });
-    room.listeners.forEach(function (id) { if (id !== S.me.id) opts += '<option value="' + id + '">🎧 ' + esc(getUser(id).name) + "</option>"; });
+    room.seats.forEach(function (s) { if (s.uid && s.uid !== S.me.id) opts += '<option value="' + esc(s.uid) + '">🎤 ' + esc(getUser(s.uid).name) + "</option>"; });
+    room.listeners.forEach(function (id) { if (id !== S.me.id) opts += '<option value="' + esc(id) + '">🎧 ' + esc(getUser(id).name) + "</option>"; });
     var grid = GIFTS.map(function (g) {
       return '<button class="gift ' + (g.id === UI.giftSel ? "sel" : "") + '" data-gift="' + g.id + '" type="button"><div class="e">' + g.e + "</div><small>" + g.n + '</small><div class="p">🪙 ' + g.p + "</div></button>";
     }).join("");
@@ -2473,6 +2505,7 @@
     $("gift-send").onclick = function () {
       var gift = GIFTS.filter(function (x) { return x.id === UI.giftSel; })[0];
       var target = $("gift-target").value;
+      if (!gift) return;
       if (S.me.coins < gift.p) { toast("رصيدك غير كافٍ ❌"); return; }
       var tname = target === "room" ? "كل الغرفة" : getUser(target).name;
       confirmBox("إرسال " + gift.e + " " + gift.n + " إلى " + tname + " مقابل " + gift.p + " عملة؟", function () { sendGift(gift, target); });
@@ -2499,9 +2532,9 @@
     });
 
     if (cloud.on && cloud.db) {
-      cloud.db.ref("rooms/" + room.id + "/recvTop/" + target).transaction(function (c) { return (c || 0) + gift.p; });
+      cloud.db.ref("rooms/" + room.id + "/recvTop/" + target).transaction(function (c) { return (c || 0) + gift.p; }).catch(function () { /* */ });
       if (target !== "room") {
-        cloud.db.ref("users/" + target + "/gifts").transaction(function (c) { return (c || 0) + 1; });
+        cloud.db.ref("users/" + target + "/gifts").transaction(function (c) { return (c || 0) + 1; }).catch(function () { /* */ });
         addNotif("🎁", S.me.name + " أرسل لك " + gift.e + " " + gift.n, target);
       }
     } else {
@@ -2514,7 +2547,7 @@
     toast("تم إرسال الهدية ✅");
   }
 
-  /* ========= 14. الملف الشخصي والأصدقاء والرسائل الخاصة + الرسائل الصوتية ========= */
+  /* ========= 14. الملف الشخصي والأصدقاء والرسائل الخاصة ========= */
   function openProfile(id) {
     if (id === S.me.id) { closeSheet(); if (!UI.roomId) go("profile"); return; }
     var u = getUser(id);
@@ -2534,33 +2567,28 @@
       if (!b) return;
       var a = b.getAttribute("data-pa");
       if (a === "follow") {
-        if (cloud.on && cloud.db) {
-          cloud.db.ref("social/" + S.me.id + "/follows/" + id).set(isFol ? null : true);
-        } else {
-          if (isFol) S.follows = S.follows.filter(function (x) { return x !== id; });
-          else S.follows.push(id);
-        }
+        if (isFol) S.follows = S.follows.filter(function (x) { return x !== id; });
+        else S.follows.push(id);
+        if (cloud.on && cloud.db) cloud.db.ref("social/" + S.me.id + "/follows/" + id).set(isFol ? null : true).catch(function () { /* */ });
         toast(isFol ? "تم إلغاء المتابعة" : "تمت المتابعة ✅");
         saveLocal(); openProfile(id);
       } else if (a === "add") { sendFriendReq(id); openProfile(id); }
       else if (a === "cancelreq") {
+        S.sentReq = S.sentReq.filter(function (x) { return x !== id; });
         if (cloud.on && cloud.db) {
           var ups = {};
           ups["social/" + S.me.id + "/sentReq/" + id] = null;
           ups["social/" + id + "/requests/" + S.me.id] = null;
-          cloud.db.ref().update(ups);
-        } else {
-          S.sentReq = S.sentReq.filter(function (x) { return x !== id; });
+          cloud.db.ref().update(ups).catch(function () { /* */ });
         }
         saveLocal(); openProfile(id);
       } else if (a === "unfriend") {
+        S.friends = S.friends.filter(function (x) { return x !== id; });
         if (cloud.on && cloud.db) {
           var ups = {};
           ups["social/" + S.me.id + "/friends/" + id] = null;
           ups["social/" + id + "/friends/" + S.me.id] = null;
-          cloud.db.ref().update(ups);
-        } else {
-          S.friends = S.friends.filter(function (x) { return x !== id; });
+          cloud.db.ref().update(ups).catch(function () { /* */ });
         }
         saveLocal(); toast("تم حذف الصديق"); openProfile(id); renderAll();
       } else if (a === "dm") { closeSheet(); openDM(id); }
@@ -2571,14 +2599,13 @@
 
   function toggleBlock(id) {
     var k = S.blocked.indexOf(id);
+    if (k >= 0) S.blocked.splice(k, 1);
+    else { S.blocked.push(id); S.friends = S.friends.filter(function (x) { return x !== id; }); }
     if (cloud.on && cloud.db) {
       var ups = {};
       ups["social/" + S.me.id + "/blocked/" + id] = k >= 0 ? null : true;
       if (k < 0) ups["social/" + S.me.id + "/friends/" + id] = null;
-      cloud.db.ref().update(ups);
-    } else {
-      if (k >= 0) S.blocked.splice(k, 1);
-      else { S.blocked.push(id); S.friends = S.friends.filter(function (x) { return x !== id; }); }
+      cloud.db.ref().update(ups).catch(function () { /* */ });
     }
     toast(k >= 0 ? "تم إلغاء الحظر" : "تم حظر المستخدم 🚫");
     saveLocal(); renderAll();
@@ -2586,14 +2613,13 @@
 
   function sendFriendReq(id) {
     if (S.sentReq.indexOf(id) >= 0 || S.friends.indexOf(id) >= 0) return;
+    S.sentReq.push(id);
     if (cloud.on && cloud.db) {
       var ups = {};
       ups["social/" + S.me.id + "/sentReq/" + id] = true;
       ups["social/" + id + "/requests/" + S.me.id] = true;
-      cloud.db.ref().update(ups);
+      cloud.db.ref().update(ups).catch(function () { /* */ });
       addNotif("👥", S.me.name + " أرسل لك طلب صداقة.", id);
-    } else {
-      S.sentReq.push(id);
     }
     completeTask("friend", 25);
     toast("تم إرسال طلب الصداقة ✅");
@@ -2646,8 +2672,13 @@
   function sendDM(extra) {
     var inp = $("chat-input"), text = inp.value.trim();
     if (!UI.dmId || (!text && (!extra || !extra.audio))) return;
-    var msgObj = Object.assign({ from: S.me.id, text: clean(text), t: serverTs() }, extra || {});
     if (!extra || !extra.audio) inp.value = "";
+
+    var localObj = Object.assign({ from: S.me.id, text: clean(text), t: now() }, extra || {});
+    if (!S.dms[UI.dmId]) S.dms[UI.dmId] = [];
+    S.dms[UI.dmId].push(localObj);
+    saveLocal();
+    renderDM();
 
     if (cloud.on && cloud.db) {
       var tid = dmThreadId(S.me.id, UI.dmId);
@@ -2655,11 +2686,7 @@
       ups["userDms/" + S.me.id + "/" + UI.dmId] = true;
       ups["userDms/" + UI.dmId + "/" + S.me.id] = true;
       cloud.db.ref().update(ups).catch(function () { /* */ });
-      cloud.db.ref("dms/" + tid).push(msgObj);
-    } else {
-      if (!S.dms[UI.dmId]) S.dms[UI.dmId] = [];
-      S.dms[UI.dmId].push(Object.assign({}, msgObj, { t: now() }));
-      saveLocal(); renderDM();
+      cloud.db.ref("dms/" + tid).push(Object.assign({}, localObj, { t: serverTs() })).catch(function () { /* */ });
     }
   }
 
@@ -2720,7 +2747,7 @@
         label: "🗑️ حذف المحادثة",
         danger: true,
         fn: function () {
-          if (cloud.on && cloud.db) cloud.db.ref("dms/" + dmThreadId(S.me.id, id)).remove();
+          if (cloud.on && cloud.db) cloud.db.ref("dms/" + dmThreadId(S.me.id, id)).remove().catch(function () { /* */ });
           S.dms[id] = []; saveLocal(); renderDM(); renderAll();
           toast("تم حذف المحادثة");
         }
@@ -2774,7 +2801,7 @@
       '<div class="switchrow"><span>إشعارات التطبيق</span><button class="btn sm ' + (S.settings.notif ? "" : "ghost") + '" data-set="notif" type="button">' + (S.settings.notif ? "مفعّل" : "متوقف") + "</button></div>" +
       '<div class="switchrow"><span>المؤثرات الصوتية</span><button class="btn sm ' + (S.settings.sound ? "" : "ghost") + '" data-set="sound" type="button">' + (S.settings.sound ? "مفعّل" : "متوقف") + "</button></div>" +
       '<div class="switchrow"><span>المستخدمون المحظورون</span><button class="btn sm ghost" data-set="blocked" type="button">' + S.blocked.length + " ◀</button></div>" +
-      '<div class="switchrow"><span>حالة الاتصال</span><span class="small">' + (cloud.on ? "🟢 سحابي حي + Agora" : "🟡 محلي + Agora") + "</span></div>" +
+      '<div class="switchrow"><span>حالة الاتصال</span><span class="small">' + (cloud.on ? "🟢 سحابي حي" : "🟡 محلي") + "</span></div>" +
       '<button class="btn ghost block" data-set="reset" type="button">🔄 إعادة تعيين بيانات التطبيق</button>');
     $("sheet").onclick = function (e) {
       var b = e.target.closest("[data-set]");
@@ -2793,7 +2820,7 @@
 
   function openBlocked() {
     var html = "<h3>🚫 المحظورون</h3>" + (S.blocked.length ? S.blocked.map(function (id) {
-      return '<div class="row glass">' + avatarHTML(getUser(id), "sm") + '<div class="info"><div class="name">' + esc(getUser(id).name) + '</div></div><button class="btn sm" data-unblock="' + id + '" type="button">إلغاء الحظر</button></div>';
+      return '<div class="row glass">' + avatarHTML(getUser(id), "sm") + '<div class="info"><div class="name">' + esc(getUser(id).name) + '</div></div><button class="btn sm" data-unblock="' + esc(id) + '" type="button">إلغاء الحظر</button></div>';
     }).join("") : '<div class="empty">لا يوجد محظورون</div>');
     openSheet(html);
     $("sheet").onclick = function (e) { var b = e.target.closest("[data-unblock]"); if (b) { toggleBlock(b.getAttribute("data-unblock")); openBlocked(); } };
@@ -2858,6 +2885,9 @@
   function bind() {
     document.addEventListener("click", function (e) {
       var t = e.target, el;
+      if (!t || typeof t.closest !== "function") return;
+      if (t.closest("#sheet")) return;
+
       if ((el = t.closest("[data-enter]"))) { closeSheet(); enterRoom(el.getAttribute("data-enter")); return; }
       if ((el = t.closest(".navbtn"))) { go(el.getAttribute("data-page")); return; }
       if ((el = t.closest("#home-tabs .tab"))) { UI.filter = el.getAttribute("data-filter"); renderHome(); return; }
@@ -2868,7 +2898,9 @@
         var ansIdx = Number(el.getAttribute("data-quizans"));
         var room = getRoom(UI.roomId);
         if (room && UI.quiz && UI.quiz.active) {
-          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/quiz/current/answers/" + S.me.id).set(ansIdx);
+          if (!UI.quiz.answers) UI.quiz.answers = {};
+          UI.quiz.answers[S.me.id] = ansIdx;
+          if (cloud.on && cloud.db) cloud.db.ref("rooms/" + room.id + "/quiz/current/answers/" + S.me.id).set(ansIdx).catch(function () { /* */ });
           if (ansIdx === UI.quiz.ans) {
             S.me.coins += 30;
             addXP(10);
@@ -2877,46 +2909,44 @@
           } else {
             toast("إجابة غير صحيحة، حاول في السؤال التالي");
           }
+          renderQuizBox();
         }
         return;
       }
       if ((el = t.closest("[data-accept]"))) {
         var a = el.getAttribute("data-accept");
+        S.requests = S.requests.filter(function (x) { return x !== a; });
+        if (S.friends.indexOf(a) < 0) S.friends.push(a);
         if (cloud.on && cloud.db) {
           var ups = {};
           ups["social/" + S.me.id + "/requests/" + a] = null;
           ups["social/" + S.me.id + "/friends/" + a] = true;
           ups["social/" + a + "/sentReq/" + S.me.id] = null;
           ups["social/" + a + "/friends/" + S.me.id] = true;
-          cloud.db.ref().update(ups);
+          cloud.db.ref().update(ups).catch(function () { /* */ });
           addNotif("✅", S.me.name + " قبل طلب الصداقة.", a);
-        } else {
-          S.requests = S.requests.filter(function (x) { return x !== a; });
-          if (S.friends.indexOf(a) < 0) S.friends.push(a);
         }
         S.me.ach.social = true; addXP(10); toast("تمت إضافة " + getUser(a).name + " ✅"); save(); renderAll(); return;
       }
       if ((el = t.closest("[data-reject]"))) {
         var rj = el.getAttribute("data-reject");
+        S.requests = S.requests.filter(function (x) { return x !== rj; });
         if (cloud.on && cloud.db) {
           var ups = {};
           ups["social/" + S.me.id + "/requests/" + rj] = null;
           ups["social/" + rj + "/sentReq/" + S.me.id] = null;
-          cloud.db.ref().update(ups);
-        } else {
-          S.requests = S.requests.filter(function (x) { return x !== rj; });
+          cloud.db.ref().update(ups).catch(function () { /* */ });
         }
         saveLocal(); renderAll(); return;
       }
       if ((el = t.closest("[data-cancelreq]"))) {
         var cr = el.getAttribute("data-cancelreq");
+        S.sentReq = S.sentReq.filter(function (x) { return x !== cr; });
         if (cloud.on && cloud.db) {
           var ups = {};
           ups["social/" + S.me.id + "/sentReq/" + cr] = null;
           ups["social/" + cr + "/requests/" + S.me.id] = null;
-          cloud.db.ref().update(ups);
-        } else {
-          S.sentReq = S.sentReq.filter(function (x) { return x !== cr; });
+          cloud.db.ref().update(ups).catch(function () { /* */ });
         }
         saveLocal(); renderAll(); return;
       }
@@ -2925,10 +2955,9 @@
         var room = getRoom(UI.roomId), i = Number(el.getAttribute("data-delmsg"));
         if (room && room.msgs[i] && room.msgs[i].from === S.me.id) {
           if (cloud.on && cloud.db && room.msgs[i].key) {
-            cloud.db.ref("roomMessages/" + room.id + "/" + room.msgs[i].key).remove();
-          } else {
-            room.msgs.splice(i, 1); saveLocal(); renderRoomChat();
+            cloud.db.ref("roomMessages/" + room.id + "/" + room.msgs[i].key).remove().catch(function () { /* */ });
           }
+          room.msgs.splice(i, 1); saveLocal(); renderRoomChat();
           toast("تم حذف الرسالة");
         }
         return;
@@ -2937,10 +2966,9 @@
         var list = S.dms[UI.dmId], j = Number(el.getAttribute("data-deldm"));
         if (list && list[j]) {
           if (cloud.on && cloud.db && list[j].key) {
-            cloud.db.ref("dms/" + dmThreadId(S.me.id, UI.dmId) + "/" + list[j].key).remove();
-          } else {
-            list.splice(j, 1); saveLocal(); renderDM();
+            cloud.db.ref("dms/" + dmThreadId(S.me.id, UI.dmId) + "/" + list[j].key).remove().catch(function () { /* */ });
           }
+          list.splice(j, 1); saveLocal(); renderDM();
         }
         return;
       }
@@ -3061,14 +3089,13 @@
 
     var m = location.hash.match(/room=([\w-]+)/);
     if (m && getRoom(m[1])) {
-      enterRoom(m[1]);
+      enterRoom(m[1], true);
     }
   }
 
   try {
     init();
   } catch (err) {
-    console.warn(err);
     document.body.insertAdjacentHTML("afterbegin", '<div style="padding:20px;color:#fca5a5">حدث خطأ في تشغيل التطبيق. جرّب مسح بيانات الموقع وإعادة التحميل.</div>');
   }
 })(window);
