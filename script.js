@@ -1,4 +1,4 @@
-/* REAL VOICE — نسخة 3D احترافية + مستويات (1-100) + ثروة وجاذبية + لوحة متصدرين (100) */
+/* REAL VOICE — نسخة 3D احترافية + مستويات (1-100) + ثروة وجاذبية + لوحة متصدرين (100) + نظام User ID (0001000) */
 (function (global) {
   "use strict";
 
@@ -19,27 +19,25 @@
     startCoins: 1000,
     maxLevel: 100,
     xpPerLevel: 100,
+    initialSpecialIdNumber: 1000, // أول مستخدم يحصل على 0001000
     badWords: ["شتيمة", "قذر", "حقير", "غبي", "كلب", "حمار"],
-    // قواعد مستقلة وقابلة للتعديل لكل نظام (بدون مساواة قسرية بين الأنظمة)
     economyRules: {
-      defaultCharmMultiplier: 1,     // 10 كوينز = 10 نقاط جاذبية افتراضياً
-      defaultWealthMultiplier: 1,    // 10 كوينز = 10 نقاط ثروة افتراضياً
-      defaultXpPerGift: 6,           // نقاط خبرة إضافية عند استلام/إرسال هدية
-      // تخصيص مستقل لكل هدية إذا رغبت في تغييره من لوحة الإدارة/الإعدادات
+      defaultCharmMultiplier: 1,
+      defaultWealthMultiplier: 1,
+      defaultXpPerGift: 6,
       giftOverrides: {
-        heart:   { charmPerCoin: 1,   wealthPerCoin: 1,   xpBonus: 4 },
-        rose:    { charmPerCoin: 1,   wealthPerCoin: 1,   xpBonus: 6 },
-        crown:   { charmPerCoin: 1.1, wealthPerCoin: 1,   xpBonus: 15 },
-        car:     { charmPerCoin: 1.15,wealthPerCoin: 1,   xpBonus: 25 },
-        rocket:  { charmPerCoin: 1.2, wealthPerCoin: 1.1, xpBonus: 40 },
-        diamond: { charmPerCoin: 1.25,wealthPerCoin: 1.1, xpBonus: 60 },
-        vip:     { charmPerCoin: 1.3, wealthPerCoin: 1.2, xpBonus: 100 },
-        castle:  { charmPerCoin: 1.5, wealthPerCoin: 1.25,xpBonus: 180 }
+        heart:   { charmPerCoin: 1,    wealthPerCoin: 1,    xpBonus: 4 },
+        rose:    { charmPerCoin: 1,    wealthPerCoin: 1,    xpBonus: 6 },
+        crown:   { charmPerCoin: 1.1,  wealthPerCoin: 1,    xpBonus: 15 },
+        car:     { charmPerCoin: 1.15, wealthPerCoin: 1,    xpBonus: 25 },
+        rocket:  { charmPerCoin: 1.2,  wealthPerCoin: 1.1,  xpBonus: 40 },
+        diamond: { charmPerCoin: 1.25, wealthPerCoin: 1.1,  xpBonus: 60 },
+        vip:     { charmPerCoin: 1.3,  wealthPerCoin: 1.2,  xpBonus: 100 },
+        castle:  { charmPerCoin: 1.5,  wealthPerCoin: 1.25, xpBonus: 180 }
       }
     }
   };
 
-  // رتب الجاذبية (8 رتب متدرجة)
   var CHARM_RANKS = [
     { min: 0,      name: "مبتدئ",       icon: "🌱" },
     { min: 100,    name: "محبوب",       icon: "🌸" },
@@ -51,7 +49,6 @@
     { min: 60000,  name: "ملك الجاذبية", icon: "👑" }
   ];
 
-  // رتب الثروة (تتطور حسب نقاط الثروة)
   var WEALTH_RANKS = [
     { min: 0,      name: "بداية الثروة", icon: "🪙" },
     { min: 250,    name: "مقتنٍ",        icon: "💰" },
@@ -125,7 +122,7 @@
     { q: "في أي قارة تقع البرازيل؟", opts: ["أوروبا", "أفريقيا", "أمريكا الجنوبية", "آسيا"], ans: 2 }
   ];
 
-  /* ========= 2. أدوات مساعدة ========= */
+  /* ========= 2. أدوات مساعدة + نظام specialId (0001000+) ========= */
   function $(id) { return document.getElementById(id); }
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -146,6 +143,39 @@
     return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
   }
   function uid() { return "u" + Math.random().toString(36).slice(2, 9); }
+
+  function formatSpecialId(numVal) {
+    var n = Math.max(0, Math.floor(Number(numVal || 0)));
+    var str = String(n);
+    while (str.length < 7) str = "0" + str;
+    if (str.length > 7) str = str.slice(-7);
+    return str;
+  }
+
+  function normalizeSpecialId(val, fallbackNum) {
+    if (typeof val === "string" && /^\d{7}$/.test(val.trim())) {
+      return val.trim();
+    }
+    if (typeof val === "string" && /^\d+$/.test(val.trim())) {
+      return formatSpecialId(Number(val.trim()));
+    }
+    if (typeof val === "number" && isFinite(val) && val >= 0) {
+      return formatSpecialId(val);
+    }
+    if (typeof fallbackNum === "number" && isFinite(fallbackNum) && fallbackNum >= 0) {
+      return formatSpecialId(fallbackNum);
+    }
+    return "0001000";
+  }
+
+  function displayUserId(u) {
+    if (!u) return "0001000";
+    return normalizeSpecialId(u.specialId, u.num);
+  }
+
+  function copyBtnHTML(val, label) {
+    return '<button class="copy-id-btn" type="button" data-copyval="' + esc(val || "") + '" title="نسخ الرقم">' + esc(label || "📋 نسخ") + "</button>";
+  }
 
   function copyText(txt, msg) {
     var val = String(txt || "");
@@ -972,7 +1002,7 @@
     });
   }
 
-  /* ========= 6. الحالة والبيانات ========= */
+  /* ========= 6. الحالة والبيانات + نظام الترقيم المتسلسل (0001000+) ========= */
   var cloud = { on: false, db: null, auth: null, fbUser: null, usersMap: {}, roomsMap: {}, roomMsgs: {}, seenFly: {}, seenReact: {}, seenJoin: {} };
   var S = null;
   var UI = {
@@ -986,7 +1016,8 @@
     micQueue: {}, theme: null, quiz: null,
     celebratedProfiles: {},
     activeSeatProfileUid: null,
-    activeSeatProfileIdx: -1
+    activeSeatProfileIdx: -1,
+    idAssigning: false
   };
 
   function configReady() {
@@ -1011,12 +1042,12 @@
 
   function demoUsers() {
     return [
-      { id: "RV-1001", num: 1001, name: "ليلى", photo: "", cover: "", online: true, bio: "أحب الموسيقى 🎵", vip: 2, vipExp: Date.now() + 20 * 86400000, verified: true, country: "🇪🇬 مصر", roomsJoined: 14, roomSeconds: 4200, level: 12, xp: 1140, wealth: 1850, charm: 2400, followers: 120, following: 45, friendsCount: 18, gifts: 32, receivedGifts: [], wealthLog: [], charmLog: [] },
-      { id: "RV-1002", num: 1002, name: "أحمد", photo: "", cover: "", online: true, bio: "لاعب محترف 🎮", vip: 0, verified: false, country: "🇸🇦 السعودية", roomsJoined: 8, roomSeconds: 1900, level: 5, xp: 420, wealth: 620, charm: 310, followers: 40, following: 22, friendsCount: 9, gifts: 11, receivedGifts: [], wealthLog: [], charmLog: [] },
-      { id: "RV-1003", num: 1003, name: "سارة", photo: "", cover: "", online: false, bio: "هنا للدردشة ☕", vip: 1, vipExp: Date.now() + 12 * 86400000, verified: true, country: "🇦🇪 الإمارات", roomsJoined: 11, roomSeconds: 3100, level: 8, xp: 750, wealth: 1200, charm: 1650, followers: 85, following: 30, friendsCount: 14, gifts: 21, receivedGifts: [], wealthLog: [], charmLog: [] },
-      { id: "RV-1004", num: 1004, name: "خالد", photo: "", cover: "", online: true, bio: "صاحب غرف VIP 👑", vip: 3, vipExp: Date.now() + 28 * 86400000, verified: true, country: "🇰🇼 الكويت", roomsJoined: 25, roomSeconds: 9500, level: 24, xp: 2350, wealth: 14500, charm: 11200, followers: 340, following: 60, friendsCount: 42, gifts: 95, receivedGifts: [], wealthLog: [], charmLog: [] },
-      { id: "RV-1005", num: 1005, name: "مريم", photo: "", cover: "", online: false, bio: "مرحباً بالجميع", vip: 0, verified: false, country: "🇯🇴 الأردن", roomsJoined: 4, roomSeconds: 900, level: 3, xp: 230, wealth: 180, charm: 90, followers: 15, following: 12, friendsCount: 5, gifts: 4, receivedGifts: [], wealthLog: [], charmLog: [] },
-      { id: "RV-1006", num: 1006, name: "يوسف", photo: "", cover: "", online: true, bio: "تحدي الأسئلة 🧠", vip: 2, vipExp: Date.now() + 18 * 86400000, verified: true, country: "🇲🇦 المغرب", roomsJoined: 19, roomSeconds: 6100, level: 15, xp: 1420, wealth: 4300, charm: 5800, followers: 190, following: 51, friendsCount: 27, gifts: 48, receivedGifts: [], wealthLog: [], charmLog: [] }
+      { id: "RV-1001", num: 1001, specialId: "0001001", name: "ليلى", photo: "", cover: "", online: true, bio: "أحب الموسيقى 🎵", vip: 2, vipExp: Date.now() + 20 * 86400000, verified: true, country: "🇪🇬 مصر", roomsJoined: 14, roomSeconds: 4200, level: 12, xp: 1140, wealth: 1850, charm: 2400, followers: 120, following: 45, friendsCount: 18, gifts: 32, receivedGifts: [], wealthLog: [], charmLog: [] },
+      { id: "RV-1002", num: 1002, specialId: "0001002", name: "أحمد", photo: "", cover: "", online: true, bio: "لاعب محترف 🎮", vip: 0, verified: false, country: "🇸🇦 السعودية", roomsJoined: 8, roomSeconds: 1900, level: 5, xp: 420, wealth: 620, charm: 310, followers: 40, following: 22, friendsCount: 9, gifts: 11, receivedGifts: [], wealthLog: [], charmLog: [] },
+      { id: "RV-1003", num: 1003, specialId: "0001003", name: "سارة", photo: "", cover: "", online: false, bio: "هنا للدردشة ☕", vip: 1, vipExp: Date.now() + 12 * 86400000, verified: true, country: "🇦🇪 الإمارات", roomsJoined: 11, roomSeconds: 3100, level: 8, xp: 750, wealth: 1200, charm: 1650, followers: 85, following: 30, friendsCount: 14, gifts: 21, receivedGifts: [], wealthLog: [], charmLog: [] },
+      { id: "RV-1004", num: 1004, specialId: "0001004", name: "خالد", photo: "", cover: "", online: true, bio: "صاحب غرف VIP 👑", vip: 3, vipExp: Date.now() + 28 * 86400000, verified: true, country: "🇰🇼 الكويت", roomsJoined: 25, roomSeconds: 9500, level: 24, xp: 2350, wealth: 14500, charm: 11200, followers: 340, following: 60, friendsCount: 42, gifts: 95, receivedGifts: [], wealthLog: [], charmLog: [] },
+      { id: "RV-1005", num: 1005, specialId: "0001005", name: "مريم", photo: "", cover: "", online: false, bio: "مرحباً بالجميع", vip: 0, verified: false, country: "🇯🇴 الأردن", roomsJoined: 4, roomSeconds: 900, level: 3, xp: 230, wealth: 180, charm: 90, followers: 15, following: 12, friendsCount: 5, gifts: 4, receivedGifts: [], wealthLog: [], charmLog: [] },
+      { id: "RV-1006", num: 1006, specialId: "0001006", name: "يوسف", photo: "", cover: "", online: true, bio: "تحدي الأسئلة 🧠", vip: 2, vipExp: Date.now() + 18 * 86400000, verified: true, country: "🇲🇦 المغرب", roomsJoined: 19, roomSeconds: 6100, level: 15, xp: 1420, wealth: 4300, charm: 5800, followers: 190, following: 51, friendsCount: 27, gifts: 48, receivedGifts: [], wealthLog: [], charmLog: [] }
     ];
   }
 
@@ -1043,7 +1074,8 @@
     var num = hashNum(fixedId);
     return {
       me: {
-        id: fixedId, num: num, name: "مستخدم جديد", photo: "", cover: "",
+        id: fixedId, num: num, specialId: "",
+        name: "مستخدم جديد", photo: "", cover: "",
         bio: "مرحباً! أنا جديد في REAL VOICE 👋", coins: CONFIG.startCoins,
         xp: 0, level: 1, wealth: 0, charm: 0,
         vip: 0, vipExp: 0,
@@ -1095,6 +1127,11 @@
           S = parsed;
           S.me.id = fixedId;
           if (!S.me.num) S.me.num = hashNum(fixedId);
+          if (S.me.specialId && /^\d{7}$/.test(String(S.me.specialId))) {
+            S.me.specialId = String(S.me.specialId);
+          } else {
+            S.me.specialId = "";
+          }
           if (S.me.photo == null) S.me.photo = "";
           if (S.me.cover == null) S.me.cover = "";
           if (S.me.roomsJoined == null) S.me.roomsJoined = S.me.visits || 0;
@@ -1135,11 +1172,91 @@
     try { localStorage.setItem(CONFIG.storageKey, JSON.stringify(S)); } catch (e) { /* */ }
   }
 
+  /* تخصيص specialId متسلسل (0001000+) عبر معاملة ذرية في قاعدة البيانات ومنع التكرار */
+  async function ensureSequentialSpecialId(userId, username) {
+    if (!userId) return "0001000";
+    if (S && S.me && S.me.id === userId && /^\d{7}$/.test(String(S.me.specialId || ""))) {
+      return String(S.me.specialId);
+    }
+    if (!cloud.on || !cloud.db) {
+      var localFallback = formatSpecialId(CONFIG.initialSpecialIdNumber);
+      if (S && S.me && S.me.id === userId) S.me.specialId = localFallback;
+      return localFallback;
+    }
+
+    if (UI.idAssigning) {
+      return S.me.specialId || "0001000";
+    }
+    UI.idAssigning = true;
+
+    try {
+      var userSpecRef = cloud.db.ref("users/" + userId + "/specialId");
+      var existingSnap = await userSpecRef.once("value");
+      var existingVal = existingSnap.val();
+      if (typeof existingVal === "string" && /^\d{7}$/.test(existingVal.trim())) {
+        var validId = existingVal.trim();
+        if (S && S.me && S.me.id === userId) S.me.specialId = validId;
+        return validId;
+      }
+
+      var counterRef = cloud.db.ref("system/userIdCounter/lastAssignedId");
+      var assignedId = null;
+
+      await counterRef.transaction(function (curr) {
+        if (curr === null || typeof curr !== "number" || !isFinite(curr) || curr < CONFIG.initialSpecialIdNumber) {
+          assignedId = formatSpecialId(CONFIG.initialSpecialIdNumber);
+          return CONFIG.initialSpecialIdNumber;
+        }
+        var nextNum = Math.floor(curr) + 1;
+        if (nextNum > 9999999) {
+          return; // إيقاف التخصيص عند نفاد نطاق 7 خانات
+        }
+        assignedId = formatSpecialId(nextNum);
+        return nextNum;
+      });
+
+      if (!assignedId) {
+        return S.me.specialId || "0001000";
+      }
+
+      // حجز الرقم في فهرس فريد وربطه بحساب المستخدم فقط
+      var indexRef = cloud.db.ref("specialIdIndex/" + assignedId);
+      var idxTx = await indexRef.transaction(function (ownerUid) {
+        if (!ownerUid || ownerUid === userId) {
+          return userId;
+        }
+        return; // مأخوذ من حساب آخر -> إلغاء
+      });
+
+      if (idxTx.committed && idxTx.snapshot && idxTx.snapshot.val() === userId) {
+        await cloud.db.ref("users/" + userId).update({
+          specialId: assignedId,
+          username: clean(username || (S.me && S.me.name) || "مستخدم"),
+          createdAt: (S.me && S.me.joined) || Date.now()
+        });
+        if (S && S.me && S.me.id === userId) {
+          S.me.specialId = assignedId;
+          saveLocal();
+        }
+        return assignedId;
+      }
+
+      // في حال التعارض النادر في التزامن: إعادة المحاولة للرقم التالي
+      UI.idAssigning = false;
+      return await ensureSequentialSpecialId(userId, username);
+    } catch (e) {
+      return S.me.specialId || "";
+    } finally {
+      UI.idAssigning = false;
+    }
+  }
+
   function saveMeCloud() {
     if (!cloud.on || !cloud.db || !S || !S.me) return;
     var curLv = level();
-    cloud.db.ref("users/" + S.me.id).update({
-      id: S.me.id, num: S.me.num, name: S.me.name,
+    var payload = {
+      id: S.me.id, num: S.me.num,
+      name: S.me.name, username: S.me.name,
       photo: S.me.photo || "", cover: S.me.cover || "",
       bio: S.me.bio, coins: S.me.coins,
       xp: S.me.xp || 0, level: curLv,
@@ -1157,7 +1274,11 @@
       msgCount: S.me.msgCount || 0, ach: S.me.ach || {},
       daily: S.me.daily || 0, tasks: S.me.tasks || {}, invites: S.me.invites || 0,
       online: true
-    }).catch(function () { /* */ });
+    };
+    if (/^\d{7}$/.test(String(S.me.specialId || ""))) {
+      payload.specialId = String(S.me.specialId);
+    }
+    cloud.db.ref("users/" + S.me.id).update(payload).catch(function () { /* */ });
   }
 
   function save() {
@@ -1255,7 +1376,7 @@
     return new Promise(function (resolve) {
       var resolved = false;
       function finish() { if (!resolved) { resolved = true; resolve(); } }
-      var safetyTimer = setTimeout(finish, 2500);
+      var safetyTimer = setTimeout(finish, 3000);
 
       var myId = getOrCreateFixedUid();
       var myNum = hashNum(myId);
@@ -1264,21 +1385,29 @@
       S.me.level = level();
 
       var uRef = cloud.db.ref("users/" + myId);
-      uRef.once("value").then(function (snap) {
+      uRef.once("value").then(async function (snap) {
         var p = snap.val();
         if (p && p.id) {
           var mergedXp = Math.max(Number(S.me.xp || 0), Number(p.xp || 0));
           S.me = Object.assign({}, S.me, p, {
             id: myId,
             num: p.num || myNum,
+            specialId: (typeof p.specialId === "string" && /^\d{7}$/.test(p.specialId.trim())) ? p.specialId.trim() : "",
             xp: mergedXp,
             level: computeLevelFromXp(mergedXp),
             wealth: Math.max(Number(S.me.wealth || 0), Number(p.wealth || 0)),
             charm: Math.max(Number(S.me.charm || 0), Number(p.charm || 0))
           });
         } else {
-          uRef.set(Object.assign({}, S.me, { online: true, level: level() })).catch(function () { /* */ });
+          await uRef.set(Object.assign({}, S.me, {
+            username: S.me.name,
+            createdAt: S.me.joined || Date.now(),
+            online: true,
+            level: level()
+          })).catch(function () { /* */ });
         }
+
+        await ensureSequentialSpecialId(myId, S.me.name);
         ensureDailyTasks();
 
         var params = new URLSearchParams(location.search);
@@ -1383,11 +1512,13 @@
 
   /* ========= 7. دوال البيانات المساعدة ========= */
   function getUser(id) {
-    if (!id) return { id: "", num: 0, name: "مستخدم", photo: "", cover: "", online: false, bio: "", vip: 0, vipExp: 0, verified: false, level: 1, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, visits: 0, roomsJoined: 0, roomSeconds: 0, gifts: 0, xp: 0, ach: {}, receivedGifts: [], wealthLog: [], charmLog: [] };
+    if (!id) return { id: "", num: 0, specialId: "0001000", name: "مستخدم", photo: "", cover: "", online: false, bio: "", vip: 0, vipExp: 0, verified: false, level: 1, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, visits: 0, roomsJoined: 0, roomSeconds: 0, gifts: 0, xp: 0, ach: {}, receivedGifts: [], wealthLog: [], charmLog: [] };
     if (id === S.me.id) {
       var meLv = level();
       return {
-        id: S.me.id, num: S.me.num, name: S.me.name,
+        id: S.me.id, num: S.me.num,
+        specialId: S.me.specialId || "",
+        name: S.me.name,
         photo: S.me.photo || "", cover: S.me.cover || "",
         online: true, bio: S.me.bio, vip: S.me.vip || 0, vipExp: S.me.vipExp || 0,
         verified: !!(S.me.verified || (S.me.vip || 0) >= 2 || meLv >= 5),
@@ -1410,7 +1541,7 @@
       var cu = cloud.usersMap[id];
       var cLv = computeLevelFromXp(cu.xp || 0);
       return Object.assign({
-        id: id, photo: "", cover: "", online: false, bio: "",
+        id: id, specialId: cu.specialId || "", photo: "", cover: "", online: false, bio: "",
         vip: 0, vipExp: 0, verified: false, level: cLv,
         wealth: Number(cu.wealth || 0),
         charm: Number(cu.charm || 0),
@@ -1423,12 +1554,12 @@
       if (S.users[i].id === id) {
         var su = S.users[i];
         return Object.assign({
-          friendsCount: 0, wealth: 0, charm: 0, ach: {},
+          specialId: su.specialId || "", friendsCount: 0, wealth: 0, charm: 0, ach: {},
           receivedGifts: [], wealthLog: [], charmLog: []
         }, su, { level: computeLevelFromXp(su.xp || 0) });
       }
     }
-    return { id: id, num: hashNum(id), name: "مستخدم", photo: "", cover: "", online: false, bio: "", vip: 0, vipExp: 0, verified: false, level: 1, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, visits: 0, roomsJoined: 0, roomSeconds: 0, gifts: 0, xp: 0, ach: {}, receivedGifts: [], wealthLog: [], charmLog: [] };
+    return { id: id, num: hashNum(id), specialId: "", name: "مستخدم", photo: "", cover: "", online: false, bio: "", vip: 0, vipExp: 0, verified: false, level: 1, wealth: 0, charm: 0, followers: 0, following: 0, friendsCount: 0, visits: 0, roomsJoined: 0, roomSeconds: 0, gifts: 0, xp: 0, ach: {}, receivedGifts: [], wealthLog: [], charmLog: [] };
   }
 
   function getRoom(id) {
@@ -1697,10 +1828,20 @@
     var box = $("search-users");
     var q = UI.query.trim().toLowerCase();
     if (q) {
-      var us = S.users.filter(function (u) { return (u.name || "").toLowerCase().indexOf(q) >= 0 || (u.id || "").toLowerCase().indexOf(q) >= 0; });
+      var us = S.users.filter(function (u) {
+        var sp = String(u.specialId || "").toLowerCase();
+        return (u.name || "").toLowerCase().indexOf(q) >= 0 ||
+          (u.id || "").toLowerCase().indexOf(q) >= 0 ||
+          sp.indexOf(q) >= 0;
+      });
       box.classList.toggle("hidden", us.length === 0);
       box.innerHTML = us.length ? '<h2 class="title">المستخدمون</h2>' + us.map(function (u) {
-        return '<div class="row glass" data-profile="' + esc(u.id) + '">' + avatarHTML(u) + '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">' + esc(u.id) + "</div></div></div>";
+        var spId = displayUserId(u);
+        return '<div class="row glass" data-profile="' + esc(u.id) + '">' +
+          avatarHTML(u) +
+          '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">ID: ' + esc(spId) + "</div></div>" +
+          copyBtnHTML(spId, "📋") +
+          "</div>";
       }).join("") : "";
     } else { box.classList.add("hidden"); box.innerHTML = ""; }
     document.querySelectorAll("#home-tabs .tab").forEach(function (t) { t.classList.toggle("active", t.getAttribute("data-filter") === UI.filter); });
@@ -1716,9 +1857,11 @@
 
   function personRow(u, actions) {
     var where = "";
+    var spId = displayUserId(u);
     for (var i = 0; i < S.rooms.length; i++) if (inRoom(S.rooms[i], u.id)) { where = " • في غرفة: " + esc(S.rooms[i].name); break; }
     return '<div class="row glass"><div data-profile="' + esc(u.id) + '" style="position:relative">' + avatarHTML(u) + '<span class="dot ' + (u.online ? "on" : "") + '"></span></div>' +
-      '<div class="info" data-profile="' + esc(u.id) + '"><div class="name">' + userNameHTML(u) + '</div><div class="meta">' + (u.online ? "متصل" : "غير متصل") + where + "</div></div>" + actions + "</div>";
+      '<div class="info" data-profile="' + esc(u.id) + '"><div class="name">' + userNameHTML(u) + '</div><div class="meta">ID: ' + esc(spId) + " • " + (u.online ? "متصل" : "غير متصل") + where + "</div></div>" +
+      copyBtnHTML(spId, "📋") + actions + "</div>";
   }
 
   function renderFriends() {
@@ -1746,7 +1889,13 @@
       }
     } else {
       var q = UI.findQ.trim().toLowerCase();
-      var res = S.users.filter(function (u) { return !q || (u.name || "").toLowerCase().indexOf(q) >= 0 || (u.id || "").toLowerCase().indexOf(q) >= 0; });
+      var res = S.users.filter(function (u) {
+        var sp = String(u.specialId || "").toLowerCase();
+        return !q ||
+          (u.name || "").toLowerCase().indexOf(q) >= 0 ||
+          (u.id || "").toLowerCase().indexOf(q) >= 0 ||
+          sp.indexOf(q) >= 0;
+      });
       html = res.length ? res.map(function (u) {
         var btn;
         if (S.friends.indexOf(u.id) >= 0) btn = '<span class="small">صديق ✔</span>';
@@ -1859,6 +2008,7 @@
     var isVerified = !!(m.verified || hasVip || lv >= 5);
     var wMeta = getWealthRankMeta(m.wealth || 0);
     var cMeta = getCharmRankMeta(m.charm || 0);
+    var spId = displayUserId(m);
 
     var covEl = $("pf-cover");
     if (covEl) {
@@ -1877,7 +2027,7 @@
       " " + levelBadgeHTML(lv) +
       (isVerified ? ' <span class="tag verified">✔ موثق</span>' : "") +
       (hasVip ? ' <span class="tag vip">👑 VIP ' + m.vip + "</span>" : "");
-    $("pf-id").textContent = "ID: " + m.id;
+    $("pf-id").textContent = "ID: " + spId;
     $("pf-badges").innerHTML = '<span class="tag">🟢 متصل الآن</span>' +
       wealthBadgeHTML(m.wealth || 0) +
       charmBadgeHTML(m.charm || 0) +
@@ -2454,38 +2604,6 @@
   }
 
   /* ========= 15. إدارة المقاعد والمايك + نافذة البروفايل الخفيفة داخل الغرفة ========= */
-  function sendLiveReaction(emoji, targetUid, targetName) {
-    var room = getRoom(UI.roomId);
-    if (!room) return;
-    showFlyGiftToSeat(emoji, S.me.name, targetUid || "room", targetName || room.name);
-    if (cloud.on && cloud.db) {
-      cloud.db.ref("rooms/" + room.id + "/reactions").push({
-        emoji: emoji,
-        fromUid: S.me.id,
-        fromName: S.me.name,
-        targetUid: targetUid || "room",
-        targetName: targetName || room.name,
-        t: serverTs()
-      }).catch(function () { /* */ });
-    }
-  }
-
-  function openSpeakerReactions(u) {
-    var list = ["👏", "❤️", "🔥", "😂"];
-    var html = "<h3>تفاعل مع " + esc(u.name) + '</h3><div style="display:flex;gap:10px;justify-content:center;padding:8px 0">';
-    list.forEach(function (em) {
-      html += '<button class="btn ghost" data-react="' + em + '" style="font-size:24px;padding:8px 14px" type="button">' + em + "</button>";
-    });
-    html += "</div>";
-    openSheet(html);
-    $("sheet").onclick = function (e) {
-      var b = e.target.closest("[data-react]");
-      if (!b) return;
-      closeSheet();
-      sendLiveReaction(b.getAttribute("data-react"), u.id, u.name);
-    };
-  }
-
   function openHandQueueSheet() {
     var room = getRoom(UI.roomId);
     if (!room) return;
@@ -2507,7 +2625,7 @@
         var u = getUser(ent.uid);
         var allowBtn = isStaff ? '<button class="btn sm" data-allowmic="' + esc(ent.uid) + '" type="button">اسمح له بالصعود</button>' : "";
         html += '<div class="row glass" style="margin-bottom:6px">' + avatarHTML(u, "sm") +
-          '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">بانتظار المايك</div></div>' + allowBtn + "</div>";
+          '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">ID: ' + esc(displayUserId(u)) + " • بانتظار المايك</div></div>" + allowBtn + "</div>";
       });
       html += "</div>";
     } else {
@@ -2591,7 +2709,6 @@
     toast("تم النزول من المايك ⬇️");
   }
 
-  /* نافذة بروفايل خفيفة وأنيقة داخل الغرفة الصوتية (لا تغطي الغرفة بالكامل) */
   function openSeatUserProfile(seatIdx) {
     var room = getRoom(UI.roomId);
     if (!room || !room.seats[seatIdx]) return;
@@ -2611,6 +2728,7 @@
       }
       var curSeat = curRoom.seats[seatIdx];
       var u = Object.assign({}, getUser(targetUid), userData || {});
+      var spId = displayUserId(u);
       var isSelf = targetUid === S.me.id;
       var myRole = role(curRoom, S.me.id);
       var canManage = myRole === "owner" || myRole === "mod";
@@ -2677,7 +2795,8 @@
               '<div class="rmp-sub">' +
                 '<span>' + esc(u.country || "🌍") + "</span>" +
                 '<span>•</span>' +
-                '<span data-copyid="' + esc(u.id) + '" style="cursor:pointer">ID: ' + esc(u.id) + " 📋</span>" +
+                '<span>ID: <b>' + esc(spId) + "</b></span>" +
+                copyBtnHTML(spId, "📋") +
               "</div>" +
               '<div class="seat-status-pills">' +
                 '<span class="seat-pill">🪑 مقعد #' + (seatIdx + 1) + "</span>" +
@@ -2705,8 +2824,10 @@
       openSheet(html);
 
       $("sheet").onclick = function (e) {
-        if (e.target.closest("[data-copyid]")) {
-          copyText(targetUid, "تم نسخ ID المستخدم 📋");
+        var cpBtn = e.target.closest("[data-copyval]");
+        if (cpBtn) {
+          e.stopPropagation();
+          copyText(cpBtn.getAttribute("data-copyval"), "تم نسخ User ID (" + spId + ") 📋");
           return;
         }
         var btn = e.target.closest("[data-sp]");
@@ -2972,7 +3093,7 @@
         }
         html += '<div class="row glass" style="margin-bottom:7px">' +
           '<div style="position:relative">' + avatarHTML(u, "sm") + '<span class="dot on"></span></div>' +
-          '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">' + posLabel + "</div></div>" +
+          '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">ID: ' + esc(displayUserId(u)) + " • " + posLabel + "</div></div>" +
           '<div style="display:flex;gap:5px">' + btns + "</div></div>";
       });
     }
@@ -3016,7 +3137,7 @@
     };
   }
 
-  /* ========= 17. خيارات الغرفة والملصقات والصور والهدايا الآمنة (Wealth + Charm + XP) ========= */
+  /* ========= 17. خيارات الغرفة والملصقات والصور والهدايا الآمنة ========= */
   function openRoomMenu() {
     var room = getRoom(UI.roomId);
     if (!room) return;
@@ -3168,7 +3289,6 @@
     inp.click();
   }
 
-  /* تطبيق مكافأة الهدية المستلمة على مستخدم (مستقل عن المستويات: يزيد الجاذبية والخبرة) */
   function applyGiftReceivedLocal(recipientUser, gift, giftTxId, senderName) {
     if (!recipientUser || !gift || !giftTxId) return false;
     recipientUser.receivedGifts = Array.isArray(recipientUser.receivedGifts) ? recipientUser.receivedGifts : [];
@@ -3337,7 +3457,6 @@
         var totalWealthGain = rule.wealthGain * Math.max(1, recipients.length);
         var totalXpGain = rule.xpGain * Math.max(1, recipients.length);
 
-        // خصم الرصيد وتحديث ثروة المرسل وخبرته بشكل مستقل
         S.me.coins -= totalCost;
         S.me.sent = (S.me.sent || 0) + totalCost;
         S.me.wealth = Number(S.me.wealth || 0) + totalWealthGain;
@@ -3353,7 +3472,6 @@
         S.me.ach.giver = true;
         addXP(totalXpGain);
 
-        // إذا كان المرسل ضمن المستلمين، تُحتسب جاذبيته أيضاً
         recipients.forEach(function (rUid) {
           if (rUid === S.me.id) {
             applyGiftReceivedLocal(S.me, gift, giftTxId + "_self", S.me.name);
@@ -3419,7 +3537,7 @@
     var u = getUser(id);
     setAvatarEl($("chat-avatar"), u);
     $("chat-title").innerHTML = userNameHTML(u);
-    $("chat-sub").textContent = u.online ? "متصل" : "غير متصل";
+    $("chat-sub").textContent = "ID: " + displayUserId(u) + " • " + (u.online ? "متصل" : "غير متصل");
     $("chat-view").classList.add("open");
     renderDM();
   }
@@ -3428,7 +3546,7 @@
     var id = UI.dmId;
     if (!id) return;
     var u = getUser(id);
-    $("chat-sub").textContent = u.online ? "متصل" : "غير متصل";
+    $("chat-sub").textContent = "ID: " + displayUserId(u) + " • " + (u.online ? "متصل" : "غير متصل");
     var list = S.dms[id] || [], box = $("chat-msgs");
     box.innerHTML = list.length ? list.map(function (m, i) {
       var me = m.from === S.me.id;
@@ -3499,16 +3617,17 @@
     }
   }
 
-  /* ========= 19. البروفايل الكامل والتعديل والإعدادات والمتصدرين (حتى 100 مستخدم) ========= */
+  /* ========= 19. البروفايل الكامل والتعديل والإعدادات والمتصدرين ========= */
   function openProfile(id) {
     if (id === S.me.id) { go("profile"); return; }
     var u = getUser(id), isF = S.friends.indexOf(id) >= 0, isFol = S.follows.indexOf(id) >= 0;
     var lv = computeLevelFromXp(u.xp || 0);
     var wMeta = getWealthRankMeta(u.wealth || 0);
     var cMeta = getCharmRankMeta(u.charm || 0);
+    var spId = displayUserId(u);
 
     var html = '<div style="text-align:center"><div class="frame ' + ((u.vip || 0) > 0 ? "vip-frame" : "") + '" style="display:inline-block">' + avatarHTML(u, "lg") + '</div>' +
-      '<h3 style="margin:10px 0 2px">' + userNameHTML(u) + '</h3><div class="small" data-copyid="' + esc(u.id) + '" style="cursor:pointer">ID: ' + esc(u.id) + " 📋 • " + esc(u.country || "🌍") + " • " + (u.online ? "🟢 متصل" : "⚪ غير متصل") + "</div>" +
+      '<h3 style="margin:10px 0 2px">' + userNameHTML(u) + '</h3><div class="small" style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap"><span>ID: <b>' + esc(spId) + "</b></span>" + copyBtnHTML(spId, "📋 نسخ") + "<span>• " + esc(u.country || "🌍") + " • " + (u.online ? "🟢 متصل" : "⚪ غير متصل") + "</span></div>" +
       '<p class="small" style="margin:8px 0">' + esc(u.bio || "") + "</p>" +
       '<div class="pf-stats"><div class="stat"><b>Lv.' + lv + '</b><span>المستوى</span></div><div class="stat"><b>' + wMeta.value + '</b><span>' + wMeta.rank.icon + ' الثروة</span></div><div class="stat"><b>' + cMeta.value + '</b><span>' + cMeta.rank.icon + ' الجاذبية</span></div></div>' +
       '<div class="pf-stats" style="margin-top:6px"><div class="stat"><b>' + (u.followers || 0) + '</b><span>المتابعون</span></div><div class="stat"><b>' + (u.friendsCount || 0) + '</b><span>الأصدقاء</span></div><div class="stat"><b>' + (u.gifts || 0) + '</b><span>الهدايا</span></div></div></div>' +
@@ -3521,7 +3640,8 @@
 
     openSheet(html);
     $("sheet").onclick = function (e) {
-      if (e.target.closest("[data-copyid]")) { copyText(id, "تم نسخ ID 📋"); return; }
+      var cpBtn = e.target.closest("[data-copyval]");
+      if (cpBtn) { e.stopPropagation(); copyText(cpBtn.getAttribute("data-copyval"), "تم نسخ ID (" + spId + ") 📋"); return; }
       if (e.target.id === "pf-fol") {
         if (isFol) {
           S.follows = S.follows.filter(function (x) { return x !== id; });
@@ -3609,7 +3729,13 @@
 
   function openSettings() {
     var s = S.settings || {};
-    openSheet('<h3>⚙️ الإعدادات</h3><div class="switchrow"><span>إشعارات التطبيق</span><input type="checkbox" id="st-notif" ' + (s.notif !== false ? "checked" : "") + ' /></div><div class="switchrow"><span>أصوات النظام</span><input type="checkbox" id="st-sound" ' + (s.sound !== false ? "checked" : "") + ' /></div><div class="switchrow"><span>الوضع النهاري</span><input type="checkbox" id="st-theme" ' + (s.lightTheme ? "checked" : "") + ' /></div><button class="btn ghost block" id="st-txs" type="button">📜 سجل العملات والهدايا</button><button class="btn red block" id="st-reset" type="button">🔄 إعادة ضبط البيانات المحلية</button>');
+    var spId = displayUserId(S.me);
+    openSheet('<h3>⚙️ إعدادات الحساب</h3>' +
+      '<div class="row glass" style="margin-bottom:10px"><div class="info"><div class="name">رقم المستخدم الخاص (User ID)</div><div class="meta"><b>' + esc(spId) + "</b> • ثابت ولا يمكن تغييره</div></div>" + copyBtnHTML(spId, "📋 نسخ ID") + "</div>" +
+      '<div class="switchrow"><span>إشعارات التطبيق</span><input type="checkbox" id="st-notif" ' + (s.notif !== false ? "checked" : "") + ' /></div><div class="switchrow"><span>أصوات النظام</span><input type="checkbox" id="st-sound" ' + (s.sound !== false ? "checked" : "") + ' /></div><div class="switchrow"><span>الوضع النهاري</span><input type="checkbox" id="st-theme" ' + (s.lightTheme ? "checked" : "") + ' /></div><button class="btn ghost block" id="st-txs" type="button">📜 سجل العملات والهدايا</button><button class="btn red block" id="st-reset" type="button">🔄 إعادة ضبط البيانات المحلية</button>');
+    $("sheet").querySelectorAll("[data-copyval]").forEach(function (btn) {
+      btn.onclick = function () { copyText(btn.getAttribute("data-copyval"), "تم نسخ User ID (" + spId + ") 📋"); };
+    });
     $("st-notif").onchange = function () {
       S.settings.notif = this.checked;
       if (this.checked) requestBrowserNotifPermission();
@@ -3632,8 +3758,10 @@
     };
     $("st-reset").onclick = function () {
       confirmBox("سيتم مسح بياناتك المحلية وإعادة ضبط التطبيق. هل أنت متأكد؟", function () {
+        var keptSpecialId = S.me && S.me.specialId ? S.me.specialId : "";
         try { localStorage.removeItem(CONFIG.storageKey); } catch (e) { /* */ }
         S = freshState();
+        if (keptSpecialId) S.me.specialId = keptSpecialId;
         applyThemeMode();
         save();
         closeSheet();
@@ -3643,7 +3771,6 @@
     };
   }
 
-  /* لوحة المتصدرين الشاملة (أفضل 100 مستخدم: الثروة، الجاذبية، المستوى، الهدايا) */
   function openLeaderboard() {
     var mode = UI.leaderTab || "wealth";
     var allUsersMap = {};
@@ -3689,7 +3816,7 @@
       return '<div class="row glass" data-profile="' + esc(u.id) + '" style="margin-bottom:6px;cursor:pointer">' +
         '<b style="min-width:26px;text-align:center">' + medal + "</b>" +
         avatarHTML(u, "sm") +
-        '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">' + esc(u.country || "🌍") + "</div></div>" +
+        '<div class="info"><div class="name">' + userNameHTML(u) + '</div><div class="meta">ID: ' + esc(displayUserId(u)) + " • " + esc(u.country || "🌍") + "</div></div>" +
         "<b>" + metricText + "</b></div>";
     }).join("");
 
@@ -3779,7 +3906,10 @@
     };
 
     if ($("pf-copy-id")) {
-      $("pf-copy-id").onclick = function () { copyText(S.me.id, "تم نسخ ID الحساب 📋"); };
+      $("pf-copy-id").onclick = function () {
+        var spId = displayUserId(S.me);
+        copyText(spId, "تم نسخ User ID (" + spId + ") 📋");
+      };
     }
 
     if ($("pf-photo-trigger") && $("pf-photo-input")) {
@@ -3830,6 +3960,13 @@
     });
 
     document.addEventListener("click", function (e) {
+      var cp = e.target.closest("[data-copyval]");
+      if (cp) {
+        e.stopPropagation();
+        var valToCopy = cp.getAttribute("data-copyval");
+        copyText(valToCopy, "تم نسخ ID (" + valToCopy + ") 📋");
+        return;
+      }
       var en = e.target.closest("[data-enter]"); if (en) { enterRoom(en.getAttribute("data-enter")); return; }
       var pr = e.target.closest("[data-profile]"); if (pr) { openProfile(pr.getAttribute("data-profile")); return; }
       var dm = e.target.closest("[data-dm]"); if (dm) { openDM(dm.getAttribute("data-dm")); return; }
