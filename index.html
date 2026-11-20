@@ -1,81 +1,189 @@
-<script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.22.0.js"></script>
-<script>
-  const tokenServerUrl = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>REAL VOICE — الغرفة الصوتية</title>
+  <style>
+    * { box-sizing: border-box; font-family: Tahoma, Arial, sans-serif; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #0d0f17;
+      color: #f4f6fb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: #161a26;
+      border: 1px solid #282f45;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    }
+    h1 { margin: 0 0 8px; font-size: 22px; color: #7aa2ff; }
+    p.sub { margin: 0 0 20px; font-size: 13px; color: #a3adc2; }
+    label { display: block; margin-bottom: 6px; font-size: 14px; }
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #2e3752;
+      background: #0e111a;
+      color: #fff;
+      font-size: 15px;
+      margin-bottom: 14px;
+    }
+    .actions { display: flex; gap: 10px; }
+    button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #joinBtn { background: #4f7cff; color: #fff; }
+    #leaveBtn { background: #2b3145; color: #e2e8f0; }
+    #status {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #10141f;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #cbd5e1;
+      min-height: 46px;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>REAL VOICE</h1>
+    <p class="sub">الدخول إلى الغرفة الصوتية عبر Agora RTC</p>
 
-  let agoraClient = null;
-  let localAudioTrack = null;
+    <label for="roomInput">اسم الغرفة</label>
+    <input id="roomInput" type="text" placeholder="مثال: room1" value="room1" />
 
-  async function fetchRtcToken(channelName, uid = 0, role = "publisher") {
-    const url = new URL(tokenServerUrl);
-    url.searchParams.set("channelName", channelName);
-    url.searchParams.set("uid", String(uid));
-    url.searchParams.set("role", role);
+    <div class="actions">
+      <button id="joinBtn" type="button">دخول الغرفة</button>
+      <button id="leaveBtn" type="button">مغادرة</button>
+    </div>
 
-    const response = await fetch(url.toString(), { method: "GET" });
-    const data = await response.json();
+    <div id="status">الحالة: جاهز للاتصال</div>
+  </div>
 
-    if (!response.ok || !data.token || !data.appId) {
-      throw new Error(data.error || "تعذر الحصول على التوكن من السيرفر");
+  <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.22.0.js"></script>
+  <script>
+    const tokenServerUrl = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";
+
+    let agoraClient = null;
+    let localAudioTrack = null;
+
+    function setStatus(msg) {
+      document.getElementById("status").textContent = msg;
     }
 
-    return data;
-  }
+    async function fetchRtcToken(channelName, uid = 0, role = "publisher") {
+      const url = new URL(tokenServerUrl);
+      url.searchParams.set("channelName", channelName);
+      url.searchParams.set("uid", String(uid));
+      url.searchParams.set("role", role);
 
-  async function joinVoiceRoom(channelName, uid = 0) {
-    if (!channelName || !String(channelName).trim()) {
-      throw new Error("اسم الغرفة مطلوب");
+      const response = await fetch(url.toString(), { method: "GET" });
+      const data = await response.json();
+
+      if (!response.ok || !data.token || !data.appId) {
+        throw new Error(data.error || "تعذر الحصول على التوكن من السيرفر");
+      }
+
+      return data;
     }
 
-    const cleanChannel = String(channelName).trim();
-    const cleanUid = Number.isInteger(Number(uid)) && Number(uid) >= 0 ? Number(uid) : 0;
+    async function joinVoiceRoom(channelName, uid = 0) {
+      if (!channelName || !String(channelName).trim()) {
+        throw new Error("اسم الغرفة مطلوب");
+      }
 
-    if (agoraClient && agoraClient.connectionState === "CONNECTED") {
-      await leaveVoiceRoom();
+      const cleanChannel = String(channelName).trim();
+      const cleanUid = Number.isInteger(Number(uid)) && Number(uid) >= 0 ? Number(uid) : 0;
+
+      if (agoraClient && agoraClient.connectionState === "CONNECTED") {
+        await leaveVoiceRoom();
+      }
+
+      setStatus("جاري طلب التوكن من السيرفر...");
+      const tokenData = await fetchRtcToken(cleanChannel, cleanUid, "publisher");
+
+      if (!agoraClient) {
+        agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+
+        agoraClient.on("user-published", async (user, mediaType) => {
+          await agoraClient.subscribe(user, mediaType);
+          if (mediaType === "audio" && user.audioTrack) {
+            user.audioTrack.play();
+          }
+        });
+
+        agoraClient.on("user-unpublished", (user) => {
+          if (user.audioTrack) {
+            user.audioTrack.stop();
+          }
+        });
+      }
+
+      setStatus("جاري الاتصال بالغرفة الصوتية...");
+      await agoraClient.join(
+        tokenData.appId,
+        cleanChannel,
+        tokenData.token,
+        tokenData.uid ?? cleanUid
+      );
+
+      if (!localAudioTrack) {
+        localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      }
+
+      await agoraClient.publish([localAudioTrack]);
+      setStatus("متصل بالغرفة: " + cleanChannel + " (الميكروفون نشط)");
+      return true;
     }
 
-    const tokenData = await fetchRtcToken(cleanChannel, cleanUid, "publisher");
+    async function leaveVoiceRoom() {
+      if (localAudioTrack) {
+        localAudioTrack.stop();
+        localAudioTrack.close();
+        localAudioTrack = null;
+      }
 
-    if (!agoraClient) {
-      agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-
-      agoraClient.on("user-published", async (user, mediaType) => {
-        await agoraClient.subscribe(user, mediaType);
-        if (mediaType === "audio" && user.audioTrack) {
-          user.audioTrack.play();
-        }
-      });
-
-      agoraClient.on("user-unpublished", (user) => {
-        if (user.audioTrack) {
-          user.audioTrack.stop();
-        }
-      });
+      if (agoraClient) {
+        await agoraClient.leave();
+      }
+      setStatus("تمت مغادرة الغرفة الصوتية");
     }
 
-    await agoraClient.join(
-      tokenData.appId,
-      cleanChannel,
-      tokenData.token,
-      tokenData.uid ?? cleanUid
-    );
+    document.getElementById("joinBtn").addEventListener("click", async () => {
+      const roomName = document.getElementById("roomInput").value;
+      try {
+        await joinVoiceRoom(roomName, 0);
+      } catch (err) {
+        setStatus("خطأ: " + (err && err.message ? err.message : String(err)));
+      }
+    });
 
-    if (!localAudioTrack) {
-      localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-    }
-
-    await agoraClient.publish([localAudioTrack]);
-    return true;
-  }
-
-  async function leaveVoiceRoom() {
-    if (localAudioTrack) {
-      localAudioTrack.stop();
-      localAudioTrack.close();
-      localAudioTrack = null;
-    }
-
-    if (agoraClient) {
-      await agoraClient.leave();
-    }
-  }
-</script>
+    document.getElementById("leaveBtn").addEventListener("click", async () => {
+      try {
+        await leaveVoiceRoom();
+      } catch (err) {
+        setStatus("خطأ أثناء المغادرة: " + (err && err.message ? err.message : String(err)));
+      }
+    });
+  </script>
+</body>
+</html>
