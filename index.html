@@ -80,6 +80,7 @@
       display:flex;align-items:center;justify-content:center;gap:10px;
       box-shadow:0 12px 28px rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.85)
     }
+    .google-signin-btn:disabled{opacity:.65;cursor:wait}
     .g-badge{
       width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
       background:conic-gradient(#ea4335 0deg 90deg, #fbbc05 90deg 180deg, #34a853 180deg 270deg, #4285f4 270deg 360deg);
@@ -503,7 +504,7 @@
     <div id="auth-step-login">
       <div class="auth-logo-3d">🎙️</div>
       <h1 class="auth-title">REAL VOICE</h1>
-      <p class="auth-sub">سجّل دخولك عبر Google لبدء الدردشة الصوتية، إكمال بياناتك، وإنشاء الغرف.</p>
+      <p class="auth-sub">سجّل دخولك عبر Gmail (Google) لبدء الدردشة الصوتية، إكمال بياناتك، وإنشاء الغرف.</p>
       <div class="auth-perks">
         <div class="auth-perk"><span>🔊</span>صوت مباشر</div>
         <div class="auth-perk"><span>🎁</span>هدايا وتفاعل</div>
@@ -511,7 +512,7 @@
       </div>
       <button class="google-signin-btn" id="google-login-btn" type="button">
         <span class="g-badge">G</span>
-        <span>تسجيل الدخول عبر Google</span>
+        <span id="google-login-text">تسجيل الدخول عبر Gmail</span>
       </button>
       <button class="auth-guest-btn" id="guest-login-btn" type="button">متابعة وإكمال البيانات على هذا الجهاز</button>
     </div>
