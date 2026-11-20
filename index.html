@@ -1,70 +1,75 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>REAL VOICE — غرف الدردشة الصوتية</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.22.0.js"></script>
-</head>
-<body class="rv-body">
-  <div class="rv-glow rv-glow-1"></div>
-  <div class="rv-glow rv-glow-2"></div>
+<script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.22.0.js"></script>
+<script>
+  const tokenServerUrl = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";[span_1](start_span)[span_1](end_span)
 
-  <main class="rv-shell">
-    <header class="rv-header glass-card">
-      <div class="rv-brand">
-        <span class="rv-badge">LIVE</span>
-        <div>
-          <h1 class="rv-title">REAL VOICE</h1>
-          <p class="rv-subtitle">دردشة صوتية فورية بتجربة سلسة</p>
-        </div>
-      </div>
-      <div id="rv-status" class="rv-status rv-status-idle">غير متصل</div>
-    </header>
+  let agoraClient = null;
+  let localAudioTrack = null;
 
-    <section id="auth-card" class="glass-card rv-card">
-      <h2>تسجيل الدخول السريع</h2>
-      <p class="rv-muted">أدخل اسمك ورمز الغرفة للانضمام إلى مقاعد الصوت.</p>
+  async function fetchRtcToken(channelName, uid = 0, role = "publisher") {
+    const url = new URL(tokenServerUrl);
+    url.searchParams.set("channelName", channelName);
+    url.searchParams.set("uid", String(uid));
+    url.searchParams.set("role", role);
 
-      <div class="rv-field">
-        <label for="username-input">الاسم الظاهر</label>
-        <input id="username-input" type="text" placeholder="مثال: محمد" maxlength="24" />
-      </div>
+    const response = await fetch(url.toString(), { method: "GET" });
+    const data = await response.json();
 
-      <div class="rv-field">
-        <label for="channel-input">اسم / رمز الغرفة الصوتية</label>
-        <input id="channel-input" type="text" value="real-voice-lobby" placeholder="مثال: real-voice-lobby" />
-      </div>
+    if (!response.ok || !data.token || !data.appId) {
+      throw new Error(data.error || "تعذر الحصول على التوكن من السيرفر");
+    }
 
-      <button id="join-btn" type="button" class="rv-btn rv-btn-primary">دخول الغرفة الصوتية</button>
-    </section>
+    return data;
+  }
 
-    <section id="room-card" class="glass-card rv-card rv-hidden">
-      <div class="rv-room-top">
-        <div>
-          <span class="rv-muted">الغرفة الحالية</span>
-          <h2 id="active-channel-name">real-voice-lobby</h2>
-        </div>
-        <button id="leave-btn" type="button" class="rv-btn rv-btn-danger">خروج</button>
-      </div>
+  async function joinVoiceRoom(channelName, uid = 0) {
+    if (!channelName || !channelName.trim()) {
+      throw new Error("اسم الغرفة مطلوب");
+    }
 
-      <div id="seats-grid" class="rv-seats-grid"></div>
+    const cleanChannel = channelName.trim();
+    const tokenData = await fetchRtcToken(cleanChannel, uid, "publisher");
 
-      <div class="rv-controls">
-        <button id="mic-btn" type="button" class="rv-btn rv-btn-secondary">كتم / فتح المايك</button>
-      </div>
-    </section>
-  </main>
+    if (!agoraClient) {
+      agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
-  <script>
-    window.REAL_VOICE_CONFIG = {
-      appName: "REAL VOICE",
-      agoraAppId: "582dadd9dbff40f7bddb64b66d9a1e8b",
-      // ضع رابط سيرفر Render هنا بعد نشر الـ Backend مثل: https://your-backend.onrender.com
-      tokenServerUrl: ""
-    };
-  </script>
-  <script src="script.js"></script>
-</body>
-</html>
+      agoraClient.on("user-published", async (user, mediaType) => {
+        await agoraClient.subscribe(user, mediaType);
+        if (mediaType === "audio" && user.audioTrack) {
+          user.audioTrack.play();
+        }
+      });
+
+      agoraClient.on("user-unpublished", (user) => {
+        if (user.audioTrack) {
+          user.audioTrack.stop();
+        }
+      });
+    }
+
+    await agoraClient.join(
+      tokenData.appId,
+      cleanChannel,
+      tokenData.token,
+      tokenData.uid ?? uid
+    );
+
+    if (!localAudioTrack) {
+      localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+    }
+
+    await agoraClient.publish([localAudioTrack]);
+    return true;
+  }
+
+  async function leaveVoiceRoom() {
+    if (localAudioTrack) {
+      localAudioTrack.stop();
+      localAudioTrack.close();
+      localAudioTrack = null;
+    }
+
+    if (agoraClient) {
+      await agoraClient.leave();
+    }
+  }
+</script>
