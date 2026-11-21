@@ -29,7 +29,7 @@
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     html,body{
-      margin:0;padding:0;min-height:100dvh;font-family:"Cairo",system-ui,sans-serif;
+      margin:0;padding:0;width:100%;min-height:100dvh;font-family:"Cairo",system-ui,sans-serif;
       background:
         radial-gradient(circle at 15% 12%, rgba(124,58,237,.26), transparent 44%),
         radial-gradient(circle at 86% 20%, rgba(236,72,153,.20), transparent 42%),
@@ -58,7 +58,7 @@
         linear-gradient(165deg,#0b0718,#160e2e 60%,#090612)
     }
     .auth-card{
-      width:100%;max-width:420px;border-radius:26px;padding:22px 18px;text-align:center;
+      width:100%;max-width:460px;border-radius:26px;padding:22px 18px;text-align:center;
       background:linear-gradient(155deg,rgba(255,255,255,.14),rgba(255,255,255,.05));
       backdrop-filter:blur(22px) saturate(160%);
       -webkit-backdrop-filter:blur(22px) saturate(160%);
@@ -115,7 +115,8 @@
     }
     .gender-pill.active{background:linear-gradient(135deg,var(--acc),var(--acc2));border-color:#fff;color:#fff}
 
-    #app{max-width:480px;margin:0 auto;min-height:100dvh;position:relative;background:transparent;box-shadow:0 0 60px rgba(0,0,0,.45)}
+    /* يملأ عرض الجوال بالكامل بدون حواف أو قيود شاشة كمبيوتر */
+    #app{width:100%;max-width:100%;margin:0 auto;min-height:100dvh;position:relative;background:transparent}
 
     .topbar{
       position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:8px;
@@ -295,7 +296,7 @@
     .empty{text-align:center;padding:36px 18px;color:var(--muted);font-size:13.5px;line-height:1.8}
 
     .nav{
-      position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:20;
+      position:fixed;bottom:0;left:0;right:0;width:100%;max-width:100%;z-index:20;
       display:grid;grid-template-columns:repeat(5,1fr);
       background:linear-gradient(180deg,rgba(20,13,42,.9),rgba(10,6,22,.96));
       backdrop-filter:blur(18px) saturate(150%);border-top:1px solid var(--border);padding:5px 0 calc(7px + env(safe-area-inset-bottom))
@@ -355,7 +356,7 @@
     }
 
     .room-view{
-      position:fixed;inset:0;z-index:30;max-width:480px;margin:0 auto;display:none;flex-direction:column;height:100dvh;
+      position:fixed;inset:0;z-index:30;width:100%;max-width:100%;margin:0 auto;display:none;flex-direction:column;height:100dvh;
       background:linear-gradient(175deg,#170e2e,#090612 68%)
     }
     .room-view.open{display:flex;animation:fadeIn .2s ease}
@@ -529,14 +530,14 @@
     .scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.62);backdrop-filter:blur(4px);display:none}
     .scrim.open{display:block}
     .sheet{
-      position:fixed;bottom:0;left:50%;transform:translate(-50%,100%);width:100%;max-width:480px;max-height:86vh;
+      position:fixed;bottom:0;left:0;right:0;transform:translateY(100%);width:100%;max-width:100%;max-height:86vh;
       overflow-y:auto;z-index:45;
       background:linear-gradient(165deg,rgba(28,18,56,.96),rgba(13,9,28,.98));
       backdrop-filter:blur(22px);border-radius:24px 24px 0 0;border-top:1px solid var(--border-hi);
       padding:10px 16px calc(26px + env(safe-area-inset-bottom));transition:transform .25s cubic-bezier(.22,1,.36,1)
     }
     body.light-theme .sheet{background:linear-gradient(165deg,rgba(255,255,255,.98),rgba(242,239,252,.98))}
-    .sheet.open{transform:translate(-50%,0)}
+    .sheet.open{transform:translateY(0)}
     .sheet-handle{width:40px;height:4px;border-radius:999px;background:rgba(255,255,255,.25);margin:0 auto 12px}
     .sheet h3{margin:4px 0 12px;font-size:16px;text-align:center}
     .sheet label{display:block;font-size:12px;color:var(--muted);margin:9px 0 4px}
@@ -631,8 +632,8 @@
 
   <main class="page active" id="page-home">
     <div class="install-app-bar" id="install-app-bar">
-      <span>📲 تثبيت تطبيق REAL VOICE على الشاشة الرئيسية</span>
-      <button class="btn sm ok" id="install-app-btn" type="button">تثبيت</button>
+      <span>📲 تثبيت تطبيق REAL VOICE على الجوال</span>
+      <button class="btn sm ok" id="install-app-btn" type="button">تنزيل</button>
     </div>
 
     <section class="banners-slot" id="home-banners-slot">
