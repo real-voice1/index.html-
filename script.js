@@ -1,4 +1,4 @@
-/* REAL VOICE — نسخة كاملة ومصححة: تجربة تطبيق جوال، تنظيم الأصدقاء والرسائل والغرف، ودعوات الغرفة */
+/* REAL VOICE — نسخة كاملة: تجربة جوال مباشرة وتثبيت تلقائي عند الضغط على تنزيل */
 (function (global) {
   "use strict";
 
@@ -171,6 +171,31 @@
     else bar.classList.remove("hidden");
   }
 
+  async function triggerAutoInstall() {
+    if (deferredInstallPrompt) {
+      try {
+        deferredInstallPrompt.prompt();
+        var choice = await deferredInstallPrompt.userChoice;
+        if (choice && choice.outcome === "accepted") {
+          toast("جاري تثبيت التطبيق على جوالك...");
+        }
+      } catch (e) { /* */ }
+      deferredInstallPrompt = null;
+      updateInstallBarVisibility();
+      return;
+    }
+
+    openSheet(
+      "<h3>📲 تثبيت REAL VOICE على الجوال</h3>" +
+      "<div class='actlist'>" +
+        "<button type='button'><b>أندرويد (Chrome):</b> اضغط على القائمة (⋮) بالأعلى واختر <b>«تثبيت التطبيق»</b> أو <b>«إضافة إلى الشاشة الرئيسية»</b>.</button>" +
+        "<button type='button'><b>آيفون (Safari):</b> اضغط على زر المشاركة (⬆️) واختر <b>«إضافة إلى الشاشة الرئيسية»</b>.</button>" +
+      "</div>" +
+      "<button class='btn block' id='ins-close' type='button'>حسناً</button>"
+    );
+    if ($("ins-close")) $("ins-close").onclick = closeSheet;
+  }
+
   function initPwaInstall() {
     updateInstallBarVisibility();
     window.addEventListener("beforeinstallprompt", function (e) {
@@ -181,29 +206,11 @@
     window.addEventListener("appinstalled", function () {
       deferredInstallPrompt = null;
       updateInstallBarVisibility();
-      toast("تم تثبيت REAL VOICE على جهازك ✅");
+      toast("تم تثبيت REAL VOICE على جوالك بنجاح ✅");
     });
     var btn = $("install-app-btn");
-    if (btn) {
-      btn.onclick = async function () {
-        if (deferredInstallPrompt) {
-          deferredInstallPrompt.prompt();
-          await deferredInstallPrompt.userChoice.catch(function () { /* */ });
-          deferredInstallPrompt = null;
-          updateInstallBarVisibility();
-        } else {
-          openSheet(
-            "<h3>📲 تثبيت REAL VOICE كتطبيق مستقل</h3>" +
-            "<div class='actlist'>" +
-              "<button type='button'><b>أندرويد (Chrome):</b> اضغط على القائمة (⋮) بالأعلى ثم اختر <b>«تثبيت التطبيق»</b> أو <b>«إضافة إلى الشاشة الرئيسية»</b>.</button>" +
-              "<button type='button'><b>آيفون (Safari):</b> اضغط على زر المشاركة (⬆️) بالأسفل ثم اختر <b>«إضافة إلى الشاشة الرئيسية»</b>.</button>" +
-            "</div>" +
-            "<button class='btn block' id='ins-close' type='button'>حسناً</button>"
-          );
-          if ($("ins-close")) $("ins-close").onclick = closeSheet;
-        }
-      };
-    }
+    if (btn) btn.onclick = triggerAutoInstall;
+
     try {
       var manifestData = {
         name: "REAL VOICE",
@@ -404,7 +411,7 @@
       startLocalVoiceMeter();
       resumeAllRemoteAudioTracks();
       return true;
-    } catch (e) { toast("اسمح للمتصفح بالوصول للميكروفون 🎤"); return false; }
+    } catch (e) { toast("اسمح للجوال بالوصول للميكروفون 🎤"); return false; }
   }
   async function syncMicHardwareState() {
     var room = getRoom(UI.roomId || UI.floatingRoomId);
@@ -927,7 +934,7 @@
   async function signInWithGoogle() {
     if (UI.authSigningIn) return;
     UI.authSigningIn = true;
-    setGoogleLoginLoading(true, "جاري فتح نافذة Gmail...");
+    setGoogleLoginLoading(true, "جاري تسجيل الدخول عبر Gmail...");
 
     try {
       if (!cloud.on || !cloud.auth || !global.firebase || !firebase.auth || !firebase.auth.GoogleAuthProvider) {
