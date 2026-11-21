@@ -1,4 +1,4 @@
-/* REAL VOICE — نسخة محسّنة للأداء والسلاسة والتثبيت كتطبيق PWA */
+/* REAL VOICE — نسخة متكاملة للدردشة الخاصة للأصدقاء والمتابعة والـ PWA */
 (function (global) {
   "use strict";
 
@@ -13,7 +13,7 @@
   var TOKEN_URL = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";
 
   var CONFIG = {
-    storageKey: "rv_state_v16",
+    storageKey: "rv_state_v17",
     fixedUidKey: "rv_fixed_uid_v1",
     authSessionKey: "rv_auth_logged_v1",
     googleAuthedKey: "rv_google_authed_v1",
@@ -580,7 +580,7 @@
         daily: 0, streak: 0, joined: now()
       },
       users: demoUsers(), rooms: demoRooms(),
-      friends: [], requests: [], sentReq: [], blocked: [], follows: [],
+      friends: [], requests: [], sentReq: [], blocked: [], follows: [], followersList: [],
       dms: {}, unread: {}, notifs: [],
       banners: [],
       settings: { notif: true, sound: true, lightTheme: false }
@@ -605,6 +605,7 @@
           if (!S.sentReq) S.sentReq = [];
           if (!S.blocked) S.blocked = [];
           if (!S.follows) S.follows = [];
+          if (!S.followersList) S.followersList = [];
           if (!S.dms) S.dms = {};
           if (!S.unread) S.unread = {};
           if (!S.notifs) S.notifs = [];
@@ -620,6 +621,14 @@
   }
   function saveLocal() { try { localStorage.setItem(CONFIG.storageKey, JSON.stringify(S)); } catch (e) { /* */ } }
 
+  function getMyFollowersCount() {
+    var fromList = Array.isArray(S.followersList) ? S.followersList.length : 0;
+    var cloudMe = cloud.usersMap && cloud.usersMap[S.me.id];
+    var fromCloud = (cloudMe && typeof cloudMe.followers === "number") ? cloudMe.followers : 0;
+    var fromMe = Number(S.me.followers || 0);
+    return Math.max(fromList, fromCloud, fromMe);
+  }
+
   function save() {
     saveLocal();
     if (!S || !S.me) return;
@@ -629,9 +638,16 @@
     var lv = computeLevelFromXp(xpVal);
     var wLv = getWealthLevel(wealthVal);
     var cLv = getCharmLevel(charmVal);
+    var followersTotal = getMyFollowersCount();
+    var followingTotal = Array.isArray(S.follows) ? S.follows.length : 0;
+    var friendsTotal = Array.isArray(S.friends) ? S.friends.length : 0;
+
     S.me.level = lv;
     S.me.wealthLevel = wLv;
     S.me.charmLevel = cLv;
+    S.me.followers = followersTotal;
+    S.me.following = followingTotal;
+    S.me.friendsCount = friendsTotal;
     if (!S.me.receivedGifts || typeof S.me.receivedGifts !== "object") S.me.receivedGifts = {};
 
     var userPayload = {
@@ -644,9 +660,9 @@
       wealth: wealthVal, wealthLevel: wLv,
       charm: charmVal, charmLevel: cLv,
       vip: Number(S.me.vip || 0),
-      followers: Number(S.me.followers || 0),
-      following: S.follows.length || 0,
-      friendsCount: S.friends.length || 0,
+      followers: followersTotal,
+      following: followingTotal,
+      friendsCount: friendsTotal,
       receivedGifts: S.me.receivedGifts,
       online: true
     };
@@ -658,9 +674,15 @@
   }
 
   function resolveLiveUser(id) {
-    if (!id) return { id: "", num: 0, specialId: "0001000", name: "مستخدم", gender: "", age: "", photo: "", online: false, level: 1, receivedGifts: {} };
+    if (!id) return { id: "", num: 0, specialId: "0001000", name: "مستخدم", gender: "", age: "", photo: "", online: false, level: 1, followers: 0, following: 0, friendsCount: 0, receivedGifts: {} };
     if (id === S.me.id) {
-      return Object.assign({}, cloud.usersMap[id] || {}, S.me, { level: computeLevelFromXp(S.me.xp || 0), me: true });
+      return Object.assign({}, cloud.usersMap[id] || {}, S.me, {
+        level: computeLevelFromXp(S.me.xp || 0),
+        followers: getMyFollowersCount(),
+        following: (S.follows || []).length,
+        friendsCount: (S.friends || []).length,
+        me: true
+      });
     }
     var fromCloud = cloud.usersMap[id];
     var fromLocal = null;
@@ -668,7 +690,7 @@
       if (S.users[i].id === id) { fromLocal = S.users[i]; break; }
     }
     var base = Object.assign({
-      id: id, num: hashNum(id), specialId: "", name: "مستخدم", gender: "", age: "", photo: "", online: false, level: 1, receivedGifts: {}
+      id: id, num: hashNum(id), specialId: "", name: "مستخدم", gender: "", age: "", photo: "", online: false, level: 1, followers: 0, following: 0, friendsCount: 0, receivedGifts: {}
     }, fromLocal || {}, fromCloud || {});
     if (!base.name) base.name = "مستخدم";
     return base;
@@ -851,7 +873,7 @@
       cloud.usersMap = val;
       if (val[myId]) {
         var cloudMe = val[myId];
-        if (typeof cloudMe.followers === "number") S.me.followers = cloudMe.followers;
+        if (typeof cloudMe.followers === "number") S.me.followers = Math.max(Number(S.me.followers || 0), cloudMe.followers);
         if (typeof cloudMe.charm === "number") S.me.charm = Math.max(Number(S.me.charm || 0), cloudMe.charm);
         if (cloudMe.receivedGifts && typeof cloudMe.receivedGifts === "object") {
           var mergedGifts = Object.assign({}, S.me.receivedGifts || {});
@@ -896,8 +918,15 @@
       S.requests = Object.keys(sv.requests || {});
       S.sentReq = Object.keys(sv.sentReq || {});
       S.follows = Object.keys(sv.follows || {});
+      S.followersList = Object.keys(sv.followersList || {});
       S.blocked = Object.keys(sv.blocked || {});
-      S.friends.forEach(function (fid) { attachDmThreadListener(myId, fid); });
+      if (S.followersList.length > Number(S.me.followers || 0)) {
+        S.me.followers = S.followersList.length;
+      }
+      S.friends.forEach(function (fid) {
+        if (!S.dms[fid]) S.dms[fid] = [];
+        attachDmThreadListener(myId, fid);
+      });
       saveLocal();
       scheduleRenderAll();
     });
@@ -905,6 +934,7 @@
     onDb("app", cloud.db.ref("userDms/" + myId), "value", function (ds) {
       var threads = ds.val() || {};
       Object.keys(threads).forEach(function (peerId) {
+        if (!S.dms[peerId]) S.dms[peerId] = [];
         attachDmThreadListener(myId, peerId);
       });
     });
@@ -929,6 +959,7 @@
           name: p.name || S.me.name || "",
           email: p.email || S.me.email || "",
           photo: p.photo || S.me.photo || "",
+          followers: Math.max(Number(S.me.followers || 0), Number(p.followers || 0)),
           receivedGifts: Object.assign({}, (S.me && S.me.receivedGifts) || {}, p.receivedGifts || {})
         });
         if (S.me.name && String(S.me.name).trim()) setOnboardDone(true);
@@ -1066,12 +1097,25 @@
 
   function addFriendMutual(otherId) {
     if (!otherId || otherId === S.me.id) return;
+    var wasFriend = isFriendWith(otherId);
     if (S.friends.indexOf(otherId) < 0) S.friends.push(otherId);
     if (S.follows.indexOf(otherId) < 0) S.follows.push(otherId);
     S.requests = S.requests.filter(function (x) { return x !== otherId; });
     S.sentReq = S.sentReq.filter(function (x) { return x !== otherId; });
-    if (!S.dms[otherId]) S.dms[otherId] = [];
+
+    if (!Array.isArray(S.dms[otherId])) S.dms[otherId] = [];
+    if (!wasFriend && S.dms[otherId].length === 0) {
+      var u = resolveLiveUser(otherId);
+      S.dms[otherId].push({
+        from: S.me.id,
+        to: otherId,
+        text: "مرحباً " + (u.name || "صديقي") + " 👋 أصبحت الآن ضمن قائمة الأصدقاء هنا.",
+        t: now()
+      });
+    }
+
     attachDmThreadListener(S.me.id, otherId);
+
     if (cloud.on && cloud.db) {
       var ups = {};
       ups["social/" + S.me.id + "/friends/" + otherId] = true;
@@ -1080,12 +1124,29 @@
       ups["social/" + S.me.id + "/sentReq/" + otherId] = null;
       ups["social/" + otherId + "/friends/" + S.me.id] = true;
       ups["social/" + otherId + "/follows/" + S.me.id] = true;
+      ups["social/" + otherId + "/followersList/" + S.me.id] = true;
       ups["social/" + otherId + "/sentReq/" + S.me.id] = null;
       ups["userDms/" + S.me.id + "/" + otherId] = true;
       ups["userDms/" + otherId + "/" + S.me.id] = true;
       cloud.db.ref().update(ups).catch(function () { /* */ });
-      cloud.db.ref("users/" + otherId + "/followers").transaction(function (c) { return (Number(c) || 0) + 1; }).catch(function () { /* */ });
+
+      if (!wasFriend) {
+        cloud.db.ref("users/" + otherId + "/followers").transaction(function (c) { return (Number(c) || 0) + 1; }).catch(function () { /* */ });
+        var tid = dmThreadId(S.me.id, otherId);
+        var welcomeMsg = {
+          from: S.me.id,
+          to: otherId,
+          text: "مرحباً 👋 تم إضافتك كصديق، يمكنك الدردشة معي هنا في الخاص.",
+          t: now()
+        };
+        cloud.db.ref("dms/" + tid).push(welcomeMsg).catch(function () { /* */ });
+      }
     }
+
+    if (cloud.usersMap && cloud.usersMap[otherId] && !wasFriend) {
+      cloud.usersMap[otherId].followers = Number(cloud.usersMap[otherId].followers || 0) + 1;
+    }
+
     save();
   }
 
@@ -1097,7 +1158,11 @@
       S.follows.splice(idx, 1);
       if (cloud.on && cloud.db) {
         cloud.db.ref("social/" + S.me.id + "/follows/" + otherId).set(null).catch(function () { /* */ });
+        cloud.db.ref("social/" + otherId + "/followersList/" + S.me.id).set(null).catch(function () { /* */ });
         cloud.db.ref("users/" + otherId + "/followers").transaction(function (c) { return Math.max(0, (Number(c) || 0) - 1); }).catch(function () { /* */ });
+      }
+      if (cloud.usersMap && cloud.usersMap[otherId]) {
+        cloud.usersMap[otherId].followers = Math.max(0, Number(cloud.usersMap[otherId].followers || 0) - 1);
       }
       toast("تم إلغاء المتابعة");
     } else {
@@ -1105,9 +1170,13 @@
       nowFollowing = true;
       if (cloud.on && cloud.db) {
         cloud.db.ref("social/" + S.me.id + "/follows/" + otherId).set(true).catch(function () { /* */ });
+        cloud.db.ref("social/" + otherId + "/followersList/" + S.me.id).set(true).catch(function () { /* */ });
         cloud.db.ref("users/" + otherId + "/followers").transaction(function (c) { return (Number(c) || 0) + 1; }).catch(function () { /* */ });
       }
-      toast("تم تفعيل المتابعة ✅");
+      if (cloud.usersMap && cloud.usersMap[otherId]) {
+        cloud.usersMap[otherId].followers = Number(cloud.usersMap[otherId].followers || 0) + 1;
+      }
+      toast("تم متابعة الحساب بنجاح ✅");
     }
     save();
     return nowFollowing;
@@ -1369,7 +1438,7 @@
     var activeRoomId = UI.roomId || UI.floatingRoomId;
 
     if (UI.ftab === "friends") {
-      var fr = S.friends.map(resolveLiveUser);
+      var fr = (S.friends || []).map(resolveLiveUser);
       html = fr.length ? fr.map(function (u) {
         var curRoom = findUserCurrentRoom(u.id);
         var fBtn = '<button class="btn sm ghost" data-follow-user="' + esc(u.id) + '" type="button">' + (isFollowingUser(u.id) ? "متابَع ✔" : "+ متابعة") + "</button>";
@@ -1394,7 +1463,7 @@
       html = res.length ? res.map(function (u) {
         var live = resolveLiveUser(u.id);
         var fBtn = '<button class="btn sm ghost" data-follow-user="' + esc(live.id) + '" type="button">' + (isFollowingUser(live.id) ? "متابَع ✔" : "+ متابعة") + "</button>";
-        var btn = S.friends.indexOf(live.id) >= 0
+        var btn = isFriendWith(live.id)
           ? '<button class="btn sm" data-dm="' + esc(live.id) + '" type="button">💬 خاص</button>'
           : '<button class="btn sm" data-addfriend="' + esc(live.id) + '" type="button">+ إضافة</button>';
         return personRow(live, fBtn + btn);
@@ -1404,15 +1473,58 @@
   }
 
   function renderMessages() {
-    var ids = Object.keys(S.dms).filter(function (id) { return isFriendWith(id); });
+    var seen = {};
+    var ids = [];
+    (S.friends || []).forEach(function (id) {
+      if (id && id !== S.me.id && !seen[id]) { seen[id] = true; ids.push(id); }
+    });
+    Object.keys(S.dms || {}).forEach(function (id) {
+      if (id && id !== S.me.id && !seen[id] && isFriendWith(id)) { seen[id] = true; ids.push(id); }
+    });
+
     $("dm-list").innerHTML = ids.length ? ids.map(function (id) {
       var u = resolveLiveUser(id), thread = S.dms[id] || [], last = thread[thread.length - 1];
       var un = S.unread[id] || 0;
-      var lastLabel = last ? (last.audio ? "🎙️ رسالة صوتية" : (last.text || "رسالة")) : "ابدأ المحادثة الخاصة الثابتة";
+      var lastLabel = last ? (last.audio ? "🎙️ رسالة صوتية" : (last.text || "رسالة")) : "صديق • اضغط لبدء الدردشة الخاصة";
       return '<div class="row glass" data-dm="' + esc(id) + '">' + avatarHTML(u) +
-        '<div class="info"><div class="name">' + esc(u.name) + (un > 0 ? ' <span class="tag verified">' + un + " جديد</span>" : "") + '</div><div class="meta">' + esc(lastLabel) + '</div></div>' +
-        '<div class="meta">' + (last ? timeStr(last.t) : "ثابت") + "</div></div>";
-    }).join("") : '<div class="empty">لا توجد محادثات خاصة للأصدقاء حالياً</div>';
+        '<div class="info"><div class="name">' + esc(u.name) + (un > 0 ? ' <span class="tag verified">' + un + " جديد</span>" : ' <span class="tag">صديق</span>') + '</div><div class="meta">' + esc(lastLabel) + '</div></div>' +
+        '<div class="meta">' + (last ? timeStr(last.t) : "💬") + "</div></div>";
+    }).join("") : '<div class="empty">أضف صديقاً ليظهر فوراً في قائمة الرسائل الخاصة 💬</div>';
+  }
+
+  function openSocialListSheet(mode) {
+    var title = "";
+    var listIds = [];
+    var emptyMsg = "";
+
+    if (mode === "friends") {
+      title = "👥 الأصدقاء (" + (S.friends || []).length + ")";
+      listIds = S.friends || [];
+      emptyMsg = "لا يوجد أصدقاء مضافون بعد";
+    } else if (mode === "following") {
+      title = "➕ من أتابعهم (" + (S.follows || []).length + ")";
+      listIds = S.follows || [];
+      emptyMsg = "أنت لا تتابع أي حساب حالياً";
+    } else {
+      title = "👁️ من يتابعني (" + getMyFollowersCount() + ")";
+      listIds = (S.followersList || []).length ? S.followersList : (S.friends || []);
+      emptyMsg = "لا توجد متابعات مسجلة بعد";
+    }
+
+    if (!listIds.length) {
+      openSheet("<h3>" + esc(title) + "</h3><div class='empty'>" + esc(emptyMsg) + "</div>");
+      return;
+    }
+
+    var rows = listIds.map(function (id) {
+      var u = resolveLiveUser(id);
+      var dmBtn = isFriendWith(id) ? '<button class="btn sm" data-dm="' + esc(id) + '" type="button">💬 خاص</button>' : "";
+      return '<div class="row glass" data-profile="' + esc(id) + '">' + avatarHTML(u, "sm") +
+        '<div class="info"><div class="name">' + esc(u.name) + '</div><div class="meta">ID: ' + esc(displayUserId(u)) + " • " + (u.online ? "متصل" : "غير متصل") + "</div></div>" +
+        '<div class="row-actions">' + dmBtn + "</div></div>";
+    }).join("");
+
+    openSheet("<h3>" + esc(title) + "</h3><div class='list'>" + rows + "</div>");
   }
 
   function renderProfileGifts(m) {
@@ -1472,7 +1584,8 @@
     $("pf-charm-level").textContent = "Lv." + getCharmLevel(m.charm || 0) + " (" + Number(m.charm || 0) + ")";
     $("pf-wealth-level").textContent = "Lv." + getWealthLevel(m.wealth || 0) + " (" + Number(m.wealth || 0) + ")";
     $("pf-friends-count").textContent = String((S.friends || []).length);
-    $("pf-followers-count").textContent = String(Number(m.followers || 0));
+    $("pf-followers-count").textContent = String(getMyFollowersCount());
+    $("pf-following-count").textContent = String((S.follows || []).length);
     $("pf-wallet-coins").textContent = String(Number(m.coins || 0));
     renderProfileGifts(m);
   }
@@ -2020,7 +2133,7 @@
     var u = resolveLiveUser(id);
     setAvatarEl($("chat-avatar"), u);
     $("chat-title").textContent = u.name;
-    $("chat-sub").textContent = "صديق • شات ثابت • ID: " + displayUserId(u);
+    $("chat-sub").textContent = "صديق • شات خاص • ID: " + displayUserId(u);
     $("chat-view").classList.add("open");
     renderDM();
     attachDmThreadListener(S.me.id, id);
@@ -2139,7 +2252,8 @@
     var details = ["ID: " + displayUserId(u)];
     if (u.gender) details.push(u.gender);
     if (u.age) details.push(u.age + " سنة");
-    details.push(isF ? "صديق ✔" : "غير مضاف");
+    details.push("أصدقاء: " + Number(u.friendsCount || 0));
+    details.push("متابعون: " + Number(u.followers || 0));
     if (curRoom) details.push("في غرفة: " + curRoom.name);
 
     var html = '<div style="display:flex;gap:12px;align-items:center">' + avatarHTML(u, "lg") +
@@ -2163,6 +2277,7 @@
     if ($("up-follow")) {
       $("up-follow").onclick = function () {
         toggleFollowUser(id);
+        renderAll();
         openUserProfile(id);
       };
     }
@@ -2178,7 +2293,7 @@
         addFriendMutual(id);
         renderAll();
         openUserProfile(id);
-        toast("تمت الإضافة وقبول الصداقة ✅ يمكنك الآن مراسلته في الخاص");
+        toast("تمت الإضافة ✅ ظهر في الخاص وتحدثت قائمة الأصدقاء");
       };
     }
     if ($("up-join-room") && curRoom) {
@@ -2267,6 +2382,9 @@
     $("notif-btn").onclick = function () { toast("لا توجد إشعارات جديدة حالياً 🔔"); };
     $("theme-toggle-btn").onclick = function () { S.settings.lightTheme = !S.settings.lightTheme; applyThemeMode(); saveLocal(); renderTop(); };
     $("pf-settings-btn").onclick = openProfileSettingsSheet;
+    $("pf-stat-friends-btn").onclick = function () { openSocialListSheet("friends"); };
+    $("pf-stat-followers-btn").onclick = function () { openSocialListSheet("followers"); };
+    $("pf-stat-following-btn").onclick = function () { openSocialListSheet("following"); };
     $("pf-copy-id").onclick = function () {
       var idVal = displayUserId(S.me);
       if (navigator.clipboard) navigator.clipboard.writeText(idVal).catch(function () { /* */ });
@@ -2384,7 +2502,7 @@
       var af = e.target.closest("[data-addfriend]"); if (af) {
         addFriendMutual(af.getAttribute("data-addfriend"));
         renderAll();
-        toast("تمت الإضافة وقبول الصداقة ✅ يمكنك الآن فتح الشات الخاص");
+        toast("تمت الإضافة ✅ ظهر في الخاص وتحدثت قائمة الأصدقاء");
         return;
       }
       var ac = e.target.closest("[data-accept]"); if (ac) {
