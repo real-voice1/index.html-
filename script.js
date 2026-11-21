@@ -1,4 +1,4 @@
-/* REAL VOICE — نسخة كاملة: تمرير سلس، تثبيت تلقائي، طلب مايك، ومكافأة أيام متتالية */
+/* REAL VOICE — نسخة محسّنة للأداء والسلاسة والتثبيت كتطبيق PWA */
 (function (global) {
   "use strict";
 
@@ -13,7 +13,7 @@
   var TOKEN_URL = "https://indexhtml-production-8a2533cd.up.railway.app/rtc-token";
 
   var CONFIG = {
-    storageKey: "rv_state_v15",
+    storageKey: "rv_state_v16",
     fixedUidKey: "rv_fixed_uid_v1",
     authSessionKey: "rv_auth_logged_v1",
     googleAuthedKey: "rv_google_authed_v1",
@@ -132,7 +132,7 @@
   function dmThreadId(a, b) { return [String(a), String(b)].sort().join("__"); }
 
   function readImageFileAsDataUrl(file, maxSize, quality) {
-    maxSize = maxSize || 240; quality = quality || 0.65;
+    maxSize = maxSize || 200; quality = quality || 0.6;
     return new Promise(function (resolve, reject) {
       if (!file || !file.type || file.type.indexOf("image/") !== 0) { reject(new Error("اختر ملف صورة صحيح")); return; }
       var reader = new FileReader();
@@ -159,6 +159,7 @@
   function getCharmLevel(charm) { return Math.max(1, Math.min(CONFIG.maxLevel, Math.floor(Math.max(0, Number(charm || 0)) / 100) + 1)); }
   function getWealthLevel(wealth) { return Math.max(1, Math.min(CONFIG.maxLevel, Math.floor(Math.max(0, Number(wealth || 0)) / 100) + 1)); }
 
+  /* ========= PWA وتثبيت التطبيق على الجوال ========= */
   function isStandaloneApp() {
     return (global.matchMedia && global.matchMedia("(display-mode: standalone)").matches) || !!global.navigator.standalone;
   }
@@ -177,7 +178,7 @@
         deferredInstallPrompt.prompt();
         var choice = await deferredInstallPrompt.userChoice;
         if (choice && choice.outcome === "accepted") {
-          toast("جاري تثبيت التطبيق على جوالك...");
+          toast("تم بدء تثبيت REAL VOICE على جوالك ✅");
         }
       } catch (e) { /* */ }
       deferredInstallPrompt = null;
@@ -186,10 +187,10 @@
     }
 
     openSheet(
-      "<h3>📲 تثبيت REAL VOICE على الجوال</h3>" +
+      "<h3>📲 تثبيت تطبيق REAL VOICE</h3>" +
       "<div class='actlist'>" +
-        "<button type='button'><b>أندرويد (Chrome):</b> اضغط على القائمة (⋮) بالأعلى واختر <b>«تثبيت التطبيق»</b> أو <b>«إضافة إلى الشاشة الرئيسية»</b>.</button>" +
-        "<button type='button'><b>آيفون (Safari):</b> اضغط على زر المشاركة (⬆️) واختر <b>«إضافة إلى الشاشة الرئيسية»</b>.</button>" +
+        "<button type='button'><b>أندرويد (Chrome):</b> افتح قائمة المتصفح (⋮) واختر <b>«تثبيت التطبيق»</b> أو <b>«إضافة إلى الشاشة الرئيسية»</b>.</button>" +
+        "<button type='button'><b>آيفون (Safari):</b> اضغط زر المشاركة (⬆️) ثم <b>«إضافة إلى الشاشة الرئيسية»</b>.</button>" +
       "</div>" +
       "<button class='btn block' id='ins-close' type='button'>حسناً</button>"
     );
@@ -228,6 +229,20 @@
       link.href = URL.createObjectURL(blob);
       document.head.appendChild(link);
     } catch (e) { /* */ }
+
+    if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+      var swCode = [
+        "self.addEventListener('install', function(e){ self.skipWaiting(); });",
+        "self.addEventListener('activate', function(e){ e.waitUntil(self.clients.claim()); });",
+        "self.addEventListener('fetch', function(e){",
+        "  if (e.request.method !== 'GET') return;",
+        "  e.respondWith(fetch(e.request).catch(function(){ return caches.match(e.request); }));",
+        "});"
+      ].join("\n");
+      var swBlob = new Blob([swCode], { type: "application/javascript" });
+      var swUrl = URL.createObjectURL(swBlob);
+      navigator.serviceWorker.register(swUrl).catch(function () { /* */ });
+    }
   }
 
   /* ========= الصوت (Agora RTC) + الموسيقى المتزامنة ========= */
@@ -343,7 +358,7 @@
         voice.localSpeaking = active;
         updateSpeakingIndicators();
       }
-    }, 120);
+    }, 150);
   }
   function stopLocalVoiceMeter() {
     if (voice.localLevelTimer) {
@@ -507,6 +522,16 @@
   };
   var listenersMap = {};
   var dmRecorder = null, dmChunks = [], isRecordingDm = false;
+  var renderRafId = null;
+
+  function scheduleRenderAll() {
+    if (renderRafId) return;
+    renderRafId = requestAnimationFrame(function () {
+      renderRafId = null;
+      renderTop();
+      renderCurrentPage();
+    });
+  }
 
   function setGoogleLoginLoading(loading, label) {
     var btn = $("google-login-btn");
@@ -791,8 +816,8 @@
   function attachDmThreadListener(myId, peerId) {
     if (!cloud.on || !cloud.db || !peerId) return;
     var tid = dmThreadId(myId, peerId);
-    cloud.db.ref("dms/" + tid).limitToLast(150).off("value");
-    cloud.db.ref("dms/" + tid).limitToLast(150).on("value", function (ms) {
+    cloud.db.ref("dms/" + tid).limitToLast(100).off("value");
+    cloud.db.ref("dms/" + tid).limitToLast(100).on("value", function (ms) {
       var v = ms.val() || {};
       var arr = Object.keys(v).map(function (k) { return Object.assign({ key: k }, v[k]); });
       arr.sort(function (a, b) { return (a.t || 0) - (b.t || 0); });
@@ -840,7 +865,7 @@
       S.users = Object.keys(val).filter(function (k) { return k !== S.me.id; }).map(function (k) {
         return Object.assign({ id: k }, val[k]);
       });
-      renderAll();
+      scheduleRenderAll();
       if (UI.roomId) renderRoom();
     });
 
@@ -874,7 +899,7 @@
       S.blocked = Object.keys(sv.blocked || {});
       S.friends.forEach(function (fid) { attachDmThreadListener(myId, fid); });
       saveLocal();
-      renderAll();
+      scheduleRenderAll();
     });
 
     onDb("app", cloud.db.ref("userDms/" + myId), "value", function (ds) {
@@ -926,7 +951,7 @@
     setLocalSession(true, true);
     await syncUserCloudProfile(uidVal);
     save();
-    renderAll();
+    scheduleRenderAll();
 
     if (isOnboardDone()) {
       UI.authReady = true;
@@ -997,7 +1022,7 @@
       UI.authReady = true;
       showAuthGate(false);
       save();
-      renderAll();
+      scheduleRenderAll();
     } else {
       showAuthGate(true, "onboard");
     }
@@ -1018,7 +1043,7 @@
     UI.authReady = true;
     showAuthGate(false);
     save();
-    renderAll();
+    scheduleRenderAll();
     toast("تم حفظ بياناتك بنجاح ✅");
   }
 
@@ -1109,7 +1134,7 @@
   }
 
   function avatarInnerHTML(u) {
-    if (u && u.photo) return '<img src="' + esc(u.photo) + '" alt="' + esc(u.name || "avatar") + '" />';
+    if (u && u.photo) return '<img src="' + esc(u.photo) + '" alt="' + esc(u.name || "avatar") + '" loading="lazy" />';
     return esc(initials(u && u.name));
   }
   function avatarHTML(u, cls) { return '<div class="avatar ' + (cls || "") + '">' + avatarInnerHTML(u) + "</div>"; }
@@ -1118,7 +1143,7 @@
   function roomSqMediaHTML(r, insideCount) {
     var bg = COVERS[(r.color || 0) % COVERS.length];
     var ic = COVER_ICONS[(r.icon || 0) % COVER_ICONS.length];
-    var inner = r.roomPhoto ? '<img src="' + esc(r.roomPhoto) + '" alt="' + esc(r.name || "") + '" />' : "<span>" + ic + "</span>";
+    var inner = r.roomPhoto ? '<img src="' + esc(r.roomPhoto) + '" alt="' + esc(r.name || "") + '" loading="lazy" />' : "<span>" + ic + "</span>";
     var modeBadge = r.micApprovalMode ? '<span class="room-sq-mode-pill">✋ بطلب</span>' : "";
     return '<div class="room-sq-media" style="background:' + bg + '">' +
       '<span class="room-sq-live-pill">🎧 ' + insideCount + "</span>" +
@@ -1215,7 +1240,7 @@
     UI.page = page;
     document.querySelectorAll(".page").forEach(function (p) { p.classList.toggle("active", p.id === "page-" + page); });
     document.querySelectorAll(".navbtn").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-page") === page); });
-    window.scrollTo({ top: 0, behavior: "instant" });
+    window.scrollTo({ top: 0, behavior: "auto" });
     renderCurrentPage();
   }
 
@@ -1549,7 +1574,7 @@
       var f = this.files && this.files[0];
       if (!f) return;
       try {
-        nextPhoto = await readImageFileAsDataUrl(f, 220, 0.65);
+        nextPhoto = await readImageFileAsDataUrl(f, 200, 0.6);
         var avEl = $("set-av-live");
         if (avEl) avEl.innerHTML = '<img src="' + esc(nextPhoto) + '" alt="" />';
         toast("تم تحميل الصورة — اضغط حفظ ونشر الصورة ✅");
@@ -1865,7 +1890,7 @@
       if (m.sys) return '<div class="msg sys">' + esc(m.text) + "</div>";
       var u = resolveLiveUser(m.from), me = m.from === S.me.id;
       var body = m.sticker ? '<div style="font-size:36px">' + esc(m.sticker) + "</div>"
-        : (m.img ? '<img src="' + esc(m.img) + '" alt="" style="max-width:190px;border-radius:10px" />' : esc(m.text));
+        : (m.img ? '<img src="' + esc(m.img) + '" alt="" loading="lazy" style="max-width:190px;border-radius:10px" />' : esc(m.text));
       return '<div class="msg ' + (me ? "me" : "") + '"><div class="who">' + esc(u.name) + "</div>" + body + '<div class="tm">' + timeStr(m.t) + "</div></div>";
     }).join("");
     if (stick) box.scrollTop = box.scrollHeight;
@@ -2007,7 +2032,7 @@
     }
     UI.dmId = null;
     $("chat-view").classList.remove("open");
-    renderAll();
+    scheduleRenderAll();
   }
 
   function renderDM() {
@@ -2232,7 +2257,7 @@
     $("ob-photo-input").onchange = async function () {
       var f = this.files && this.files[0];
       if (!f) return;
-      try { UI.onboardPhoto = await readImageFileAsDataUrl(f, 220, 0.65); renderOnboardPreview(); toast("تم اختيار الصورة ✅"); } catch (e) { toast(e.message); }
+      try { UI.onboardPhoto = await readImageFileAsDataUrl(f, 200, 0.6); renderOnboardPreview(); toast("تم اختيار الصورة ✅"); } catch (e) { toast(e.message); }
     };
     $("ob-name").oninput = renderOnboardPreview;
     $("ob-submit-btn").onclick = completeOnboarding;
@@ -2385,7 +2410,7 @@
       var f = this.files && this.files[0]; var r = getRoom(UI.roomId);
       if (!f || !r) return;
       try {
-        r.roomPhoto = await readImageFileAsDataUrl(f, 260, 0.72);
+        r.roomPhoto = await readImageFileAsDataUrl(f, 220, 0.65);
         if (cloud.on && cloud.db) cloud.db.ref("rooms/" + r.id + "/roomPhoto").set(r.roomPhoto).catch(function () { /* */ });
         saveLocal(); renderRoom(); renderHome(); renderRooms();
         toast("تم تحديث صورة الغرفة ✅");
@@ -2465,7 +2490,7 @@
       $("rm-img-file").onchange = async function () {
         var f = this.files && this.files[0]; if (!f) return;
         try {
-          var url = await readImageFileAsDataUrl(f, 380, 0.65);
+          var url = await readImageFileAsDataUrl(f, 340, 0.6);
           closeSheet(); sendRoomMsg("", { img: url });
         } catch (err) { toast(err.message); }
       };
